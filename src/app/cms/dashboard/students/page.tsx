@@ -1,0 +1,7 @@
+import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
+import { getStudentApplications } from '@/lib/student-applications'
+
+export default async function CmsStudentApplicationsPage() {
+  const applications = await getStudentApplications()
+  return <CmsDashboardShell activeKey="students" title="Theo dõi đăng ký học viên" description="CMS chỉ theo dõi toàn bộ đơn đăng ký. Nghệ sĩ hoặc Agent sở hữu profile là bên trực tiếp tiếp nhận và phản hồi."><section className="cms-panel"><div className="cms-panel-head-inline"><div><p className="section-eyebrow">Student applications</p><h2>Đơn mới nhất</h2><p className="cms-muted">Thông tin học viên được bảo mật; không có thao tác tiếp nhận tại CMS.</p></div></div><div className="cms-table-wrap"><table className="cms-table"><thead><tr><th>Học viên</th><th>Đăng ký với</th><th>Mục tiêu</th><th>Liên hệ</th><th>Trạng thái</th></tr></thead><tbody>{applications.length ? applications.slice(0, 20).map((item) => <tr key={item.id}><td><strong>{item.fullName}</strong><span>{item.city || 'Chưa cung cấp'}</span></td><td>{item.targetName}<span>{item.targetType === 'artist' ? 'Nghệ sĩ' : 'Agent'}</span></td><td>{item.learningGoal}</td><td>{item.email}<span>{item.phone}</span></td><td>{item.status === 'accepted' ? 'Đã tiếp nhận' : item.status === 'declined' ? 'Từ chối' : 'Mới'}</td></tr>) : <tr><td colSpan={5}>Chưa có đơn học viên.</td></tr>}</tbody></table></div></section></CmsDashboardShell>
+}

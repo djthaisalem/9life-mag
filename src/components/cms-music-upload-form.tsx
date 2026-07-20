@@ -1,0 +1,63 @@
+'use client'
+
+import { FormEvent, useState } from 'react'
+
+type ArtistOption = { slug: string; name: string }
+type GenreOption = { id: string; slug: string; name: string }
+type AlbumOption = { id: string; title: string; artist: string }
+
+type UploadResult = { durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string }
+
+const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
+
+export function CmsMusicUploadForm({ artists, genres, albums }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[] }) {
+  const [isPending, setIsPending] = useState(false)
+  const [message, setMessage] = useState('')
+  const [result, setResult] = useState<UploadResult | null>(null)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsPending(true)
+    setMessage('Đang tạo mã nhạc, chuẩn hóa metadata, xuất MP3 256 kbps và upload lên R2...')
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/cms/music/upload', { method: 'POST', body: new FormData(event.currentTarget) })
+      const payload = await response.json() as { ok?: boolean; message?: string; result?: UploadResult }
+      if (!response.ok || !payload.ok || !payload.result) {
+        setMessage(payload.message ?? 'Không thể xử lý file nhạc.')
+        return
+      }
+      setResult(payload.result)
+      setMessage(`Đã xử lý xong. Mã nhạc: ${payload.result.musicCode}. Thời lượng: ${payload.result.durationLabel}.`)
+      event.currentTarget.reset()
+    } catch {
+      setMessage('Không kết nối được đến worker upload music.')
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <form className="form-shell cms-embedded-form" onSubmit={handleSubmit}>
+      <div className="field"><label htmlFor="musicTitle">Tên nội dung</label><input id="musicTitle" name="title" required placeholder="Water Lily Club Remix" /></div>
+      <div className="cms-form-two">
+        <div className="field"><label htmlFor="musicType">Loại file audio</label><select id="musicType" name="type" defaultValue="track"><option value="track">Track</option><option value="nonstop">Nonstop</option><option value="remix">Remix</option></select><span className="cms-muted">Album/EP là release container, không upload như một file audio.</span></div>
+        <div className="field"><label htmlFor="musicGenre">Thể loại</label><select id="musicGenre" name="genre" defaultValue=""><option value="">Chọn thể loại</option>{genres.map((genre) => <option key={genre.id} value={genre.slug}>{genre.name}</option>)}</select></div>
+      </div>
+      <div className="cms-form-two">
+        <div className="field"><label htmlFor="musicArtist">Nghệ sĩ</label><select id="musicArtist" name="artistSlug" defaultValue=""><option value="">Để trống nếu chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.slug} value={artist.slug}>{artist.name}</option>)}</select></div>
+        <div className="field"><label htmlFor="musicAccess">Quyền truy cập</label><select id="musicAccess" name="access" defaultValue="public"><option value="public">Công khai - nghe miễn phí</option><option value="stars">Trừ sao để phát</option><option value="premium">Chỉ Premium</option><option value="internal">Chỉ nội bộ CMS</option></select></div>
+      </div>
+      <div className="cms-form-two">
+        <div className="field"><label htmlFor="musicVisibility">Hiển thị</label><select id="musicVisibility" name="visibility" defaultValue="draft"><option value="draft">Nháp nội bộ</option><option value="pending">Chờ admin duyệt</option><option value="public">Đang public</option><option value="hidden">Tạm ẩn</option></select></div>
+        <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue=""><option value="">Không thuộc album</option>{albums.map((album) => <option key={album.id} value={album.title}>{album.title} · {album.artist}</option>)}</select></div>
+      </div>
+      <div className="field"><label htmlFor="musicAudio">File nhạc gốc</label><input id="musicAudio" name="audio" type="file" required accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac" /><span className="cms-muted">Hỗ trợ MP3, WAV, FLAC, M4A, AAC. Worker tự tạo preview MP3 256kb và giữ master riêng cho download.</span></div>
+      <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Tick các khu vực được phép hiển thị track này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" name="displayMap" value={option} />{option}</label>)}</div></fieldset>
+      <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending}>{isPending ? 'Đang xử lý...' : 'Xử lý và upload nhạc'}</button></div>
+      {message ? <p className="cms-muted" role="status">{message}</p> : null}
+      {result ? <div className="cms-security-panel"><strong>Đã tạo track nháp</strong><p>Mã quản lý: {result.musicCode}</p><p>Preview: {result.previewKey}</p><p>Download: {result.masterKey}</p><p>Cover mặc định: {result.coverR2Key}</p></div> : null}
+    </form>
+  )
+}

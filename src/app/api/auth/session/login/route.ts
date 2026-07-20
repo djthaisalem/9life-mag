@@ -1,0 +1,93 @@
+import { cookies, headers } from 'next/headers'
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
+import {
+  getSiteSessionCookieOptions,
+  loginSiteAccount,
+  SITE_SESSION_COOKIE,
+} from '@/lib/site-user-session'
+
+const loginSchema = z.object({
+  identity: z.string().min(1, 'Vui lòng nhập email hoặc số điện thoại'),
+  password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
+  accountType: z.enum(['user', 'artist']).default('user'),
+})
+
+function json(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  })
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const payload = loginSchema.parse(body)
+    const headerStore = await headers()
+    const ip = getTrustedClientIp(headerStore)
+    const guard = await guardLoginAttempts(payload.identity, ip)
+
+    if (!guard.ok) {
+      return json(
+        {
+          ok: false,
+          message: guard.message,
+        },
+        429
+      )
+    }
+
+    const result = await loginSiteAccount(payload)
+
+    if (!result.ok) {
+      return json(
+        {
+          ok: false,
+          message: 'Thông tin đăng nhập chưa đúng hoặc tài khoản chưa sẵn sàng.',
+        },
+        401
+      )
+    }
+
+    const cookieStore = await cookies()
+    cookieStore.set(SITE_SESSION_COOKIE, result.token, getSiteSessionCookieOptions())
+
+    return json({
+      ok: true,
+      state: {
+        isAuthenticated: true,
+      },
+      profile: {
+        provider: result.account.provider,
+        email: result.account.email,
+        fullName: result.account.fullName,
+        avatarUrl: result.account.avatarUrl,
+      },
+      accountType: result.account.accountType,
+      portalRole: result.account.portalRole,
+      portalAccessStatus: result.account.portalAccessStatus,
+    })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return json(
+        {
+          ok: false,
+          message: error.issues[0]?.message ?? 'Dữ liệu đăng nhập chưa hợp lệ.',
+        },
+        400
+      )
+    }
+
+    return json(
+      {
+        ok: false,
+        message: 'Không thể đăng nhập lúc này.',
+      },
+      500
+    )
+  }
+}

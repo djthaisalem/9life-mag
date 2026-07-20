@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9LIFE MAG | Tin Tức Giải Trí, Bảng Xếp Hạng Nghệ Sĩ & Nghe Nhạc Nonstop</title>
+    <meta name="description" content="9LIFE MAG - Tin tức giải trí đa chủ đề, bảng xếp hạng nghệ sĩ DJ/Producer, nghe và tải nhạc nonstop chất lượng cao.">
+    <meta name="keywords" content="9lifemag, tin tức giải trí, bảng xếp hạng DJ, vote nghệ sĩ, nghe nhạc nonstop, tải nhạc, DJ, producer, nightlife">
+    <link rel="canonical" href="https://9lifemag.com/">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://9lifemag.com/">
+    <meta property="og:title" content="9LIFE MAG | Entertainment News, Artist Rankings & Nonstop Music">
+    <meta property="og:description" content="Tin tức giải trí, bảng xếp hạng nghệ sĩ, nghe và tải nhạc nonstop.">
+    <meta property="og:image" content="https://9lifemag.com/assets/og-banner.jpg">
+    <meta property="og:site_name" content="9LIFE MAG">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="9LIFE MAG | Entertainment News, Rankings & Nonstop Music">
+    <meta name="twitter:description" content="Tin tức giải trí, bảng xếp hạng nghệ sĩ, nghe và tải nhạc nonstop.">
+    <meta name="twitter:image" content="https://9lifemag.com/assets/og-banner.jpg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        neon: { pink: '#ff00ff', cyan: '#00ffff', purple: '#8b5cf6', yellow: '#facc15', green: '#39ff14' },
+                        dark: { 900: '#050505', 800: '#0a0a0f', 700: '#12121a', 600: '#1a1a2e' }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'equalizer': 'equalizer 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-20px)' } },
+                        equalizer: { '0%, 100%': { height: '20%' }, '50%': { height: '100%' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #e2e8f0; overflow-x: hidden; }
+        .glass { background: rgba(18, 18, 30, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-card { background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(10, 10, 15, 0.9) 100%); border: 1px solid rgba(255, 255, 255, 0.06); backdrop-filter: blur(8px); transition: all 0.3s ease; }
+        .glass-card:hover { border-color: rgba(255, 0, 255, 0.4); transform: translateY(-4px); box-shadow: 0 10px 40px -10px rgba(255, 0, 255, 0.15); }
+        .neon-text { background: linear-gradient(90deg, #ff00ff, #00ffff, #facc15); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero-gradient { background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, rgba(5, 5, 5, 0) 50%), radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.08) 0%, transparent 40%); }
+        .noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-active { background: linear-gradient(90deg, #ff00ff, #8b5cf6); color: white; border-color: transparent; }
+        .tab-inactive { background: transparent; color: #9ca3af; border: 1px solid rgba(255,255,255,0.1); }
+        .tab-inactive:hover { border-color: rgba(255,0,255,0.4); color: white; }
+        .equalizer-bar { width: 4px; background: linear-gradient(to top, #ff00ff, #00ffff); border-radius: 2px; animation: equalizer 0.8s ease-in-out infinite; }
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #E8E8E8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .playing-glow { box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); border-color: rgba(0, 255, 255, 0.5); }
+    </style>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "url": "https://9lifemag.com/",
+                "name": "9LIFE MAG",
+                "description": "Tin tức giải trí, bảng xếp hạng nghệ sĩ và nghe nhạc nonstop.",
+                "publisher": { "@type": "Organization", "name": "9LIFE MAG", "url": "https://9lifemag.com" },
+                "potentialAction": { "@type": "SearchAction", "target": { "@type": "EntryPoint", "urlTemplate": "https://9lifemag.com/search?q={search_term_string}" }, "query-input": "required name=search_term_string" }
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://9lifemag.com/#organization",
+                "name": "9LIFE MAG",
+                "url": "https://9lifemag.com",
+                "logo": "https://9lifemag.com/assets/logo.png",
+                "sameAs": ["https://facebook.com/9lifemag","https://instagram.com/9lifemag","https://youtube.com/9lifemag"]
+            }
+        ]
+    }
+    </script>
+</head>
+<body class="font-sans antialiased">
+
+    <div class="noise"></div>
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-40 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 md:h-20">
+                <a href="#" class="flex items-center gap-2 group" aria-label="9LIFE MAG Home">
+                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-neon-pink to-neon-cyan flex items-center justify-center font-bold text-black text-lg md:text-xl group-hover:shadow-[0_0_15px_rgba(255,0,255,0.5)] transition">9</div>
+                    <span class="font-display font-bold text-xl md:text-2xl tracking-tight text-white">LIFE <span class="text-neon-cyan">MAG</span></span>
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="#news" class="text-sm font-medium text-gray-300 hover:text-white transition">Tin Tức</a>
+                    <a href="#artists" class="text-sm font-medium text-gray-300 hover:text-white transition">Nghệ Sĩ</a>
+                    <a href="#ranking" class="text-sm font-medium text-gray-300 hover:text-white transition">Bảng Xếp Hạng</a>
+                    <a href="#music" class="text-sm font-medium text-gray-300 hover:text-white transition">Nonstop Music</a>
+                    <a href="#contact" class="text-sm font-medium px-5 py-2.5 rounded-full bg-gradient-to-r from-neon-pink to-neon-purple text-white hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition">Liên Hệ</a>
+                </nav>
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-white" aria-label="Open menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden border-t border-white/5 bg-dark-800/95 backdrop-blur-xl">
+            <div class="px-4 pt-2 pb-6 space-y-1">
+                <a href="#news" class="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg">Tin Tức</a>
+                <a href="#artists" class="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg">Nghệ Sĩ</a>
+                <a href="#ranking" class="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg">Bảng Xếp Hạng</a>
+                <a href="#music" class="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg">Nonstop Music</a>
+                <a href="#contact" class="block px-3 py-3 text-base font-medium text-neon-pink hover:text-white">Liên Hệ</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden" aria-label="Hero">
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-pink/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s;"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-neon-cyan/30 text-neon-cyan text-sm font-medium mb-8 animate-float">
+                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-neon-cyan"></span></span>
+                Cộng đồng giải trí & âm nhạc chuyên nghiệp
+            </div>
+            <h1 class="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6">
+                <span class="block text-white">NGHỆ THUẬT</span>
+                <span class="neon-text">KHÔNG GIỚI HẠN</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-gray-400 leading-relaxed">
+                Tin tức giải trí đa chiều. Bảng xếp hạng nghệ sĩ DJ & Producer. Nghe và tải nhạc nonstop chất lượng cao.
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#ranking" class="px-8 py-4 rounded-full bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(255,0,255,0.4)] transition transform hover:scale-105">Bảng Xếp Hạng</a>
+                <a href="#music" class="px-8 py-4 rounded-full glass border border-white/20 text-white font-bold text-lg hover:bg-white/10 transition transform hover:scale-105 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Nghe Nhạc Nonstop
+                </a>
+            </div>
+        </div>
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        </div>
+    </section>
+
+    <!-- NEWS SECTION -->
+    <section id="news" class="relative py-24 bg-dark-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+                <div>
+                    <h2 class="font-display text-3xl md:text-5xl font-bold text-white mb-2">Tin Tức <span class="text-neon-pink">&</span> Sự Kiện</h2>
+                    <p class="text-gray-400">Cập nhật đa chủ đề từ ngành công nghiệp giải trí và nightlife.</p>
+                </div>
+                <a href="#" class="inline-flex items-center gap-1 text-neon-cyan hover:text-white transition font-medium">Xem tất cả 
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </a>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="flex flex-wrap gap-2 mb-8" id="news-tabs">
+                <button onclick="filterNews('all')" class="news-tab tab-active px-4 py-2 rounded-full text-sm font-medium transition" data-cat="all">Tất Cả</button>
+                <button onclick="filterNews('events')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="events">Sự Kiện</button>
+                <button onclick="filterNews('music')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="music">Âm Nhạc</button>
+                <button onclick="filterNews('nightlife')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="nightlife">Nightlife</button>
+                <button onclick="filterNews('interview')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="interview">Interview</button>
+                <button onclick="filterNews('review')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="review">Review</button>
+                <button onclick="filterNews('tech')" class="news-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-cat="tech">Công Nghệ</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="news-grid">
+                <!-- Events -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="events" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-10">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=600&h=400&fit=crop" alt="Nightclub event" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-pink/90 text-white text-xs font-bold rounded-full">Sự Kiện</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">10 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Đêm nhạc EDM quốc tế thu hút 10,000 khán giả tại TP.HCM</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Sự kiện âm nhạc điện tử lớn nhất mùa hè với sự góp mặt của các DJ hàng đầu thế giới.</p>
+                    </div>
+                </article>
+
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="events" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-08">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=400&fit=crop" alt="Festival" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-pink/90 text-white text-xs font-bold rounded-full">Sự Kiện</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">08 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Countdown 2027 công bố lineup đầu tiên tại Hà Nội</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Chuỗi sự kiện đón năm mới hứa hẹn bùng nổ với sân khấu 360 độ đầu tiên tại Việt Nam.</p>
+                    </div>
+                </article>
+
+                <!-- Music -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="music" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-09">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=600&h=400&fit=crop" alt="DJ in studio" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-cyan/90 text-black text-xs font-bold rounded-full">Âm Nhạc</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">09 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Top 10 DJ Việt Nam đang lên: Xu hướng âm nhạc 2026</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Những cái tên trẻ đang làm mới bản đồ âm nhạc điện tử Việt Nam.</p>
+                    </div>
+                </article>
+
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="music" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-07">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop" alt="Studio" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-cyan/90 text-black text-xs font-bold rounded-full">Âm Nhạc</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">07 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Album debut của producer trẻ lọt top trending toàn cầu</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Sản phẩm đầu tay pha trộn traditional instruments và electronic bass.</p>
+                    </div>
+                </article>
+
+                <!-- Nightlife -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="nightlife" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-05">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1514525253440-b393452e8d26?w=600&h=400&fit=crop" alt="Nightclub lights" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-purple/90 text-white text-xs font-bold rounded-full">Nightlife</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">05 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Công nghệ ánh sáng & âm thanh mới tại các club hàng đầu</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Trải nghiệm immersive đang trở thành tiêu chuẩn mới cho không gian giải trí về đêm.</p>
+                    </div>
+                </article>
+
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="nightlife" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-03">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1563841930606-67e2bce48b78?w=600&h=400&fit=crop" alt="Bar" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-purple/90 text-white text-xs font-bold rounded-full">Nightlife</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">03 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Rooftop bar concept kết hợp pool party gây sốt tại Đà Nẵng</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Mô hình giải trí mới lạ thu hút giới trẻ và du khách quốc tế.</p>
+                    </div>
+                </article>
+
+                <!-- Interview -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="interview" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-06">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1529068755536-a5ade0dcb4e8?w=600&h=400&fit=crop" alt="DJ interview" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-yellow/90 text-black text-xs font-bold rounded-full">Interview</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">06 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">[Interview] Hành trình từ bedroom producer đến main stage</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Chia sẻ chân thật về 5 năm làm nghề và những cú ngã định hình sự nghiệp.</p>
+                    </div>
+                </article>
+
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="interview" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-02">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&h=400&fit=crop" alt="Female DJ" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-neon-yellow/90 text-black text-xs font-bold rounded-full">Interview</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">02 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Nữ DJ nói về định kiến giới tính trong ngành công nghiệp đêm</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Cuộc trò chuyện cởi mở về sự công nhận và cơ hội cho nữ nghệ sĩ.</p>
+                    </div>
+                </article>
+
+                <!-- Review -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="review" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-04">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&h=400&fit=crop" alt="Headphones" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-green-500/90 text-black text-xs font-bold rounded-full">Review</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">04 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">Đánh giá tai nghe DJ monitoring mới ra mắt 2026</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Có thực sự đáng đầu tư cho các producer làm việc trong môi trường club?</p>
+                    </div>
+                </article>
+
+                <!-- Tech -->
+                <article class="news-item glass-card rounded-2xl overflow-hidden group cursor-pointer" data-category="tech" itemscope itemtype="https://schema.org/NewsArticle">
+                    <meta itemprop="datePublished" content="2026-07-01">
+                    <meta itemprop="author" content="9LIFE MAG Editorial">
+                    <div class="relative h-48 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-900 to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&h=400&fit=crop" alt="Tech" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" loading="lazy">
+                        <span class="absolute top-4 left-4 z-20 px-3 py-1 bg-blue-500/90 text-white text-xs font-bold rounded-full">Công Nghệ</span>
+                    </div>
+                    <div class="p-6">
+                        <time class="text-xs text-gray-500 font-medium">01 Tháng 7, 2026</time>
+                        <h3 class="mt-2 text-xl font-bold text-white group-hover:text-neon-cyan transition" itemprop="headline">AI trong sản xuất âm nhạc: Cơ hội hay mối đe dọa?</h3>
+                        <p class="mt-2 text-gray-400 text-sm line-clamp-2" itemprop="description">Phân tích tác động của generative AI đến creative workflow của producer hiện đại.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARTISTS + RANKING SECTION -->
+    <section id="artists" class="relative py-24 bg-dark-900">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-neon-purple/5 to-transparent pointer-events-none"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-10">
+                <span class="text-neon-pink font-bold tracking-wider text-sm uppercase">Artist Directory</span>
+                <h2 class="font-display text-3xl md:text-5xl font-bold text-white mt-2">Nghệ Sĩ & <span class="neon-text">DJ Profiles</span></h2>
+                <p class="mt-4 text-gray-400 max-w-2xl mx-auto">Khám phá, lọc và vote cho nghệ sĩ DJ, Producer yêu thích của bạn.</p>
+            </div>
+
+            <!-- Artist Filters -->
+            <div class="flex flex-wrap justify-center gap-2 mb-10" id="artist-tabs">
+                <button onclick="filterArtists('all')" class="artist-tab tab-active px-4 py-2 rounded-full text-sm font-medium transition" data-filter="all">Tất Cả</button>
+                <button onclick="filterArtists('dj')" class="artist-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-filter="dj">DJ</button>
+                <button onclick="filterArtists('producer')" class="artist-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-filter="producer">Producer</button>
+                <button onclick="filterArtists('male')" class="artist-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-filter="male">Nam</button>
+                <button onclick="filterArtists('female')" class="artist-tab tab-inactive px-4 py-2 rounded-full text-sm font-medium transition" data-filter="female">Nữ</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="artist-grid">
+                <!-- Artist 1: Male DJ -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="dj" data-gender="male" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/dj-neon-viper">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-neon-pink to-neon-cyan blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1529068755536-a5ade0dcb4e8?w=300&h=300&fit=crop" alt="DJ Neon Viper" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">DJ Neon Viper</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">DJ • EDM / House</p>
+                    <p class="text-gray-500 text-xs mt-2">Nam • <span class="text-gray-300">Việt Nam & Đông Nam Á</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Big Room</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Tech House</span>
+                    </div>
+                    <button onclick="openBooking('DJ Neon Viper')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 2: Female Vocalist -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="producer" data-gender="female" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/luna-mystic">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-neon-purple to-neon-cyan blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop" alt="Luna Mystic" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Luna Mystic</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">Producer • Vocalist</p>
+                    <p class="text-gray-500 text-xs mt-2">Nữ • <span class="text-gray-300">Global</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Deep House</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Melodic</span>
+                    </div>
+                    <button onclick="openBooking('Luna Mystic')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 3: Male Producer -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="producer" data-gender="male" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/k-phantom">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop" alt="K-Phantom" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-yellow-500 border-2 border-dark-900 rounded-full" title="Limited"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">K-Phantom</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">Producer • Hip-Hop / Trap</p>
+                    <p class="text-gray-500 text-xs mt-2">Nam • <span class="text-gray-300">Việt Nam</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Trap</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Drill</span>
+                    </div>
+                    <button onclick="openBooking('K-Phantom')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 4: Female DJ -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="dj" data-gender="female" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/sky-raver">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-neon-cyan to-blue-500 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" alt="Sky Raver" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Sky Raver</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">DJ • Techno / Industrial</p>
+                    <p class="text-gray-500 text-xs mt-2">Nữ • <span class="text-gray-300">Châu Âu & Châu Á</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Techno</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Industrial</span>
+                    </div>
+                    <button onclick="openBooking('Sky Raver')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 5: Male DJ -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="dj" data-gender="male" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/dark-rythm">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 to-pink-600 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" alt="Dark Rythm" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Dark Rythm</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">DJ • DnB / Jungle</p>
+                    <p class="text-gray-500 text-xs mt-2">Nam • <span class="text-gray-300">Anh Quốc</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">DnB</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Jungle</span>
+                    </div>
+                    <button onclick="openBooking('Dark Rythm')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 6: Female Producer -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="producer" data-gender="female" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/echo-violet">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-500 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=300&h=300&fit=crop" alt="Echo Violet" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-yellow-500 border-2 border-dark-900 rounded-full" title="Limited"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Echo Violet</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">Producer • Future Bass</p>
+                    <p class="text-gray-500 text-xs mt-2">Nữ • <span class="text-gray-300">Hàn Quốc</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Future Bass</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Hyperpop</span>
+                    </div>
+                    <button onclick="openBooking('Echo Violet')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 7: Male Producer -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="producer" data-gender="male" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/ghost-frequency">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop" alt="Ghost Frequency" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Ghost Frequency</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">Producer • Lo-Fi / Ambient</p>
+                    <p class="text-gray-500 text-xs mt-2">Nam • <span class="text-gray-300">Global</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Lo-Fi</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Ambient</span>
+                    </div>
+                    <button onclick="openBooking('Ghost Frequency')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+
+                <!-- Artist 8: Female DJ -->
+                <div class="artist-card glass-card rounded-2xl p-6 text-center group" data-role="dj" data-gender="female" itemscope itemtype="https://schema.org/Person">
+                    <link itemprop="url" href="https://9lifemag.com/artists/cyber-rose">
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-rose-400 to-orange-400 blur-md opacity-50 group-hover:opacity-100 transition"></div>
+                        <img src="https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=300&h=300&fit=crop" alt="Cyber Rose" class="relative w-full h-full rounded-full object-cover border-2 border-white/10" itemprop="image">
+                        <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-dark-900 rounded-full" title="Available"></div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" itemprop="name">Cyber Rose</h3>
+                    <p class="text-neon-cyan text-sm font-medium" itemprop="jobTitle">DJ • Hardstyle / Trance</p>
+                    <p class="text-gray-500 text-xs mt-2">Nữ • <span class="text-gray-300">Hà Lan</span></p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Hardstyle</span>
+                        <span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/5">Trance</span>
+                    </div>
+                    <button onclick="openBooking('Cyber Rose')" class="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,255,0.3)] transition transform hover:scale-105">Book Show</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RANKING SECTION -->
+    <section id="ranking" class="relative py-24 bg-dark-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <span class="text-neon-cyan font-bold tracking-wider text-sm uppercase">Community Vote</span>
+                <h2 class="font-display text-3xl md:text-5xl font-bold text-white mt-2">Bảng Xếp Hạng <span class="text-neon-pink">Nghệ Sĩ</span></h2>
+                <p class="mt-4 text-gray-400 max-w-2xl mx-auto">Bình chọn cho nghệ sĩ bạn yêu thích. Bảng xếp hạng cập nhật real-time theo lượt vote cộng đồng.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Top 3 Podium -->
+                <div class="lg:col-span-1 space-y-6">
+                    <h3 class="text-xl font-bold text-white mb-4">Top 3 Tháng 7/2026</h3>
+                    
+                    <!-- Rank 1 -->
+                    <div class="glass-card rounded-2xl p-6 relative border border-yellow-500/30" itemscope itemtype="https://schema.org/Person">
+                        <div class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-bold text-black shadow-lg">1</div>
+                        <div class="flex items-center gap-4">
+                            <img src="https://images.unsplash.com/photo-1529068755536-a5ade0dcb4e8?w=100&h=100&fit=crop" class="w-16 h-16 rounded-full object-cover border-2 border-yellow-500/50" itemprop="image">
+                            <div>
+                                <h4 class="text-lg font-bold text-white rank-1" itemprop="name">DJ Neon Viper</h4>
+                                <p class="text-sm text-gray-400">DJ • Big Room / House</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-yellow-400 font-bold text-lg" id="votes-1">12,847</span>
+                                    <span class="text-xs text-gray-500">votes</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="voteArtist(1)" class="mt-4 w-full py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500 hover:text-black font-bold transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            Vote
+                        </button>
+                    </div>
+
+                    <!-- Rank 2 -->
+                    <div class="glass-card rounded-2xl p-6 relative border border-gray-400/30" itemscope itemtype="https://schema.org/Person">
+                        <div class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-bold text-black shadow-lg">2</div>
+                        <div class="flex items-center gap-4">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" class="w-16 h-16 rounded-full object-cover border-2 border-gray-400/50" itemprop="image">
+                            <div>
+                                <h4 class="text-lg font-bold text-white rank-2" itemprop="name">Luna Mystic</h4>
+                                <p class="text-sm text-gray-400">Producer • Deep House</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-gray-300 font-bold text-lg" id="votes-2">10,532</span>
+                                    <span class="text-xs text-gray-500">votes</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="voteArtist(2)" class="mt-4 w-full py-2 rounded-xl bg-gray-400/10 border border-gray-400/30 text-gray-300 hover:bg-gray-300 hover:text-black font-bold transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            Vote
+                        </button>
+                    </div>
+
+                    <!-- Rank 3 -->
+                    <div class="glass-card rounded-2xl p-6 relative border border-orange-700/30" itemscope itemtype="https://schema.org/Person">
+                        <div class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-gradient-to-br from-orange-600 to-orange-800 flex items-center justify-center font-bold text-white shadow-lg">3</div>
+                        <div class="flex items-center gap-4">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" class="w-16 h-16 rounded-full object-cover border-2 border-orange-700/50" itemprop="image">
+                            <div>
+                                <h4 class="text-lg font-bold text-white rank-3" itemprop="name">Sky Raver</h4>
+                                <p class="text-sm text-gray-400">DJ • Techno</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-orange-400 font-bold text-lg" id="votes-3">9,104</span>
+                                    <span class="text-xs text-gray-500">votes</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="voteArtist(3)" class="mt-4 w-full py-2 rounded-xl bg-orange-700/10 border border-orange-700/30 text-orange-400 hover:bg-orange-600 hover:text-white font-bold transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            Vote
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Full Ranking List -->
+                <div class="lg:col-span-2">
+                    <div class="glass rounded-2xl p-6 border border-white/5">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-white">Bảng Xếp Hạng Đầy Đủ</h3>
+                            <span class="text-xs text-gray-500 bg-white/5 px-3 py-1 rounded-full">Cập nhật: 10/07/2026</span>
+                        </div>
+                        <div class="space-y-3" id="ranking-list">
+                            <!-- Ranking items generated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NONSTOP MUSIC SECTION -->
+    <section id="music" class="relative py-24 bg-dark-900 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-neon-pink/5 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-neon-cyan/5 rounded-full blur-[100px]"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-12">
+                <span class="text-neon-cyan font-bold tracking-wider text-sm uppercase">Listen & Download</span>
+                <h2 class="font-display text-3xl md:text-5xl font-bold text-white mt-2">Nonstop Music & <span class="text-neon-pink">Mixtape</span></h2>
+                <p class="mt-4 text-gray-400 max-w-2xl mx-auto">Nghe nhạc nonstop chất lượng cao. Tải track lẻ hoặc package mixtape đầy đủ.</p>
+            </div>
+
+            <!-- Now Playing / Player -->
+            <div class="glass rounded-2xl p-6 md:p-8 mb-10 border border-white/5" id="player-bar">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="relative w-24 h-24 md:w-32 md:h-32 flex-shrink-0">
+                        <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop" id="player-cover" class="w-full h-full rounded-xl object-cover playing-glow" alt="Cover">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                                <div class="flex items-end gap-0.5 h-4">
+                                    <div class="equalizer-bar" style="animation-delay: 0s"></div>
+                                    <div class="equalizer-bar" style="animation-delay: 0.1s"></div>
+                                    <div class="equalizer-bar" style="animation-delay: 0.2s"></div>
+                                    <div class="equalizer-bar" style="animation-delay: 0.3s"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 w-full text-center md:text-left">
+                        <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
+                            <span class="px-2 py-0.5 rounded bg-neon-pink/20 text-neon-pink text-xs font-bold">NOW PLAYING</span>
+                            <span class="text-xs text-gray-500" id="player-duration">58:32</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-1" id="player-title">Summer EDM Nonstop 2026</h3>
+                        <p class="text-gray-400" id="player-artist">Mixed by DJ Neon Viper</p>
+                        <div class="mt-4 w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-neon-pink to-neon-cyan h-full rounded-full" style="width: 35%"></div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
+                            <span>20:15</span>
+                            <span>58:32</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:text-neon-cyan transition">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                        </button>
+                        <button class="w-16 h-16 rounded-full bg-gradient-to-r from-neon-pink to-neon-purple flex items-center justify-center text-white hover:shadow-[0_0_30px_rgba(255,0,255,0.4)] transition transform hover:scale-105">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        </button>
+                        <button class="w-12 h-12 rounded-full glass flex items-center justify-center text-white hover:text-neon-cyan transition">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <h3 class="text-xl font-bold text-white mb-6">Playlist Nonstop</h3>
+                    <div class="space-y-3" id="playlist">
+                        <!-- Playlist items -->
+                        <div class="playlist-item glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition" onclick="playTrack(this, 0)">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&h=100&fit=crop" class="w-full h-full object-cover">
+                                <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate">Summer EDM Nonstop 2026</h4>
+                                <p class="text-sm text-gray-400">DJ Neon Viper • Big Room / House</p>
+                            </div>
+                            <span class="text-sm text-gray-500">58:32</span>
+                            <button class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-neon-cyan hover:text-black text-white text-xs font-bold transition border border-white/10" onclick="event.stopPropagation(); alert('Tải xuống track đã bắt đầu!')">
+                                Tải
+                            </button>
+                        </div>
+
+                        <div class="playlist-item glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition" onclick="playTrack(this, 1)">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&h=100&fit=crop" class="w-full h-full object-cover">
+                                <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate">Trap Dynasty Mix Vol.3</h4>
+                                <p class="text-sm text-gray-400">K-Phantom • Trap / Drill</p>
+                            </div>
+                            <span class="text-sm text-gray-500">42:18</span>
+                            <button class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-neon-cyan hover:text-black text-white text-xs font-bold transition border border-white/10" onclick="event.stopPropagation(); alert('Tải xuống track đã bắt đầu!')">
+                                Tải
+                            </button>
+                        </div>
+
+                        <div class="playlist-item glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition" onclick="playTrack(this, 2)">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=100&h=100&fit=crop" class="w-full h-full object-cover">
+                                <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate">Retro Wave Night Drive</h4>
+                                <p class="text-sm text-gray-400">Ghost Frequency • Synthwave / Retrowave</p>
+                            </div>
+                            <span class="text-sm text-gray-500">1:12:45</span>
+                            <button class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-neon-cyan hover:text-black text-white text-xs font-bold transition border border-white/10" onclick="event.stopPropagation(); alert('Tải xuống track đã bắt đầu!')">
+                                Tải
+                            </button>
+                        </div>
+
+                        <div class="playlist-item glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition" onclick="playTrack(this, 3)">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=100&h=100&fit=crop" class="w-full h-full object-cover">
+                                <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate">Techno Underground Session</h4>
+                                <p class="text-sm text-gray-400">Sky Raver • Techno / Industrial</p>
+                            </div>
+                            <span class="text-sm text-gray-500">1:05:00</span>
+                            <button class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-neon-cyan hover:text-black text-white text-xs font-bold transition border border-white/10" onclick="event.stopPropagation(); alert('Tải xuống track đã bắt đầu!')">
+                                Tải
+                            </button>
+                        </div>
+
+                        <div class="playlist-item glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition" onclick="playTrack(this, 4)">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src="https://images.unsplash.com/photo-1459749411177-0473ef7161a9?w=100&h=100&fit=crop" class="w-full h-full object-cover">
+                                <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate">Future Bass Chillout</h4>
+                                <p class="text-sm text-gray-400">Echo Violet • Future Bass / Hyperpop</p>
+                            </div>
+                            <span class="text-sm text-gray-500">48:22</span>
+                            <button class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-neon-cyan hover:text-black text-white text-xs font-bold transition border border-white/10" onclick="event.stopPropagation(); alert('Tải xuống track đã bắt đầu!')">
+                                Tải
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Packages -->
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-6">Gói Tải Mixtape</h3>
+                    <div class="space-y-4">
+                        <div class="glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-cyan/50 transition">
+                            <h4 class="text-lg font-bold text-white">Starter Pack</h4>
+                            <p class="text-gray-400 text-sm mt-1">3 Mixtape MP3 320kbps</p>
+                            <div class="mt-3 mb-4">
+                                <span class="text-2xl font-bold text-white">Miễn phí</span>
+                            </div>
+                            <ul class="space-y-2 text-sm text-gray-300 mb-6">
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 3 Mixtape (~3 giờ)</li>
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> MP3 320kbps</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-xl border border-neon-cyan text-neon-cyan font-bold hover:bg-neon-cyan hover:text-black transition">Tải Gói</button>
+                        </div>
+
+                        <div class="glass-card rounded-2xl p-6 border border-neon-pink/50 relative shadow-[0_0_40px_rgba(255,0,255,0.1)]">
+                            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-neon-pink to-neon-purple px-4 py-1 rounded-b-xl text-xs font-bold text-white shadow-lg">Best Value</div>
+                            <h4 class="text-lg font-bold text-white">Pro Package</h4>
+                            <p class="text-gray-400 text-sm mt-1">10 Mixtape WAV + MP3</p>
+                            <div class="mt-3 mb-4">
+                                <span class="text-2xl font-bold text-neon-pink">99.000</span><span class="text-gray-400">₫</span>
+                            </div>
+                            <ul class="space-y-2 text-sm text-gray-300 mb-6">
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 10 Mixtape (~10 giờ)</li>
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> WAV Lossless + MP3</li>
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Tracklist đầy đủ</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-[0_0_30px_rgba(255,0,255,0.4)] transition">Mua Gói</button>
+                        </div>
+
+                        <div class="glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-purple/50 transition">
+                            <h4 class="text-lg font-bold text-white">Platinum Collection</h4>
+                            <p class="text-gray-400 text-sm mt-1">Toàn bộ thư viện 50+ Mixtape</p>
+                            <div class="mt-3 mb-4">
+                                <span class="text-2xl font-bold text-white">349.000</span><span class="text-gray-400">₫</span>
+                            </div>
+                            <ul class="space-y-2 text-sm text-gray-300 mb-6">
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 50+ Mixtape (~60 giờ)</li>
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> WAV + MP3 + Cue sheets</li>
+                                <li class="flex items-center gap-2"><svg class="w-4 h-4 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Cập nhật hàng tháng</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-xl border border-neon-purple text-neon-purple font-bold hover:bg-neon-purple hover:text-white transition">Mua Gói</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="relative py-24 bg-dark-800">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-display text-3xl md:text-5xl font-bold text-white mb-6">Sẵn sàng cho <span class="neon-text">sự kiện tiếp theo?</span></h2>
+            <p class="text-gray-400 text-lg mb-10">Dù bạn là promoter, club owner hay nghệ sĩ tìm kiếm cơ hội — 9LIFE MAG là cầu nối của bạn.</p>
+            <div class="glass rounded-2xl p-8 md:p-10 text-left">
+                <form class="space-y-6" onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi trong 24h.');">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Họ và Tên</label>
+                            <input type="text" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition" placeholder="Nguyễn Văn A">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                            <input type="email" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition" placeholder="you@company.com">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Loại hình liên hệ</label>
+                        <select class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition">
+                            <option>Book nghệ sĩ / DJ</option>
+                            <option>Mua / Tải Mixtape</option>
+                            <option>Hợp tác truyền thông</option>
+                            <option>Khác</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Nội dung</label>
+                        <textarea rows="4" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition" placeholder="Mô tả chi tiết về nhu cầu của bạn..."></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(255,0,255,0.4)] transition transform hover:scale-[1.02]">
+                        Gửi Liên Hệ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 bg-dark-900 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-1 md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-pink to-neon-cyan flex items-center justify-center font-bold text-black">9</div>
+                        <span class="font-display font-bold text-xl text-white">LIFE <span class="text-neon-cyan">MAG</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed">Nền tảng giải trí toàn diện — tin tức, nghệ sĩ booking, bảng xếp hạng và thư viện nhạc nonstop.</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Khám Phá</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#news" class="hover:text-neon-cyan transition">Tin Tức</a></li>
+                        <li><a href="#artists" class="hover:text-neon-cyan transition">Nghệ Sĩ</a></li>
+                        <li><a href="#ranking" class="hover:text-neon-cyan transition">Bảng Xếp Hạng</a></li>
+                        <li><a href="#music" class="hover:text-neon-cyan transition">Nonstop Music</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Pháp Lý</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-neon-cyan transition">Điều khoản sử dụng</a></li>
+                        <li><a href="#" class="hover:text-neon-cyan transition">Chính sách bản quyền</a></li>
+                        <li><a href="#" class="hover:text-neon-cyan transition">Chính sách thanh toán</a></li>
+                        <li><a href="#" class="hover:text-neon-cyan transition">License Agreement</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Kết Nối</h4>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-neon-pink hover:text-white transition text-gray-400" aria-label="Facebook">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-neon-pink hover:text-white transition text-gray-400" aria-label="Instagram">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-neon-pink hover:text-white transition text-gray-400" aria-label="YouTube">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </a>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500">Email: <a href="mailto:booking@9lifemag.com" class="text-neon-cyan hover:underline">booking@9lifemag.com</a></p>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-500 text-sm">© 2026 9LIFE MAG. All rights reserved.</p>
+                <p class="text-gray-600 text-xs">Designed for Entertainment Industry & Nightlife.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeBooking()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
+            <div class="glass rounded-2xl p-8 border border-neon-pink/30 shadow-[0_0_50px_rgba(255,0,255,0.2)]">
+                <h3 class="text-2xl font-bold text-white mb-2">Book Nghệ Sĩ</h3>
+                <p class="text-gray-400 text-sm mb-6">Bạn đang yêu cầu booking cho: <span id="artist-name" class="text-neon-cyan font-bold"></span></p>
+                <form class="space-y-4" onsubmit="event.preventDefault(); closeBooking(); alert('Yêu cầu booking đã được gửi! Chúng tôi sẽ liên hệ trong 24h.');">
+                    <input type="text" placeholder="Tên của bạn" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink">
+                    <input type="email" placeholder="Email" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink">
+                    <input type="text" placeholder="Ngày diễn / Sự kiện" required class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink">
+                    <textarea placeholder="Ghi chú thêm..." rows="3" class="w-full px-4 py-3 rounded-xl bg-dark-700 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-neon-pink"></textarea>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeBooking()" class="flex-1 py-3 rounded-xl border border-white/20 text-white hover:bg-white/10 transition">Hủy</button>
+                        <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-neon-pink to-neon-purple text-white font-bold hover:shadow-lg transition">Gửi Yêu Cầu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        mobileMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => mobileMenu.classList.add('hidden')));
+
+        // Booking modal
+        function openBooking(name) {
+            document.getElementById('artist-name').textContent = name;
+            document.getElementById('booking-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeBooking() {
+            document.getElementById('booking-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // News filter
+        function filterNews(category) {
+            document.querySelectorAll('.news-tab').forEach(btn => {
+                if (btn.dataset.cat === category) {
+                    btn.classList.remove('tab-inactive'); btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active'); btn.classList.add('tab-inactive');
+                }
+            });
+            document.querySelectorAll('.news-item').forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Artist filter
+        function filterArtists(filter) {
+            document.querySelectorAll('.artist-tab').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.remove('tab-inactive'); btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active'); btn.classList.add('tab-inactive');
+                }
+            });
+            document.querySelectorAll('.artist-card').forEach(card => {
+                const role = card.dataset.role;
+                const gender = card.dataset.gender;
+                if (filter === 'all' || role === filter || gender === filter) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Ranking data
+        const rankingData = [
+            { rank: 4, name: 'Dark Rythm', role: 'DJ', genre: 'DnB / Jungle', votes: 8750, img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop' },
+            { rank: 5, name: 'Echo Violet', role: 'Producer', genre: 'Future Bass', votes: 7230, img: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=100&h=100&fit=crop' },
+            { rank: 6, name: 'Ghost Frequency', role: 'Producer', genre: 'Lo-Fi / Ambient', votes: 6540, img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop' },
+            { rank: 7, name: 'Cyber Rose', role: 'DJ', genre: 'Hardstyle / Trance', votes: 5890, img: 'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=100&h=100&fit=crop' },
+            { rank: 8, name: 'K-Phantom', role: 'Producer', genre: 'Trap / Drill', votes: 4320, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' },
+        ];
+
+        function renderRanking() {
+            const container = document.getElementById('ranking-list');
+            container.innerHTML = rankingData.map(item => `
+                <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition cursor-pointer" itemscope itemtype="https://schema.org/Person">
+                    <span class="font-bold text-lg w-8 text-center text-gray-500">${item.rank}</span>
+                    <img src="${item.img}" class="w-12 h-12 rounded-full object-cover border border-white/10" itemprop="image">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-white text-sm truncate" itemprop="name">${item.name}</h4>
+                        <p class="text-xs text-gray-400">${item.role} • ${item.genre}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-neon-pink font-bold text-sm" id="rank-votes-${item.rank}">${item.votes.toLocaleString()}</div>
+                        <div class="text-xs text-gray-500">votes</div>
+                    </div>
+                    <button onclick="voteRank(${item.rank})" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-neon-pink text-white text-xs font-bold transition border border-white/10">
+                        Vote
+                    </button>
+                </div>
+            `).join('');
+        }
+        renderRanking();
+
+        // Vote functions
+        const voteCounts = { 1: 12847, 2: 10532, 3: 9104 };
+        rankingData.forEach(i => voteCounts[i.rank] = i.votes);
+
+        function voteArtist(id) {
+            voteCounts[id] = (voteCounts[id] || 0) + 1;
+            const el = document.getElementById('votes-' + id);
+            if (el) el.textContent = voteCounts[id].toLocaleString();
+            alert('Cảm ơn bạn đã vote! 🎉');
+        }
+        function voteRank(rank) {
+            voteCounts[rank] = (voteCounts[rank] || 0) + 1;
+            const el = document.getElementById('rank-votes-' + rank);
+            if (el) el.textContent = voteCounts[rank].toLocaleString();
+            alert('Cảm ơn bạn đã vote! 🎉');
+        }
+
+        // Playlist / Player
+        const tracks = [
+            { title: 'Summer EDM Nonstop 2026', artist: 'Mixed by DJ Neon Viper', duration: '58:32', cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop' },
+            { title: 'Trap Dynasty Mix Vol.3', artist: 'Mixed by K-Phantom', duration: '42:18', cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop' },
+            { title: 'Retro Wave Night Drive', artist: 'Mixed by Ghost Frequency', duration: '1:12:45', cover: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=300&h=300&fit=crop' },
+            { title: 'Techno Underground Session', artist: 'Mixed by Sky Raver', duration: '1:05:00', cover: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=300&fit=crop' },
+            { title: 'Future Bass Chillout', artist: 'Mixed by Echo Violet', duration: '48:22', cover: 'https://images.unsplash.com/photo-1459749411177-0473ef7161a9?w=300&h=300&fit=crop' },
+        ];
+
+        function playTrack(el, index) {
+            const track = tracks[index];
+            document.getElementById('player-title').textContent = track.title;
+            document.getElementById('player-artist').textContent = track.artist;
+            document.getElementById('player-duration').textContent = track.duration;
+            document.getElementById('player-cover').src = track.cover;
+            
+            document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('playing-glow'));
+            el.classList.add('playing-glow');
+        }
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Header shadow
+        const header = document.querySelector('header');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('shadow-lg', 'shadow-black/20');
+            } else {
+                header.classList.remove('shadow-lg', 'shadow-black/20');
+            }
+        });
+    </script>
+</body>
+</html>
