@@ -1,0 +1,84 @@
+{
+  "entries": [
+    {
+      "userId": "artist-portal-9life",
+      "amount": -1,
+      "balanceAfter": 5,
+      "eventType": "spend_playback",
+      "reference": "spend-1784369849665",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784369849665-3fpvtd",
+      "createdAt": "2026-07-18T10:17:29.665Z"
+    },
+    {
+      "userId": "manager-portal-9life",
+      "amount": -1,
+      "balanceAfter": 9,
+      "eventType": "spend_playback",
+      "reference": "spend-1784364139950",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784364139950-cencxz",
+      "createdAt": "2026-07-18T08:42:19.951Z"
+    },
+    {
+      "userId": "artist-portal-9life",
+      "amount": -1,
+      "balanceAfter": 6,
+      "eventType": "spend_playback",
+      "reference": "spend-1784351447942",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784351447942-oda8cm",
+      "createdAt": "2026-07-18T05:10:47.942Z"
+    },
+    {
+      "userId": "manager-portal-9life",
+      "amount": 10,
+      "balanceAfter": 10,
+      "eventType": "daily_claim",
+      "reference": "daily-manager-portal-9life-2026-07-18",
+      "note": "Daily star claim",
+      "id": "ledger-1784350370247-sqmfz1",
+      "createdAt": "2026-07-18T04:52:50.247Z"
+    },
+    {
+      "userId": "artist-portal-9life",
+      "amount": -1,
+      "balanceAfter": 7,
+      "eventType": "spend_playback",
+      "reference": "spend-1784310209817",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784310209817-p7qdve",
+      "createdAt": "2026-07-17T17:43:29.817Z"
+    },
+    {
+      "userId": "artist-portal-9life",
+      "amount": -1,
+      "balanceAfter": 8,
+      "eventType": "spend_playback",
+      "reference": "spend-1784310070169",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784310070169-wuxd52",
+      "createdAt": "2026-07-17T17:41:10.169Z"
+    },
+    {
+      "userId": "artist-portal-9life",
+      "amount": -1,
+      "balanceAfter": 9,
+      "eventType": "spend_vote",
+      "reference": "spend-1784310061274",
+      "note": "Star spend from protected action",
+      "id": "ledger-1784310061274-kx1o8p",
+      "createdAt": "2026-07-17T17:41:01.274Z"
+    },
+    {
+      "userId": "artist-portal-9life",
+      "amount": 10,
+      "balanceAfter": 10,
+      "eventType": "daily_claim",
+      "reference": "daily-artist-portal-9life-2026-07-18",
+      "note": "Daily star claim",
+      "id": "ledger-1784310035511-d6c57r",
+      "createdAt": "2026-07-17T17:40:35.511Z"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "accounts": [
+    {
+      "id": "member-9life",
+      "accountType": "user",
+      "provider": "local",
+      "identity": "member@9lifemag.com",
+      "email": "member@9lifemag.com",
+      "fullName": "9LIFE Member",
+      "passwordHash": "f38d124b-c62d-4a88-bd10-4749ce1f05fb:ddb65b9fd8e7bcaab2267817f1d3d615265e88e0d1db9d5a03ef45a224c171178836c080844f5ad7d2279950190d58014bdd1a345817bf2bf254c0d648467880",
+      "stars": 100,
+      "followedArtists": [],
+      "createdAt": "2026-07-17T13:57:20.671Z",
+      "updatedAt": "2026-07-17T13:57:20.671Z"
+    },
+    {
+      "id": "artist-portal-9life",
+      "accountType": "artist",
+      "portalRole": "artist",
+      "portalAccessStatus": "approved",
+      "provider": "local",
+      "identity": "artist@9lifemag.com",
+      "email": "artist@9lifemag.com",
+      "fullName": "9LIFE Artist",
+      "passwordHash": "d00f93cc-b750-427c-b653-6d8716132205:80c5c3f8733fa26c9f8bea4659ec1cf41bdb969b89af87b9f9fc4380f8ae7303b9b16a888925449133d08c0af242dbc89f45be98b056977eff2db9e32da16880",
+      "stars": 5,
+      "followedArtists": [],
+      "createdAt": "2026-07-17T13:57:20.671Z",
+      "updatedAt": "2026-07-18T10:17:29.661Z",
+      "artistProfileSlug": "neon-viper",
+      "dailyClaimDate": "2026-07-18",
+      "dailyStarsEarned": 10,
+      "followedAgents": [
+        "luxe-booking-desk"
+      ]
+    },
+    {
+      "id": "manager-portal-9life",
+      "accountType": "artist",
+      "portalRole": "manager",
+      "portalAccessStatus": "approved",
+      "provider": "local",
+      "identity": "manager@9lifemag.com",
+      "email": "manager@9lifemag.com",
+      "fullName": "9LIFE Manager",
+      "passwordHash": "e089f44a-ea1e-4484-ae66-8a30f41f78d8:4c11eadf4baa3028adcb71ca8a0d1b73a08bc922ca765e8bd0f3ff90e1b50dd9e6825d33a4bbcf4b3a33eeb5131c7349ed628ede0e07b037daa28f4f22ba12da",
+      "stars": 9,
+      "followedArtists": [],
+      "createdAt": "2026-07-17T13:57:20.671Z",
+      "updatedAt": "2026-07-18T08:42:19.945Z",
+      "managedAgent": "9Life Artist Ops",
+      "dailyClaimDate": "2026-07-18",
+      "dailyStarsEarned": 10
+    },
+    {
+      "id": "booking-portal-9life",
+      "accountType": "artist",
+      "portalRole": "booking",
+      "portalAccessStatus": "approved",
+      "provider": "local",
+      "identity": "booking@9lifemag.com",
+      "email": "booking@9lifemag.com",
+      "fullName": "9LIFE Booking Coordinator",
+      "passwordHash": "f86b1011-4a08-4087-848c-dca60e623bd7:4163d7bc17ec785c1b572e85119389d8b078751e478be484f53bff7000d2f9581febbb728ad15a304e7144ba836874c30dd5e92eb7802c8bd414e74173288238",
+      "stars": 0,
+      "followedArtists": [],
+      "createdAt": "2026-07-17T13:57:20.671Z",
+      "updatedAt": "2026-07-17T13:57:20.671Z",
+      "managedOutletSlugs": [
+        "district-9-pulse",
+        "halo-rooftop"
+      ]
+    }
+  ]
+}

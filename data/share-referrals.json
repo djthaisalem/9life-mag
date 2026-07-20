@@ -1,0 +1,36 @@
+{
+  "rows": [
+    {
+      "id": "share-1784369881068-7e1f7407",
+      "ownerId": "artist-portal-9life",
+      "token": "e86ae9ae99a547e3aa112b05b8d5daef",
+      "path": "/music?track=tidal-remix-4&source=remix",
+      "status": "pending",
+      "createdAt": "2026-07-18T10:18:01.066Z"
+    },
+    {
+      "id": "share-1784369827387-628f2a4a",
+      "ownerId": "artist-portal-9life",
+      "token": "8bc1ec5255ca45d287d8b4d224849dce",
+      "path": "/tin-tuc/echo-violet-producer-va-community",
+      "status": "pending",
+      "createdAt": "2026-07-18T10:17:07.383Z"
+    },
+    {
+      "id": "share-1784349779298-71a778fd",
+      "ownerId": "artist-portal-9life",
+      "token": "b2e4a21c88fe4435886290c00b479b34",
+      "path": "/nghe-si/aster-kline",
+      "status": "pending",
+      "createdAt": "2026-07-18T04:42:59.295Z"
+    },
+    {
+      "id": "share-1784311949493-487ebe42",
+      "ownerId": "artist-portal-9life",
+      "token": "397593dcf6f444b3bc550e169b74bb3c",
+      "path": "/nghe-si/neon-viper",
+      "status": "pending",
+      "createdAt": "2026-07-17T18:12:29.492Z"
+    }
+  ]
+}

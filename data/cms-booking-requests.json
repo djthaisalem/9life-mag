@@ -1,0 +1,364 @@
+{
+  "requests": [
+    {
+      "id": "bk-art-002",
+      "type": "artist",
+      "typeLabel": "Booking nghệ sĩ",
+      "title": "Luna Flux",
+      "requester": "Skyline Hà Nội / Minh Tú",
+      "location": "Hà Nội",
+      "schedule": "26/07/2026 21:00",
+      "detail": "22.000.000 VND • 16:30 - main floor",
+      "status": "Mới",
+      "href": "/cms/dashboard/artists/luna-flux",
+      "submittedFields": [
+        {
+          "label": "Tên nghệ sĩ",
+          "value": "Luna Flux"
+        },
+        {
+          "label": "Đơn vị gửi",
+          "value": "Skyline Hà Nội / Minh Tú"
+        },
+        {
+          "label": "Venue / thành phố",
+          "value": "Hà Nội"
+        },
+        {
+          "label": "Ngày giờ show",
+          "value": "26/07/2026 21:00"
+        },
+        {
+          "label": "Budget",
+          "value": "22.000.000 VND"
+        },
+        {
+          "label": "Soundcheck",
+          "value": "16:30 - main floor"
+        },
+        {
+          "label": "Email / hotline",
+          "value": "booking@9lifemag.com • 0909 000 111"
+        },
+        {
+          "label": "Mô tả chương trình",
+          "value": "Cần set headline 60-90 phút, có MC intro và visual opening."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc lại venue xác nhận booth, monitor và đường vào nghệ sĩ.",
+        "Nếu chưa chốt giá, bot cần nhắc follow-up sau khi gửi báo giá 2 giờ."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@artist_luna_flux_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc đội booking kiểm tra rider, line-up, đón nghệ sĩ và xác nhận thanh toán."
+      },
+      "reminderDispatch": {}
+    },
+    {
+      "id": "bk-out-003",
+      "type": "outlet",
+      "typeLabel": "Đặt bàn",
+      "title": "LUXE District",
+      "requester": "Vân My",
+      "location": "TP.HCM",
+      "schedule": "25/07/2026 22:00",
+      "detail": "10 khách • Birthday Premium",
+      "status": "Mới",
+      "href": "/cms/dashboard/outlets/luxe-district",
+      "submittedFields": [
+        {
+          "label": "Outlet",
+          "value": "LUXE District"
+        },
+        {
+          "label": "Khách đặt",
+          "value": "Vân My"
+        },
+        {
+          "label": "Địa phương",
+          "value": "TP.HCM"
+        },
+        {
+          "label": "Ngày giờ booking",
+          "value": "25/07/2026 22:00"
+        },
+        {
+          "label": "Số khách",
+          "value": "10 khách"
+        },
+        {
+          "label": "Gói bàn",
+          "value": "Birthday Premium"
+        },
+        {
+          "label": "Liên hệ khách",
+          "value": "guest@9lifemag.com • 0908 888 222"
+        },
+        {
+          "label": "Ghi chú thêm",
+          "value": "Muốn bàn đẹp, vào trước 30 phút và có hỗ trợ check-in nhanh."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc floor manager xác nhận cọc và giữ bàn đúng khung giờ.",
+        "Nếu khách có sinh nhật hoặc setup riêng, bot cần nhắc crew trước giờ vào 60 phút."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@outlet_luxe_district_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc xác nhận cọc, số khách thực tế, bàn giữ và người tiếp đón tại cửa."
+      },
+      "reminderDispatch": {}
+    },
+    {
+      "id": "bk-art-001",
+      "type": "artist",
+      "typeLabel": "Booking nghệ sĩ",
+      "title": "Neon Viper",
+      "requester": "Velvet Room / Lan Anh",
+      "location": "TP.HCM",
+      "schedule": "20/07/2026 22:30",
+      "detail": "30.000.000 VND • 17:00 - booth chính",
+      "status": "Đang báo giá",
+      "href": "/cms/dashboard/artists/neon-viper",
+      "submittedFields": [
+        {
+          "label": "Tên nghệ sĩ",
+          "value": "Neon Viper"
+        },
+        {
+          "label": "Đơn vị gửi",
+          "value": "Velvet Room / Lan Anh"
+        },
+        {
+          "label": "Venue / thành phố",
+          "value": "TP.HCM"
+        },
+        {
+          "label": "Ngày giờ show",
+          "value": "20/07/2026 22:30"
+        },
+        {
+          "label": "Budget",
+          "value": "30.000.000 VND"
+        },
+        {
+          "label": "Soundcheck",
+          "value": "17:00 - booth chính"
+        },
+        {
+          "label": "Email / hotline",
+          "value": "booking@9lifemag.com • 0909 000 111"
+        },
+        {
+          "label": "Mô tả chương trình",
+          "value": "Cần set headline 60-90 phút, có MC intro và visual opening."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc lại venue xác nhận booth, monitor và đường vào nghệ sĩ.",
+        "Nếu chưa chốt giá, bot cần nhắc follow-up sau khi gửi báo giá 2 giờ."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@artist_neon_viper_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc đội booking kiểm tra rider, line-up, đón nghệ sĩ và xác nhận thanh toán."
+      },
+      "reminderDispatch": {}
+    },
+    {
+      "id": "bk-out-002",
+      "type": "outlet",
+      "typeLabel": "Đặt bàn",
+      "title": "Halo Rooftop",
+      "requester": "Trung Hiếu",
+      "location": "Đà Nẵng",
+      "schedule": "19/07/2026 20:00",
+      "detail": "6 khách • Sky Table",
+      "status": "Giữ bàn",
+      "href": "/cms/dashboard/outlets/halo-rooftop",
+      "submittedFields": [
+        {
+          "label": "Outlet",
+          "value": "Halo Rooftop"
+        },
+        {
+          "label": "Khách đặt",
+          "value": "Trung Hiếu"
+        },
+        {
+          "label": "Địa phương",
+          "value": "Đà Nẵng"
+        },
+        {
+          "label": "Ngày giờ booking",
+          "value": "19/07/2026 20:00"
+        },
+        {
+          "label": "Số khách",
+          "value": "6 khách"
+        },
+        {
+          "label": "Gói bàn",
+          "value": "Sky Table"
+        },
+        {
+          "label": "Liên hệ khách",
+          "value": "guest@9lifemag.com • 0908 888 222"
+        },
+        {
+          "label": "Ghi chú thêm",
+          "value": "Muốn bàn đẹp, vào trước 30 phút và có hỗ trợ check-in nhanh."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc floor manager xác nhận cọc và giữ bàn đúng khung giờ.",
+        "Nếu khách có sinh nhật hoặc setup riêng, bot cần nhắc crew trước giờ vào 60 phút."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@outlet_halo_rooftop_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc xác nhận cọc, số khách thực tế, bàn giữ và người tiếp đón tại cửa."
+      },
+      "reminderDispatch": {}
+    },
+    {
+      "id": "bk-out-001",
+      "type": "outlet",
+      "typeLabel": "Đặt bàn",
+      "title": "District 9 Pulse",
+      "requester": "Ngọc Trâm",
+      "location": "TP.HCM",
+      "schedule": "18/07/2026 21:30",
+      "detail": "8 khách • VIP Booth",
+      "status": "Đã cọc",
+      "href": "/cms/dashboard/outlets/district-9-pulse",
+      "submittedFields": [
+        {
+          "label": "Outlet",
+          "value": "District 9 Pulse"
+        },
+        {
+          "label": "Khách đặt",
+          "value": "Ngọc Trâm"
+        },
+        {
+          "label": "Địa phương",
+          "value": "TP.HCM"
+        },
+        {
+          "label": "Ngày giờ booking",
+          "value": "18/07/2026 21:30"
+        },
+        {
+          "label": "Số khách",
+          "value": "8 khách"
+        },
+        {
+          "label": "Gói bàn",
+          "value": "VIP Booth"
+        },
+        {
+          "label": "Liên hệ khách",
+          "value": "guest@9lifemag.com • 0908 888 222"
+        },
+        {
+          "label": "Ghi chú thêm",
+          "value": "Muốn bàn đẹp, vào trước 30 phút và có hỗ trợ check-in nhanh."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc floor manager xác nhận cọc và giữ bàn đúng khung giờ.",
+        "Nếu khách có sinh nhật hoặc setup riêng, bot cần nhắc crew trước giờ vào 60 phút."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@outlet_district_9_pulse_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc xác nhận cọc, số khách thực tế, bàn giữ và người tiếp đón tại cửa."
+      },
+      "reminderDispatch": {}
+    },
+    {
+      "id": "bk-art-003",
+      "type": "artist",
+      "typeLabel": "Booking nghệ sĩ",
+      "title": "Ghost Frequency",
+      "requester": "After Dark Hội An / Phúc",
+      "location": "Hội An",
+      "schedule": "02/08/2026 23:00",
+      "detail": "Liên hệ thêm • 18:00 - DJ booth",
+      "status": "Chờ chốt",
+      "href": "/cms/dashboard/artists/ghost-frequency",
+      "submittedFields": [
+        {
+          "label": "Tên nghệ sĩ",
+          "value": "Ghost Frequency"
+        },
+        {
+          "label": "Đơn vị gửi",
+          "value": "After Dark Hội An / Phúc"
+        },
+        {
+          "label": "Venue / thành phố",
+          "value": "Hội An"
+        },
+        {
+          "label": "Ngày giờ show",
+          "value": "02/08/2026 23:00"
+        },
+        {
+          "label": "Budget",
+          "value": "Liên hệ thêm"
+        },
+        {
+          "label": "Soundcheck",
+          "value": "18:00 - DJ booth"
+        },
+        {
+          "label": "Email / hotline",
+          "value": "booking@9lifemag.com • 0909 000 111"
+        },
+        {
+          "label": "Mô tả chương trình",
+          "value": "Cần set headline 60-90 phút, có MC intro và visual opening."
+        }
+      ],
+      "internalNotes": [
+        "Nhắc lại venue xác nhận booth, monitor và đường vào nghệ sĩ.",
+        "Nếu chưa chốt giá, bot cần nhắc follow-up sau khi gửi báo giá 2 giờ."
+      ],
+      "reminderConfig": {
+        "telegramChannel": "@9lifemag_booking_ops",
+        "profileChannel": "@artist_ghost_frequency_ops",
+        "reminderAt": "",
+        "soundcheckAt": "",
+        "checkinAt": "",
+        "followUpAt": "",
+        "assistantNote": "Nhắc đội booking kiểm tra rider, line-up, đón nghệ sĩ và xác nhận thanh toán."
+      },
+      "reminderDispatch": {}
+    }
+  ]
+}
