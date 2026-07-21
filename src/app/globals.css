@@ -11232,6 +11232,189 @@ button.artist-dashboard-module-card {
   }
 }
 
+.artist-profile-role {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .artist-portal-hero {
+    padding: 20px 0 8px;
+  }
+
+  .artist-portal-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .artist-portal-copy {
+    display: contents;
+  }
+
+  .artist-portal-copy .artist-login-slider {
+    order: -1;
+    min-height: 190px;
+    margin-top: 0;
+    border-radius: 20px;
+  }
+
+  .artist-portal-copy .artist-login-slider img {
+    height: 190px;
+  }
+
+  .artist-portal-copy .artist-login-slider-overlay {
+    padding: 16px;
+  }
+
+  .artist-portal-copy h1 {
+    font-size: clamp(2rem, 10vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .artist-portal-copy .section-intro {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .artist-portal-stats {
+    display: none;
+  }
+
+  .artist-portal-login-shell {
+    order: 2;
+  }
+
+  .artist-portal-login-card,
+  .artist-portal-feature-card,
+  .artist-dashboard-panel,
+  .artist-dashboard-module-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .artist-portal-feature-grid,
+  .artist-dashboard-module-grid,
+  .artist-dashboard-kanban,
+  .artist-onboarding-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .artist-dashboard-hero {
+    padding: 24px 0 8px;
+  }
+
+  .artist-dashboard-hero-row {
+    gap: 14px;
+  }
+
+  .artist-dashboard-hero-row h1 {
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+    line-height: 1;
+  }
+
+  .artist-dashboard-hero-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .artist-dashboard-hero-actions > * {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 10px;
+  }
+
+  .artist-dashboard-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .artist-dashboard-stat {
+    padding: 13px;
+    border-radius: 17px;
+  }
+
+  .talent-management-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .talent-management-tabs .artist-editor-tab {
+    min-width: 0;
+    padding: 9px 7px;
+    text-align: center;
+    font-size: 0.7rem;
+  }
+
+  .artist-profile-grid {
+    gap: 10px;
+  }
+
+  .artist-profile-card {
+    border-radius: 18px;
+  }
+
+  .artist-profile-media,
+  .artist-profile-card-featured .artist-profile-media {
+    aspect-ratio: 1 / 1.12;
+  }
+
+  .artist-profile-tags,
+  .artist-profile-meta,
+  .artist-profile-head p {
+    display: none;
+  }
+
+  .artist-profile-body {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .artist-profile-head {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .artist-profile-head > div {
+    min-width: 0;
+  }
+
+  .artist-profile-head h3 {
+    margin: 0;
+    overflow: hidden;
+    font-size: 1rem;
+    line-height: 1.12;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .artist-profile-role {
+    display: block;
+    overflow: hidden;
+    margin-top: 5px;
+    color: #aeb6c6;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .artist-profile-followers {
+    max-width: 58px;
+    overflow: hidden;
+    color: #ffcf73;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+  }
+
+  .artist-profile-followers::before {
+    content: '\2665';
+    margin-right: 3px;
+    color: #ff8ab3;
+  }
+}
+
 @media (max-width: 640px) {
   .account-mobile-portal-tabs,
   .user-dashboard-topup-mobile-tabs {

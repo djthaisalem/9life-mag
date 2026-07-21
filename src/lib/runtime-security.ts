@@ -20,7 +20,11 @@ export function getRuntimeSecret(envKey: string, fallbackLabel: string) {
 }
 
 export function canUseDevelopmentSeeds() {
-  return process.env.NODE_ENV !== 'production'
+  if (process.env.NODE_ENV !== 'production') return true
+
+  // Demo accounts are available only for an explicitly marked file-storage demo.
+  return process.env.SITE_USER_STORAGE_DRIVER === 'file'
+    && process.env.ALLOW_FILE_STORAGE_IN_PRODUCTION === 'true'
 }
 
 export function assertProductionPersistence() {

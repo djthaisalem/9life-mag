@@ -230,6 +230,7 @@ function ArtistsPageContent() {
                     <div className="artist-profile-head">
                       <div>
                         <h3>{artist.name}</h3>
+                        <span className="artist-profile-role">{artist.role}</span>
                         <p>{artist.genres}</p>
                       </div>
                       <span className="artist-profile-followers">{artist.followers}</span>
