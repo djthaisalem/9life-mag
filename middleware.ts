@@ -6,7 +6,22 @@ import { getCmsDashboardScope, hasCmsScope } from '@/lib/cms-role-policy'
 function isSafeOrigin(request: NextRequest) {
   const origin = request.headers.get('origin')
   if (!origin) return process.env.NODE_ENV !== 'production'
-  return origin === request.nextUrl.origin
+
+  const host = request.headers.get('host')?.trim()
+  if (!host) return false
+
+  const forwardedProtocol = process.env.TRUST_PROXY_HEADERS === 'true'
+    ? request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+    : undefined
+  const protocol = forwardedProtocol || request.nextUrl.protocol.replace(':', '')
+
+  try {
+    // In standalone mode, nextUrl can retain the bind host (0.0.0.0).
+    // Compare against the request Host instead, which is the browser origin.
+    return new URL(origin).origin === `${protocol}://${host}`
+  } catch {
+    return false
+  }
 }
 
 function buildUnauthorizedApiResponse() {
