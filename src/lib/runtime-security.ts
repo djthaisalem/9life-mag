@@ -26,9 +26,15 @@ export function canUseDevelopmentSeeds() {
 export function assertProductionPersistence() {
   if (process.env.NODE_ENV !== 'production') return
 
-  if (process.env.SITE_USER_STORAGE_DRIVER !== 'payload') {
+  // File storage is allowed only for an explicitly marked demo deployment.
+  const isFileStorageDemo = process.env.SITE_USER_STORAGE_DRIVER === 'file'
+    && process.env.ALLOW_FILE_STORAGE_IN_PRODUCTION === 'true'
+
+  if (process.env.SITE_USER_STORAGE_DRIVER !== 'payload' && !isFileStorageDemo) {
     throw new Error('production_requires_payload_storage')
   }
+
+  if (isFileStorageDemo) return
 
   if (!process.env.DATABASE_URI || process.env.DATABASE_URI === 'postgres://postgres:postgres@localhost:5432/9life_mag') {
     throw new Error('production_database_uri_is_required')

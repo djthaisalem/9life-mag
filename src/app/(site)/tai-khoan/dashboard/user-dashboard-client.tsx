@@ -532,9 +532,24 @@ export function UserDashboardClient() {
                 {topupMessage ? <p className="user-dashboard-playlist-message">{topupMessage}</p> : null}
               </div>
 
+              <div className="user-dashboard-topup-mobile-tabs" role="tablist" aria-label="Chọn gói sao">
+                {topUpPlans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    className={`user-dashboard-topup-mobile-tab ${selectedTopupPackageId === plan.id ? 'user-dashboard-topup-mobile-tab-active' : ''}`}
+                    role="tab"
+                    aria-selected={selectedTopupPackageId === plan.id}
+                    onClick={() => setSelectedTopupPackageId(plan.id)}
+                  >
+                    {plan.stars} sao
+                  </button>
+                ))}
+              </div>
+
               <div className="user-dashboard-topup-grid">
                 {topUpPlans.map((plan) => (
-                  <article key={plan.title} className="user-dashboard-topup-card">
+                  <article key={plan.title} className={`user-dashboard-topup-card ${selectedTopupPackageId === plan.id ? '' : 'user-dashboard-topup-card-mobile-hidden'}`}>
                     <strong>{plan.title}</strong>
                     <span>{plan.price}</span>
                     <p>{plan.note}</p>
