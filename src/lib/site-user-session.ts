@@ -744,10 +744,15 @@ export async function verifySiteSessionToken(token?: string | null) {
 }
 
 export function getSiteSessionCookieOptions() {
+  // HTTP cookies are permitted only for the explicitly marked VPS demo.
+  const allowInsecureHttpDemo = process.env.ALLOW_INSECURE_HTTP_DEMO === 'true'
+    && process.env.SITE_USER_STORAGE_DRIVER === 'file'
+    && process.env.ALLOW_FILE_STORAGE_IN_PRODUCTION === 'true'
+
   return {
     httpOnly: true,
     sameSite: 'strict' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' && !allowInsecureHttpDemo,
     path: '/',
     maxAge: SITE_SESSION_TTL_SECONDS,
   }
