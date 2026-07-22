@@ -1,6 +1,4 @@
 import { getRuntimeSecret } from '@/lib/runtime-security'
-import { env } from '@/lib/env'
-import { loadPayloadClient } from '@/lib/payload-runtime'
 
 export const CMS_SESSION_COOKIE = 'nine_life_cms_session'
 const CMS_SESSION_TTL_SECONDS = 60 * 60 * 8
@@ -17,17 +15,6 @@ type CmsLoginConfig = {
   password: string
   otpCode: string
   role: string
-}
-
-const CMS_ROLE_MAP: Record<string, string> = {
-  admin: 'super_admin',
-  super_admin: 'super_admin',
-  security_admin: 'security_admin',
-  finance: 'finance_ops',
-  finance_ops: 'finance_ops',
-  booking_ops: 'booking_ops',
-  artist_ops: 'artist_ops',
-  editor: 'editor',
 }
 
 function getSessionSecret() {
@@ -114,35 +101,6 @@ export function getCmsSessionCookieOptions() {
 }
 
 export async function validateCmsCredentials(input: { email: string; password: string; otpCode?: string }) {
-  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
-    const payload = await loadPayloadClient()
-
-    try {
-      const result = await payload.login({
-        collection: 'users',
-        data: {
-          email: input.email.trim().toLowerCase(),
-          password: input.password,
-        },
-      })
-      const user = result.user as { isActive?: boolean; role?: string }
-      const role = CMS_ROLE_MAP[user.role ?? '']
-
-      if (!user.isActive || !role) {
-        return { ok: false as const, reason: 'invalid_credentials' as const }
-      }
-
-      const requiredOtp = process.env.CMS_ADMIN_OTP_CODE?.trim()
-      if (requiredOtp && input.otpCode?.trim() !== requiredOtp) {
-        return { ok: false as const, reason: 'invalid_otp' as const }
-      }
-
-      return { ok: true as const, role }
-    } catch {
-      return { ok: false as const, reason: 'invalid_credentials' as const }
-    }
-  }
-
   const config = getLoginConfig()
 
   if (!config.email || !config.password) {

@@ -6,6 +6,16 @@ const scriptSource = process.env.NODE_ENV === 'production'
 const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
+  serverExternalPackages: [
+    'payload',
+    '@payloadcms/db-postgres',
+    '@payloadcms/drizzle',
+    '@payloadcms/richtext-lexical',
+    '@payloadcms/storage-s3',
+    'drizzle-kit',
+    'esbuild',
+    'file-type',
+  ],
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   async headers() {
     return [

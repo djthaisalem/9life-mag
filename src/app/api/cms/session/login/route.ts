@@ -2,6 +2,8 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getTrustedClientIp, guardCmsLoginAttempts } from '@/lib/request-guard'
+import { env } from '@/lib/env'
+import { validatePayloadCmsCredentials } from '@/lib/cms-session-payload'
 import {
   CMS_SESSION_COOKIE,
   createCmsSessionToken,
@@ -28,7 +30,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: guard.message }, { status: 429 })
     }
 
-    const result = await validateCmsCredentials(payload)
+    const result = env.SITE_USER_STORAGE_DRIVER === 'payload'
+      ? await validatePayloadCmsCredentials(payload)
+      : await validateCmsCredentials(payload)
 
     if (!result.ok) {
       const message =
