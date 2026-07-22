@@ -8,27 +8,21 @@ import {
   addTrackToPlaylist,
   buildPlaylistSharePath,
   createUserPlaylist,
-  ensureUserPlaylists,
   findPlaylistByShareCode,
   getUserPlaylists,
   removeTrackFromPlaylist,
+  saveUserPlaylists,
   type UserPlaylist,
 } from '@/lib/user-playlists'
 import {
   claimBonusStars,
   claimDailyStars,
   fetchUserAccessState,
-  loginDemoUser,
+  type StoredUserProfile,
   type UserAccessState,
 } from '@/lib/client-user-access'
 import { createReferralShareUrl, getReferralSummary, type ReferralSummary } from '@/lib/client-referrals'
 import { paymentProviders, starPackages, type PaymentProviderId, type StarTopupRequest } from '@/lib/star-payment-shared'
-
-const followedArtists = [
-  { name: 'Neon Viper', role: 'DJ Headliner', status: 'Vừa lên #1 tuần này', stars: 'Đã vote 6 sao' },
-  { name: 'Luna Flux', role: 'Open Format DJ', status: 'Có set mới cuối tuần', stars: 'Đã vote 3 sao' },
-  { name: 'Nova Fire', role: 'Rapper / Performance Artist', status: 'Đang mở booking college tour', stars: 'Đã follow + lưu bài' },
-]
 
 const topUpPlans = starPackages.map((plan) => ({
   ...plan,
@@ -59,72 +53,15 @@ const dashboardLibrary = [
   ...remixTracks.map((track) => ({ ...track, sourceType: 'remix' as const, sourceLabel: 'Top remix' })),
 ]
 
-const seedPlaylists: UserPlaylist[] = [
-  {
-    id: 'seed-midnight-pulse',
-    name: 'Midnight Pulse',
-    shareCode: 'midnight-pulse-9life',
-    createdAt: '2026-07-01T10:00:00.000Z',
-    updatedAt: '2026-07-10T10:00:00.000Z',
-    listens: 12400,
-    rewardStars: 124,
-    note: 'Playlist đang mang lại sao community ổn định.',
-    items: [
-      { ...dashboardLibrary[0], addedAt: '2026-07-01T10:00:00.000Z' },
-      { ...dashboardLibrary[3], addedAt: '2026-07-02T10:00:00.000Z' },
-    ],
-  },
-  {
-    id: 'seed-sunset-warmup',
-    name: 'Sunset Club Warmup',
-    shareCode: 'sunset-club-warmup',
-    createdAt: '2026-07-03T10:00:00.000Z',
-    updatedAt: '2026-07-08T10:00:00.000Z',
-    listens: 4900,
-    rewardStars: 49,
-    note: 'Còn một chút là vào nhóm playlist tăng trưởng tốt.',
-    items: [
-      { ...dashboardLibrary[1], addedAt: '2026-07-03T10:00:00.000Z' },
-      { ...dashboardLibrary[4], addedAt: '2026-07-04T10:00:00.000Z' },
-    ],
-  },
-  {
-    id: 'seed-girls-on-deck',
-    name: 'Girls on Deck',
-    shareCode: 'girls-on-deck',
-    createdAt: '2026-07-05T10:00:00.000Z',
-    updatedAt: '2026-07-09T10:00:00.000Z',
-    listens: 18200,
-    rewardStars: 182,
-    note: 'Playlist hiệu suất cao, rất hợp để tiếp tục đẩy nghe lại.',
-    items: [
-      { ...dashboardLibrary[2], addedAt: '2026-07-05T10:00:00.000Z' },
-      { ...dashboardLibrary[5], addedAt: '2026-07-06T10:00:00.000Z' },
-    ],
-  },
-]
-
-const defaultAccessState: UserAccessState = {
-  isAuthenticated: false,
-  stars: 0,
-  starSources: { signup: 0, daily: 0, bonus: 0, playlist: 0, share: 0 },
-  followedArtists: [],
-  followedAgents: [],
-  hasClaimedDailyToday: false,
-  hasClaimedBonusToday: false,
-  canClaimDaily: false,
-  canClaimBonus: false,
-  isPastNoon: false,
-}
-
-export function UserDashboardClient() {
+export function UserDashboardClient({ initialProfile, initialAccessState }: { initialProfile: StoredUserProfile; initialAccessState: UserAccessState }) {
   const searchParams = useSearchParams()
   const [playlists, setPlaylists] = useState<UserPlaylist[]>([])
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('')
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [shareMessage, setShareMessage] = useState('')
   const [rewardMessage, setRewardMessage] = useState('')
-  const [accessState, setAccessState] = useState<UserAccessState>(defaultAccessState)
+  const [accessState, setAccessState] = useState<UserAccessState>(initialAccessState)
+  const [profile, setProfile] = useState<StoredUserProfile>(initialProfile)
   const [selectedTopupPackageId, setSelectedTopupPackageId] = useState<string>(topUpPlans[0]?.id ?? 'star-50')
   const [selectedTopupProvider, setSelectedTopupProvider] = useState<PaymentProviderId>('bank_qr')
   const [topupMessage, setTopupMessage] = useState('')
@@ -134,7 +71,9 @@ export function UserDashboardClient() {
 
   useEffect(() => {
     void (async () => {
-      const stored = ensureUserPlaylists(seedPlaylists)
+      const currentPlaylists = getUserPlaylists()
+      const stored = currentPlaylists.filter((playlist) => !playlist.id.startsWith('seed-'))
+      if (stored.length !== currentPlaylists.length) saveUserPlaylists(stored)
       setPlaylists(stored)
       const shareCode = searchParams.get('playlist')
       const sharedPlaylist = findPlaylistByShareCode(stored, shareCode)
@@ -142,6 +81,7 @@ export function UserDashboardClient() {
 
       const snapshot = await fetchUserAccessState()
       setAccessState(snapshot.state)
+      if (snapshot.profile) setProfile(snapshot.profile)
       if (snapshot.state.isAuthenticated) {
         const referrals = await getReferralSummary()
         if (referrals.summary) setReferralSummary(referrals.summary)
@@ -156,18 +96,6 @@ export function UserDashboardClient() {
 
   const refreshPlaylists = () => {
     setPlaylists(getUserPlaylists())
-  }
-
-  const handleActivateAccount = async () => {
-    const result = await loginDemoUser('member@9lifemag.com', '9life123')
-    if (!result.ok) {
-      setRewardMessage(result.message ?? 'Không thể kích hoạt tài khoản lúc này.')
-      return
-    }
-
-    const snapshot = await fetchUserAccessState()
-    setAccessState(snapshot.state)
-    setRewardMessage('Đăng ký thành công. Tài khoản đã được kích hoạt với 100 sao.')
   }
 
   const handleClaimDaily = async () => {
@@ -363,13 +291,18 @@ export function UserDashboardClient() {
         : 'Khi dùng hết 100 sao đăng ký và 10 sao daily, dashboard sẽ bật thông báo bonus để bạn quay lại nhận.'
 
   const isOutOfStars = accessState.isAuthenticated && accessState.stars <= 0
+  const accountLabel = profile.fullName?.trim() || profile.email || 'thành viên 9LIFE'
+  const followedArtistCards = accessState.followedArtists.map((slug) => ({
+    slug,
+    name: slug.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' '),
+  }))
 
   return (
     <main className="user-dashboard-page">
       <section className="user-dashboard-hero">
         <div className="container user-dashboard-hero-row">
           <div>
-            <p className="section-eyebrow">User Dashboard</p>
+            <p className="section-eyebrow">Chào mừng, {accountLabel}{profile.email && profile.fullName ? ` (${profile.email})` : ''}</p>
             <h1>User có thể nghe nhạc, vote, tạo playlist và vận hành ví sao thông minh</h1>
             <p className="section-intro">
               Dashboard này gom toàn bộ hoạt động user vào một chỗ: sao đăng ký, daily reward, bonus quay lại, playlist economy,
@@ -485,47 +418,39 @@ export function UserDashboardClient() {
 
               <div className="user-dashboard-reward-panel">
                 <div className="user-dashboard-reward-summary">
-                  <strong>{accessState.isAuthenticated ? `${accessState.stars} sao khả dụng` : 'Kích hoạt để nhận 100 sao'}</strong>
+                  <strong>{accessState.stars} sao khả dụng</strong>
                   <p>{bonusAnnouncement}</p>
                 </div>
 
                 <div className="user-dashboard-reward-actions">
-                  {!accessState.isAuthenticated ? (
-                    <button type="button" className="button" onClick={() => void handleActivateAccount()}>
-                      Kích hoạt tài khoản +100 sao
+                  <button
+                    type="button"
+                    className={accessState.canClaimDaily ? 'button' : 'button-secondary'}
+                    onClick={() => void handleClaimDaily()}
+                    disabled={!accessState.canClaimDaily}
+                  >
+                    Nhận daily +10 sao
+                  </button>
+                  {showBonusButton ? (
+                    <button
+                      type="button"
+                      className={accessState.canClaimBonus ? 'button' : 'button-secondary'}
+                      onClick={() => void handleClaimBonus()}
+                      disabled={!accessState.canClaimBonus}
+                    >
+                      Nhận bonus +5 sao
                     </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className={accessState.canClaimDaily ? 'button' : 'button-secondary'}
-                        onClick={() => void handleClaimDaily()}
-                        disabled={!accessState.canClaimDaily}
-                      >
-                        Nhận daily +10 sao
-                      </button>
-                      {showBonusButton ? (
-                        <button
-                          type="button"
-                          className={accessState.canClaimBonus ? 'button' : 'button-secondary'}
-                          onClick={() => void handleClaimBonus()}
-                          disabled={!accessState.canClaimBonus}
-                        >
-                          Nhận bonus +5 sao
-                        </button>
-                      ) : null}
-                      {isOutOfStars ? (
-                        <button
-                          type="button"
-                          className="button"
-                          onClick={() => void handleCreateTopupRequest(selectedTopupPackageId)}
-                          disabled={isCreatingTopup}
-                        >
-                          {isCreatingTopup ? 'Đang tạo QR...' : 'Nạp sao ngay'}
-                        </button>
-                      ) : null}
-                    </>
-                  )}
+                  ) : null}
+                  {isOutOfStars ? (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => void handleCreateTopupRequest(selectedTopupPackageId)}
+                      disabled={isCreatingTopup}
+                    >
+                      {isCreatingTopup ? 'Đang tạo QR...' : 'Nạp sao ngay'}
+                    </button>
+                  ) : null}
                 </div>
 
                 {rewardMessage ? <p className="user-dashboard-playlist-message">{rewardMessage}</p> : null}
@@ -613,17 +538,18 @@ export function UserDashboardClient() {
               </div>
 
               <div className="user-dashboard-follow-grid">
-                {followedArtists.map((artist) => (
-                  <article key={artist.name} className="user-dashboard-follow-card">
+                {followedArtistCards.map((artist) => (
+                  <article key={artist.slug} className="user-dashboard-follow-card">
                     <strong>{artist.name}</strong>
-                    <span>{artist.role}</span>
-                    <p>{artist.status}</p>
+                    <span>Đang theo dõi</span>
+                    <p>Mở hồ sơ để xem nội dung và lịch hoạt động mới nhất.</p>
                     <div className="user-dashboard-follow-footer">
-                      <span>{artist.stars}</span>
-                      <Link href="/nghe-si" className="mini-button">Mở profile</Link>
+                      <span>Đã lưu vào tài khoản</span>
+                      <Link href={`/nghe-si/${artist.slug}`} className="mini-button">Mở profile</Link>
                     </div>
                   </article>
                 ))}
+                {!followedArtistCards.length ? <p className="muted">Bạn chưa theo dõi nghệ sĩ nào.</p> : null}
               </div>
             </article>
 

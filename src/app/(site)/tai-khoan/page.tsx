@@ -87,9 +87,6 @@ export default function AccountPage() {
                 ))}
               </div>
 
-              <div className="artist-portal-actions">
-                <Link href="/tai-khoan/dashboard" className="button-secondary">Xem dashboard user mẫu</Link>
-              </div>
             </article>
 
             <article className={`account-card account-card-artist ${activePortal === 'artist' ? '' : 'account-card-mobile-hidden'}`}>
@@ -110,7 +107,6 @@ export default function AccountPage() {
                 </div>
                 <div className="artist-portal-actions">
                   <Link href="/tai-khoan/nghe-si" className="button">Mở cổng nghệ sĩ</Link>
-                  <Link href="/tai-khoan/nghe-si/dashboard" className="button-secondary">Xem dashboard mẫu</Link>
                 </div>
               </div>
 
