@@ -326,6 +326,11 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         return
       }
 
+      if (result.reason !== 'insufficient_stars') {
+        window.alert(result.message ?? 'Không thể xác thực quyền phát nhạc lúc này. Vui lòng thử lại sau.')
+        return
+      }
+
       window.alert('Bạn không đủ sao để phát nhạc. Hãy nạp thêm sao trong tài khoản.')
       return
     }
@@ -436,6 +441,15 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     if (isAuthenticated) {
       const result = await accessTrackWithStars(track.id, 'download')
       if (!result.ok) {
+        if (result.reason !== 'insufficient_stars') {
+          window.alert(
+            result.reason === 'not_authenticated'
+              ? 'Vui lòng đăng nhập để tải nhạc.'
+              : result.message ?? 'Không thể xác thực quyền download lúc này. Vui lòng thử lại sau.',
+          )
+          return
+        }
+
         window.alert('Bạn không đủ sao để download. Hãy nạp thêm sao trong tài khoản.')
         return
       }

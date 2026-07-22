@@ -26,7 +26,7 @@ export type StoredUserProfile = {
 
 type AccessApiResponse = {
   ok: boolean
-  reason?: 'not_authenticated' | 'insufficient_stars' | 'already_claimed' | 'bonus_locked'
+  reason?: 'not_authenticated' | 'insufficient_stars' | 'already_claimed' | 'bonus_locked' | 'server_error'
   message?: string
   state: UserAccessState
   profile: StoredUserProfile | null

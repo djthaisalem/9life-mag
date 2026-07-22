@@ -24,9 +24,20 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: 'Yêu cầu media không hợp lệ.' }, { status: 400 })
+      return NextResponse.json(
+        { ok: false, reason: 'server_error', message: 'Yêu cầu media không hợp lệ.' },
+        { status: 400 },
+      )
     }
 
-    return NextResponse.json({ ok: false, message: 'Không thể xác thực quyền media lúc này.' }, { status: 500 })
+    console.error('Media star access failed', error)
+    return NextResponse.json(
+      {
+        ok: false,
+        reason: 'server_error',
+        message: 'Không thể xác thực quyền phát nhạc lúc này. Vui lòng thử lại sau.',
+      },
+      { status: 500 },
+    )
   }
 }
