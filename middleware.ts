@@ -25,13 +25,16 @@ function isSafeOrigin(request: NextRequest) {
 }
 
 function buildUnauthorizedApiResponse() {
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       ok: false,
       message: 'Bạn cần đăng nhập CMS hợp lệ để dùng endpoint này.',
     },
     { status: 401 }
   )
+
+  response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+  return response
 }
 
 export async function middleware(request: NextRequest) {
@@ -79,12 +82,18 @@ export async function middleware(request: NextRequest) {
     if (!cmsSession) {
       const loginUrl = new URL('/cms', request.url)
       loginUrl.searchParams.set('next', `${pathname}${search}`)
-      return NextResponse.redirect(loginUrl)
+      const response = NextResponse.redirect(loginUrl)
+      response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+      return response
     }
 
     if (!hasCmsScope(cmsSession.role, getCmsDashboardScope(pathname))) {
       return NextResponse.rewrite(new URL('/cms/forbidden', request.url), { status: 403 })
     }
+
+    const response = NextResponse.next()
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+    return response
   }
 
   return NextResponse.next()
