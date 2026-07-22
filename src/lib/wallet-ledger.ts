@@ -55,10 +55,15 @@ export async function recordWalletLedgerEntry(input: Omit<WalletLedgerEntry, 'id
 
   if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
     const payload = await loadPayloadClient()
+    const numericUserId = Number(entry.userId)
+    const userRelation = Number.isSafeInteger(numericUserId) && numericUserId > 0
+      ? numericUserId
+      : undefined
+
     await payload.create({
       collection: 'wallet-ledger',
       data: {
-        user: entry.userId,
+        user: userRelation,
         siteUserId: entry.userId,
         amount: entry.amount,
         balanceAfter: entry.balanceAfter,
