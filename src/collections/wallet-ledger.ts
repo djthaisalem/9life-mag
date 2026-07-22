@@ -13,7 +13,8 @@ export const WalletLedger: CollectionConfig = {
       relationTo: 'users',
     },
     {
-      name: 'userId',
+      // Avoid colliding with the `user` relationship database column.
+      name: 'siteUserId',
       type: 'text',
       required: true,
     },

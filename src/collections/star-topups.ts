@@ -24,7 +24,8 @@ export const StarTopups: CollectionConfig = {
       relationTo: 'users',
     },
     {
-      name: 'userId',
+      // Keep the external account key separate from Payload's `user` relation.
+      name: 'siteUserId',
       type: 'text',
       required: true,
     },

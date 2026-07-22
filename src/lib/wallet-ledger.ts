@@ -59,7 +59,7 @@ export async function recordWalletLedgerEntry(input: Omit<WalletLedgerEntry, 'id
       collection: 'wallet-ledger',
       data: {
         user: entry.userId,
-        userId: entry.userId,
+        siteUserId: entry.userId,
         amount: entry.amount,
         balanceAfter: entry.balanceAfter,
         eventType: entry.eventType,
@@ -92,7 +92,7 @@ export async function getWalletLedgerSnapshot() {
 
   return (result.docs as Array<Record<string, unknown>>).map<WalletLedgerEntry>((entry) => ({
     id: String(entry.id),
-    userId: String(entry.userId ?? entry.user ?? ''),
+    userId: String(entry.siteUserId ?? entry.user ?? ''),
     amount: typeof entry.amount === 'number' ? entry.amount : 0,
     balanceAfter: typeof entry.balanceAfter === 'number' ? entry.balanceAfter : 0,
     eventType: entry.eventType as WalletEventType,
