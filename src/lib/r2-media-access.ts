@@ -21,8 +21,27 @@ export async function getPreviewPlaybackUrl(key: string) {
   return getPrivateObjectUrl(key, 60 * 30)
 }
 
-export async function getPrivateObjectUrl(key: string, expiresIn: number) {
+function buildAttachmentDisposition(filename: string) {
+  const normalized = filename.replace(/[\r\n"]/g, '').trim() || '9life-music-download'
+  const asciiFallback = normalized.replace(/[^\x20-\x7E]/g, '_')
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(normalized)}`
+}
+
+export async function getPrivateObjectUrl(key: string, expiresIn: number, options?: { downloadFilename?: string }) {
   const client = getClient()
   if (!client) throw new Error('r2_media_not_configured')
-  return getSignedUrl(client, new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key }), { expiresIn })
+  return getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: env.R2_BUCKET,
+      Key: key,
+      ...(options?.downloadFilename
+        ? {
+            ResponseContentDisposition: buildAttachmentDisposition(options.downloadFilename),
+            ResponseContentType: 'application/octet-stream',
+          }
+        : {}),
+    }),
+    { expiresIn },
+  )
 }

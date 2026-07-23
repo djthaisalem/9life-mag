@@ -5,7 +5,7 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
 
-type TrackDocument = { id: string | number; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number }
+type TrackDocument = { id: string | number; title?: string; musicCode?: string; sourceFormat?: string; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number }
 const mediaRequestSchema = z.object({ kind: z.enum(['preview', 'download']) })
 
 function isExpectedR2Key(key: string | undefined, prefixes: readonly string[]): key is string {
@@ -14,6 +14,14 @@ function isExpectedR2Key(key: string | undefined, prefixes: readonly string[]): 
 
 function getStarCost(value: number | undefined) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+}
+
+function getDownloadFilename(track: TrackDocument) {
+  const extensionFromKey = track.masterR2Key?.match(/(\.[a-z0-9]{2,5})$/i)?.[1]
+  const extension = extensionFromKey || (track.sourceFormat ? `.${track.sourceFormat.toLowerCase()}` : '.mp3')
+  const title = (track.title || '9life-music').replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').replace(/\s+/g, ' ').trim()
+  const code = track.musicCode?.replace(/\D/g, '').slice(0, 6)
+  return `${title}${code ? ` - ${code}` : ''}${extension}`
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ trackId: string }> }) {
@@ -48,7 +56,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     if (!isExpectedR2Key(track.masterR2Key, ['music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file master để tải.' }, { status: 404 })
 
     // Generate the short-lived URL first so a storage failure never charges the user.
-    const downloadUrl = await getPrivateObjectUrl(track.masterR2Key, 60 * 5)
+    const downloadUrl = await getPrivateObjectUrl(
+      track.masterR2Key,
+      60 * 5,
+      { downloadFilename: getDownloadFilename(track) },
+    )
 
     const downloadCost = getStarCost(track.downloadStarCost)
     if (downloadCost > 0) {

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Play, Plus } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { useMediaPlayer } from '@/components/global-media-player'
@@ -98,6 +98,7 @@ export default function MusicPage() {
   const [communityMixOrder, setCommunityMixOrder] = useState<number[]>(() => tidalMixes.map((_, index) => index))
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
   const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
+  const openedTrackIdRef = useRef('')
   const publishedNonstopTracks = useMemo(
     () => publishedCatalog.filter((track) => track.type !== 'remix').map(catalogItemToAudioTrack),
     [publishedCatalog],
@@ -152,6 +153,21 @@ export default function MusicPage() {
   useEffect(() => {
     void fetchPublicMusicCatalog().then(setPublishedCatalog).catch(() => setPublishedCatalog([]))
   }, [])
+
+  useEffect(() => {
+    if (!publishedCatalog.length || typeof window === 'undefined') return
+    const trackId = new URLSearchParams(window.location.search).get('track')?.trim()
+    if (!trackId || openedTrackIdRef.current === trackId) return
+    const catalogItem = publishedCatalog.find((track) => track.id === trackId)
+    if (!catalogItem) return
+
+    openedTrackIdRef.current = trackId
+    const track = catalogItemToAudioTrack(catalogItem)
+    playCollection([track], 0, catalogItem.type === 'remix' ? 'remix' : catalogItem.type === 'nonstop' ? 'nonstop' : 'track')
+    window.setTimeout(() => {
+      document.querySelector('.global-media-player-shell')?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 250)
+  }, [publishedCatalog, playCollection])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {

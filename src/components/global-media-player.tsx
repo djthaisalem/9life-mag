@@ -461,7 +461,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
   const openDownload = (track: AudioTrack) => {
     registerDownload(track)
-    window.open(track.downloadUrl ?? track.audioUrl, '_blank', 'noopener,noreferrer')
+    const downloadUrl = track.downloadUrl ?? track.audioUrl
+    const anchor = document.createElement('a')
+    anchor.href = downloadUrl
+    anchor.download = ''
+    anchor.rel = 'noopener noreferrer'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
   }
 
   const openDownloadRequest = async (track: AudioTrack) => {
