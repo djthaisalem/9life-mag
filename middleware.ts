@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
-import { getCmsDashboardScope, hasCmsScope } from '@/lib/cms-role-policy'
 
 function isSafeOrigin(request: NextRequest) {
   const origin = request.headers.get('origin')
@@ -38,7 +37,7 @@ function buildUnauthorizedApiResponse() {
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname, search } = request.nextUrl
+  const { pathname } = request.nextUrl
   const isCmsApi = pathname.startsWith('/api/cms/')
   const isAuthApi = pathname.startsWith('/api/auth/')
   const isCmsLoginRoute = pathname === '/api/cms/session/login'
@@ -49,6 +48,14 @@ export async function middleware(request: NextRequest) {
   const isReferralRoute = pathname === '/api/referrals'
   const isMediaRoute = pathname.startsWith('/api/media/')
   const isStudentApplicationsRoute = pathname === '/api/student-applications'
+
+  if (pathname.startsWith('/cms/dashboard')) {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-cms-pathname', pathname)
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+    return response
+  }
 
   if ((isCmsApi || isAuthApi || isContactRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
     return NextResponse.json(
@@ -76,24 +83,6 @@ export async function middleware(request: NextRequest) {
     }
 
     return NextResponse.next()
-  }
-
-  if (pathname.startsWith('/cms/dashboard')) {
-    if (!cmsSession) {
-      const loginUrl = new URL('/cms', request.url)
-      loginUrl.searchParams.set('next', `${pathname}${search}`)
-      const response = NextResponse.redirect(loginUrl)
-      response.headers.set('Cache-Control', 'private, no-store, max-age=0')
-      return response
-    }
-
-    if (!hasCmsScope(cmsSession.role, getCmsDashboardScope(pathname))) {
-      return NextResponse.rewrite(new URL('/cms/forbidden', request.url), { status: 403 })
-    }
-
-    const response = NextResponse.next()
-    response.headers.set('Cache-Control', 'private, no-store, max-age=0')
-    return response
   }
 
   return NextResponse.next()
