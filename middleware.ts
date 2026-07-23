@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 
 function isSafeOrigin(request: NextRequest) {
   const origin = request.headers.get('origin')
@@ -23,26 +22,11 @@ function isSafeOrigin(request: NextRequest) {
   }
 }
 
-function buildUnauthorizedApiResponse() {
-  const response = NextResponse.json(
-    {
-      ok: false,
-      message: 'Bạn cần đăng nhập CMS hợp lệ để dùng endpoint này.',
-    },
-    { status: 401 }
-  )
-
-  response.headers.set('Cache-Control', 'private, no-store, max-age=0')
-  return response
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isCmsApi = pathname.startsWith('/api/cms/')
   const isAuthApi = pathname.startsWith('/api/auth/')
   const isCmsLoginRoute = pathname === '/api/cms/session/login'
-  const isCmsLogoutRoute = pathname === '/api/cms/session/logout'
-  const isPublicTopupRoute = pathname === '/api/cms/star-topups'
   const isContactRequestRoute = pathname === '/api/contact-requests'
   const isPortalApi = pathname.startsWith('/api/portal/')
   const isReferralRoute = pathname === '/api/referrals'
@@ -71,17 +55,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const cmsSession = await verifyCmsSessionToken(request.cookies.get(CMS_SESSION_COOKIE)?.value)
-
-  if (isCmsApi || isCmsLogoutRoute) {
-    if (isPublicTopupRoute) {
-      return NextResponse.next()
-    }
-
-    if (!cmsSession) {
-      return buildUnauthorizedApiResponse()
-    }
-
+  // CMS API routes validate the session and role in the Node.js route runtime.
+  // Avoid verifying the same token again in middleware, which can use a different runtime.
+  if (isCmsApi) {
     return NextResponse.next()
   }
 
