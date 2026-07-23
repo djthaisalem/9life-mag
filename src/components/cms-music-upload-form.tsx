@@ -19,6 +19,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const form = event.currentTarget
     setIsPending(true)
     setMessage('Đang tạo mã nhạc, chuẩn hóa metadata, xuất MP3 256 kbps và upload lên R2...')
     setResult(null)
@@ -29,7 +30,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
         credentials: 'include',
         cache: 'no-store',
         headers: uploadCapability ? { Authorization: `Bearer ${uploadCapability}` } : undefined,
-        body: new FormData(event.currentTarget),
+        body: new FormData(form),
       })
       const payload = await response.json() as { ok?: boolean; message?: string; result?: UploadResult }
       if (!response.ok || !payload.ok || !payload.result) {
@@ -38,7 +39,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
       }
       setResult(payload.result)
       setMessage(`Đã xử lý xong. Mã nhạc: ${payload.result.musicCode}. Thời lượng: ${payload.result.durationLabel}.`)
-      event.currentTarget.reset()
+      form.reset()
     } catch {
       setMessage('Không kết nối được đến tiến trình xử lý nhạc.')
     } finally {
