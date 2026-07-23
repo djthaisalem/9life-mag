@@ -142,7 +142,7 @@ export type CmsMusicRow = {
   downloadStarCost?: number
 }
 
-export const cmsMusicRows: CmsMusicRow[] = ([
+const cmsMusicSampleRows: CmsMusicRow[] = ([
   {
     id: 'music-010',
     slug: 'water-lily-club-remix-ep',
@@ -280,6 +280,8 @@ export const cmsMusicRows: CmsMusicRow[] = ([
     duration: '03:56',
   },
 ] satisfies CmsMusicRow[]).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+
+export const cmsMusicRows: CmsMusicRow[] = []
 
 export type CmsMusicTabKey = 'all' | 'track' | 'nonstop' | 'remix' | 'playlist' | 'album'
 

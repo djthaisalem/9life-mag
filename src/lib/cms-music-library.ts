@@ -1,7 +1,7 @@
 import 'server-only'
 
 import type { Where } from 'payload'
-import { cmsMusicRows, type CmsMusicRow, type CmsMusicTabKey } from '@/lib/cms-dashboard-data'
+import type { CmsMusicRow, CmsMusicTabKey } from '@/lib/cms-dashboard-data'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 type TrackDocument = {
@@ -24,7 +24,7 @@ type TrackDocument = {
 }
 
 export type CmsMusicLibraryRow = CmsMusicRow & {
-  source: 'database' | 'sample'
+  source: 'database'
   musicCode?: string
   masterR2Key?: string
   trackTypeValue: 'track' | 'nonstop' | 'remix' | 'album'
@@ -34,8 +34,6 @@ export type CmsMusicLibraryRow = CmsMusicRow & {
 }
 
 type EditableTrackType = CmsMusicLibraryRow['trackTypeValue']
-type MusicAccessLevel = CmsMusicLibraryRow['accessLevelValue']
-type MusicVisibility = CmsMusicLibraryRow['visibilityValue']
 
 const visibilityLabels: Record<string, string> = {
   draft: 'Nháp nội bộ',
@@ -55,22 +53,6 @@ function normalizeTrackType(value?: string): EditableTrackType {
   if (value === 'single') return 'track'
   if (value === 'nonstop' || value === 'remix' || value === 'album') return value
   return 'track'
-}
-
-function normalizeSampleTrack(row: CmsMusicRow): CmsMusicLibraryRow {
-  const accessText = row.access.toLocaleLowerCase('vi-VN')
-  const visibilityText = row.visibility.toLocaleLowerCase('vi-VN')
-  const trackTypeValue: EditableTrackType = row.type === 'album' || row.type === 'nonstop' || row.type === 'remix' ? row.type : 'track'
-  const accessLevelValue: MusicAccessLevel = row.access.includes('Premium') ? 'premium' : accessText.includes('sao') ? 'stars' : accessText.includes('nội bộ') ? 'internal' : 'public'
-  const visibilityValue: MusicVisibility = visibilityText.includes('public') ? 'public' : visibilityText.includes('duyệt') || visibilityText.includes('rà soát') ? 'pending' : visibilityText.includes('ẩn') ? 'hidden' : 'draft'
-
-  return {
-    ...row,
-    source: 'sample',
-    trackTypeValue,
-    accessLevelValue,
-    visibilityValue,
-  }
 }
 
 function normalizeDatabaseTrack(doc: TrackDocument): CmsMusicLibraryRow {
@@ -106,19 +88,6 @@ function normalizeDatabaseTrack(doc: TrackDocument): CmsMusicLibraryRow {
   }
 }
 
-function matchesQuery(row: CmsMusicRow, query: string) {
-  if (!query) return true
-  const haystack = `${row.title} ${row.artist} ${row.genre} ${row.slug}`.toLocaleLowerCase('vi-VN')
-  return haystack.includes(query.toLocaleLowerCase('vi-VN'))
-}
-
-function getSampleRows(tab: CmsMusicTabKey, query: string): CmsMusicLibraryRow[] {
-  return cmsMusicRows
-    .filter((row) => tab === 'all' || row.type === tab)
-    .filter((row) => matchesQuery(row, query))
-    .map(normalizeSampleTrack)
-}
-
 function getDatabaseWhere(tab: CmsMusicTabKey, query: string) {
   const conditions: Where[] = []
   const trackType = tab === 'track' ? 'single' : tab === 'nonstop' || tab === 'remix' || tab === 'album' ? tab : ''
@@ -151,7 +120,6 @@ export async function getCmsMusicLibraryPage(input: {
 }) {
   const query = input.query.trim().slice(0, 100)
   const page = Math.max(1, input.page)
-  const sampleRows = getSampleRows(input.tab, query)
 
   try {
     const payload = await loadPayloadClient()
@@ -165,22 +133,16 @@ export async function getCmsMusicLibraryPage(input: {
       overrideAccess: true,
     })
 
-    const databaseRows = result.docs.map((doc) => normalizeDatabaseTrack(doc as TrackDocument))
-    const startIndex = (page - 1) * input.pageSize
-    const sampleStart = Math.max(0, startIndex - result.totalDocs)
-    const remaining = Math.max(0, input.pageSize - databaseRows.length)
-
     return {
-      rows: [...databaseRows, ...sampleRows.slice(sampleStart, sampleStart + remaining)],
-      totalItems: result.totalDocs + sampleRows.length,
+      rows: result.docs.map((doc) => normalizeDatabaseTrack(doc as TrackDocument)),
+      totalItems: result.totalDocs,
       query,
     }
   } catch (error) {
     console.error('CMS music library database query failed', error)
-    const startIndex = (page - 1) * input.pageSize
     return {
-      rows: sampleRows.slice(startIndex, startIndex + input.pageSize),
-      totalItems: sampleRows.length,
+      rows: [],
+      totalItems: 0,
       query,
     }
   }
@@ -201,7 +163,5 @@ export async function getCmsMusicLibraryRowBySlug(slug: string): Promise<CmsMusi
     console.error('CMS music detail database query failed', error)
   }
 
-  const sample = cmsMusicRows.find((row) => row.slug === slug)
-  if (!sample) return null
-  return normalizeSampleTrack(sample)
+  return null
 }
