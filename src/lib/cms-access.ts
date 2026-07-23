@@ -1,11 +1,31 @@
 import 'server-only'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken, type CmsSession } from '@/lib/cms-session'
 import { hasCmsScope, type CmsScope } from '@/lib/cms-role-policy'
 
 export type { CmsScope } from '@/lib/cms-role-policy'
+
+async function hasTrustedRequestOrigin() {
+  const headerStore = await headers()
+  const origin = headerStore.get('origin')
+  if (!origin) return true
+
+  const host = headerStore.get('host')?.trim()
+  if (!host) return false
+
+  const forwardedProtocol = process.env.TRUST_PROXY_HEADERS === 'true'
+    ? headerStore.get('x-forwarded-proto')?.split(',')[0]?.trim()
+    : undefined
+  const protocol = forwardedProtocol || 'https'
+
+  try {
+    return new URL(origin).origin === `${protocol}://${host}`
+  } catch {
+    return false
+  }
+}
 
 export async function requireCmsApiAccess(scope: CmsScope): Promise<
   | {
@@ -17,6 +37,19 @@ export async function requireCmsApiAccess(scope: CmsScope): Promise<
       response: NextResponse
     }
 > {
+  if (!await hasTrustedRequestOrigin()) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          ok: false,
+          message: 'Origin không hợp lệ cho thao tác nhạy cảm.',
+        },
+        { status: 403 },
+      ),
+    }
+  }
+
   const cookieStore = await cookies()
   const token = cookieStore.get(CMS_SESSION_COOKIE)?.value
   const session = await verifyCmsSessionToken(token)

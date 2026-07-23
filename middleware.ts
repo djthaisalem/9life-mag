@@ -65,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/cms/dashboard/:path*', '/api/cms/:path*', '/api/auth/:path*', '/api/contact-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/student-applications'],
+  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/student-applications'],
 }
