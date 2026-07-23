@@ -163,6 +163,37 @@ export async function claimBonusStars() {
   return readJson<AccessApiResponse>(response)
 }
 
+export type PremiumAccessResponse = {
+  ok: boolean
+  active: boolean
+  alreadyCharged?: boolean
+  message?: string
+  premiumAccess?: {
+    activatedAt: string
+    expiresAt: string
+  } | null
+  state?: UserAccessState
+}
+
+export async function getPremiumAccess() {
+  const response = await fetch('/api/auth/premium-access', {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+
+  return readJson<PremiumAccessResponse>(response)
+}
+
+export async function activatePremiumAccess() {
+  const response = await fetch('/api/auth/premium-access', {
+    method: 'POST',
+    credentials: 'same-origin',
+  })
+
+  return readJson<PremiumAccessResponse>(response)
+}
+
 export async function toggleFollowedArtist(slug: string) {
   const response = await fetch('/api/auth/follow', {
     method: 'POST',

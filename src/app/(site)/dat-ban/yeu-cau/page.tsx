@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PageHero } from '@/components/page-hero'
+import { SiteBookingSubmitForm } from '@/components/site-public-submit-form'
 import { clubOutlets } from '@/lib/club-booking-data'
 
 const tableBookingFlow = [
@@ -41,29 +42,30 @@ export default async function TableRequestPage({
         <div className="container booking-grid">
           <div className="booking-form-column">
             <div className="artist-profile-cta-row">
-              <button type="button" className="button">
+              <span className="button" aria-current="page">
                 Đặt Bàn
-              </button>
+              </span>
               <Link href="/booking" className="button-secondary">
                 Booking Nghệ Sĩ
               </Link>
             </div>
 
-            <form className="form-shell">
+            <SiteBookingSubmitForm type="outlet">
               <div className="field">
                 <label htmlFor="outlet">Outlet mong muốn</label>
-                <select id="outlet" name="outlet">
-                  {selectedOutlet ? <option>{selectedOutlet.name}</option> : <option>Chọn outlet / night club</option>}
+                <select id="outlet" name="outlet" required>
+                  {selectedOutlet ? <option>{selectedOutlet.name}</option> : <option value="">Chọn outlet / night club</option>}
                   {clubOutlets
                     .filter((item) => item.slug !== selectedOutlet?.slug)
                     .map((outlet) => (
                       <option key={outlet.slug}>{outlet.name}</option>
                     ))}
                 </select>
+                <input type="hidden" name="outletSlug" value={selectedOutlet?.slug ?? ''} />
               </div>
               <div className="field">
                 <label htmlFor="bookingDate">Ngày đi</label>
-                <input id="bookingDate" name="bookingDate" type="date" />
+                <input id="bookingDate" name="bookingDate" type="date" required />
               </div>
               <div className="field">
                 <label htmlFor="arrivalTime">Khung giờ đến</label>
@@ -76,7 +78,7 @@ export default async function TableRequestPage({
               </div>
               <div className="field">
                 <label htmlFor="guestCount">Số lượng khách</label>
-                <input id="guestCount" name="guestCount" placeholder="Ví dụ: 8 khách" />
+                <input id="guestCount" name="guestCount" placeholder="Ví dụ: 8 khách" required />
               </div>
               <div className="field">
                 <label htmlFor="tableType">Loại bàn mong muốn</label>
@@ -93,11 +95,11 @@ export default async function TableRequestPage({
               </div>
               <div className="field">
                 <label htmlFor="contactName">Tên người đặt</label>
-                <input id="contactName" name="contactName" placeholder="Nguyễn Văn B" />
+                <input id="contactName" name="contactName" placeholder="Nguyễn Văn B" required />
               </div>
               <div className="field">
                 <label htmlFor="contactPhone">Số điện thoại</label>
-                <input id="contactPhone" name="contactPhone" placeholder="090x xxx xxx" />
+                <input id="contactPhone" name="contactPhone" placeholder="090x xxx xxx" required />
               </div>
               <div className="field">
                 <label htmlFor="occasion">Dịp đặt bàn</label>
@@ -121,7 +123,7 @@ export default async function TableRequestPage({
                   Gửi
                 </button>
               </div>
-            </form>
+            </SiteBookingSubmitForm>
           </div>
 
           <div className="timeline">

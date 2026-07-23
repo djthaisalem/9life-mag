@@ -10,6 +10,7 @@
     "start:standalone": "node scripts/start-standalone.cjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "audit:site": "node scripts/audit-site-interactions.mjs",
     "payload": "payload"
   },
   "dependencies": {

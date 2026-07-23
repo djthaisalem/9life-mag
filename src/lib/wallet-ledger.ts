@@ -124,3 +124,22 @@ export async function hasRecentMediaStarCharge(
     new Date(entry.createdAt).getTime() >= minimumCreatedAt,
   )
 }
+
+export async function getRecentPremiumAccess(userId: string, windowMs = 24 * 60 * 60 * 1000) {
+  const minimumCreatedAt = Date.now() - windowMs
+  const referencePrefix = `premium-access:${userId}:`
+  const entries = await getWalletLedgerSnapshot()
+  const entry = entries.find((item) =>
+    item.userId === userId &&
+    item.eventType === 'spend_general' &&
+    item.reference.startsWith(referencePrefix) &&
+    new Date(item.createdAt).getTime() >= minimumCreatedAt,
+  )
+
+  if (!entry) return null
+
+  return {
+    activatedAt: entry.createdAt,
+    expiresAt: new Date(new Date(entry.createdAt).getTime() + windowMs).toISOString(),
+  }
+}

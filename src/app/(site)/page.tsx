@@ -1091,9 +1091,9 @@ export default function HomePage() {
           </div>
 
           <div className="section-more">
-            <button type="button" className="more-link-unified">
+            <Link href="/music#charts" className="more-link-unified">
               Xem thêm bảng xếp hạng
-            </button>
+            </Link>
           </div>
         </div>
       </section>

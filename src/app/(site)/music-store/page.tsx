@@ -78,12 +78,12 @@ export default function MusicStorePage() {
                 <a href="/music" className="music5s-btn music5s-btn-outline">
                   Xem frontend Music
                 </a>
-                <button type="button" className="music5s-btn music5s-btn-outline">
+                <a href="#albums" className="music5s-btn music5s-btn-outline">
                   Danh sách album
-                </button>
-                <button type="button" className="music5s-btn">
+                </a>
+                <a href="/cms/dashboard/music/upload" className="music5s-btn">
                   Tạo mới
-                </button>
+                </a>
               </div>
             </div>
 
@@ -125,7 +125,7 @@ export default function MusicStorePage() {
               </div>
             </section>
 
-            <section className="music5s-card-section">
+            <section className="music5s-card-section" id="albums">
               <div className="music5s-section-head">
                 <h2>Danh sách album</h2>
                 <span className="music5s-muted">Kiểu card giống trang album cũ</span>
@@ -164,9 +164,9 @@ export default function MusicStorePage() {
                 <div className="music5s-form-grid">
                   <div className="music5s-upload-box">
                     <img src="/music-legacy/bg/14.jpg" alt="Playlist cover" />
-                    <button type="button" className="music5s-btn music5s-btn-outline">
+                    <a href="/cms/dashboard/music/upload" className="music5s-btn music5s-btn-outline">
                       Upload ảnh
-                    </button>
+                    </a>
                   </div>
 
                   <div className="music5s-fields">
@@ -223,9 +223,9 @@ export default function MusicStorePage() {
                       />
                     </label>
                     <div className="music5s-button-row">
-                      <button type="button" className="music5s-btn">
+                      <a href="/cms/dashboard/music/upload" className="music5s-btn">
                         Thêm mới
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>

@@ -144,7 +144,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
     return <article key={template.title} className="artist-editor-template-card">
       <div className="artist-editor-template-head"><div><strong>{text(template.title)}</strong><p>{text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => save(id)}>Lưu bản nháp</button></div>
-      <form className="artist-editor-form-grid">
+      <form className="artist-editor-form-grid" onSubmit={(event) => { event.preventDefault(); save(id) }}>
         {template.fields.map((field) => <div key={field.name} className={`field${field.type === 'textarea' || field.type === 'trackpicker' || field.type === 'file' ? ' artist-editor-field-wide' : ''}`}>
           <label htmlFor={`${id}-${field.name}`}>{text(field.label)}{field.optional ? <span className="artist-editor-optional-tag">Tùy chọn</span> : null}</label>
           {field.type === 'textarea' ? <textarea id={`${id}-${field.name}`} name={field.name} placeholder={text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
+import { getRecentPremiumAccess } from '@/lib/wallet-ledger'
 
 type TrackDocument = { id: string | number; title?: string; musicCode?: string; sourceFormat?: string; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number }
 const mediaRequestSchema = z.object({ kind: z.enum(['preview', 'download']) })
@@ -36,13 +37,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     }
 
     if (kind === 'preview') {
-      if (track.accessLevel === 'premium') return NextResponse.json({ ok: false, message: 'Track này cần quyền Premium.' }, { status: 403 })
+      const cookieStore = await cookies()
+      const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+      if (track.accessLevel === 'premium') {
+        if (!authenticated) {
+          return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để mở Premium Drop.' }, { status: 401 })
+        }
+        const premiumAccess = await getRecentPremiumAccess(authenticated.session.userId)
+        if (!premiumAccess) {
+          return NextResponse.json({ ok: false, message: 'Track này cần quyền Premium Drop còn hiệu lực.' }, { status: 403 })
+        }
+      }
       if (!isExpectedR2Key(track.previewR2Key, ['music/preview/', 'music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file phát.' }, { status: 404 })
       const playbackUrl = await getPreviewPlaybackUrl(track.previewR2Key)
       const playbackCost = getStarCost(track.playbackStarCost)
       if (playbackCost > 0) {
-        const cookieStore = await cookies()
-        const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
         if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để mở track này.' }, { status: 401 })
         const result = await accessMediaWithStars(authenticated.session.userId, trackId, 'playback', playbackCost)
         if (!result.ok) return NextResponse.json({ ok: false, message: `Bạn cần ${playbackCost} sao để nghe track này.` }, { status: 402 })

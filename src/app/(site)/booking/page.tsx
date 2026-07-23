@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PageHero } from '@/components/page-hero'
+import { SiteBookingSubmitForm } from '@/components/site-public-submit-form'
 import { artistProfiles } from '@/lib/artist-directory-data'
 
 const pipeline = [
@@ -42,29 +43,29 @@ export default async function BookingPage({
         <div className="container booking-grid">
           <div className="booking-form-column">
             <div className="artist-profile-cta-row">
-              <button type="button" className="button">
+              <span className="button" aria-current="page">
                 Booking Nghệ Sĩ
-              </button>
+              </span>
               <Link href="/dat-ban/yeu-cau" className="button-secondary">
                 Đặt Bàn
               </Link>
             </div>
 
-            <form className="form-shell">
+            <SiteBookingSubmitForm type="artist">
               <div className="field">
                 <label htmlFor="eventName">Tên sự kiện</label>
-                <input id="eventName" name="eventName" placeholder="Summer Rooftop Party 2026" />
+                <input id="eventName" name="eventName" placeholder="Summer Rooftop Party 2026" required />
               </div>
               <div className="field">
                 <label htmlFor="artist">Nghệ sĩ mong muốn</label>
                 {isArtistLocked ? (
                   <>
-                    <input id="artist" name="artistName" value={selectedArtist!.name} readOnly />
+                    <input id="artist" name="artist" value={selectedArtist!.name} readOnly />
                     <input type="hidden" name="artistSlug" value={selectedArtist!.slug} />
                   </>
                 ) : (
-                  <select id="artist" name="artist">
-                    <option>Chọn nghệ sĩ quan tâm</option>
+                  <select id="artist" name="artist" required>
+                    <option value="">Chọn nghệ sĩ quan tâm</option>
                     {artistProfiles.slice(0, 20).map((artist) => (
                       <option key={artist.slug}>{artist.name}</option>
                     ))}
@@ -73,11 +74,11 @@ export default async function BookingPage({
               </div>
               <div className="field">
                 <label htmlFor="showDate">Ngày biểu diễn dự kiến</label>
-                <input id="showDate" name="showDate" type="date" />
+                <input id="showDate" name="showDate" type="date" required />
               </div>
               <div className="field">
                 <label htmlFor="eventLocation">Địa điểm / thành phố</label>
-                <input id="eventLocation" name="eventLocation" placeholder="TP.HCM - Quận 1" />
+                <input id="eventLocation" name="eventLocation" placeholder="TP.HCM - Quận 1" required />
               </div>
               <div className="field">
                 <label htmlFor="performanceType">Loại show</label>
@@ -102,11 +103,11 @@ export default async function BookingPage({
               </div>
               <div className="field">
                 <label htmlFor="contactName">Người liên hệ</label>
-                <input id="contactName" name="contactName" placeholder="Nguyễn Văn A" />
+                <input id="contactName" name="contactName" placeholder="Nguyễn Văn A" required />
               </div>
               <div className="field">
                 <label htmlFor="contactPhone">Số điện thoại / Zalo</label>
-                <input id="contactPhone" name="contactPhone" placeholder="090x xxx xxx" />
+                <input id="contactPhone" name="contactPhone" placeholder="090x xxx xxx" required />
               </div>
               <div className="field">
                 <label htmlFor="notes">Mô tả thêm</label>
@@ -121,7 +122,7 @@ export default async function BookingPage({
                   Gửi
                 </button>
               </div>
-            </form>
+            </SiteBookingSubmitForm>
           </div>
 
           <div className="timeline">

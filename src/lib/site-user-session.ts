@@ -6,7 +6,7 @@ import path from 'path'
 import { env } from '@/lib/env'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { assertProductionPersistence, canUseDevelopmentSeeds, getRuntimeSecret } from '@/lib/runtime-security'
-import { hasRecentMediaStarCharge, recordWalletLedgerEntry, type WalletEventType } from '@/lib/wallet-ledger'
+import { getRecentPremiumAccess, hasRecentMediaStarCharge, recordWalletLedgerEntry, type WalletEventType } from '@/lib/wallet-ledger'
 
 export const SITE_SESSION_COOKIE = 'nine_life_site_session'
 
@@ -1145,6 +1145,9 @@ export async function spendStarsForUser(
       trackId: string
       windowMs: number
     }
+    premiumAccess?: {
+      windowMs: number
+    }
   },
 ) {
   const previous = walletLocks.get(accountId) ?? Promise.resolve()
@@ -1170,6 +1173,17 @@ export async function spendStarsForUser(
         return {
           ...buildAccessResult(current),
           alreadyCharged: true,
+        }
+      }
+    }
+
+    if (options?.premiumAccess) {
+      const activeAccess = await getRecentPremiumAccess(accountId, options.premiumAccess.windowMs)
+      if (activeAccess) {
+        return {
+          ...buildAccessResult(current),
+          alreadyCharged: true,
+          premiumAccess: activeAccess,
         }
       }
     }
@@ -1200,6 +1214,22 @@ export async function spendStarsForUser(
   } finally {
     release()
     if (walletLocks.get(accountId) === queuedLock) walletLocks.delete(accountId)
+  }
+}
+
+export async function activatePremiumAccessForUser(accountId: string) {
+  const windowMs = 24 * 60 * 60 * 1000
+  const result = await spendStarsForUser(accountId, 10, 'spend_general', {
+    reference: `premium-access:${accountId}:${randomUUID()}`,
+    note: '24-hour Premium Drop access',
+    premiumAccess: { windowMs },
+  })
+  const alreadyCharged = 'alreadyCharged' in result && result.alreadyCharged === true
+
+  return {
+    ...result,
+    alreadyCharged,
+    premiumAccess: result.ok ? await getRecentPremiumAccess(accountId, windowMs) : null,
   }
 }
 

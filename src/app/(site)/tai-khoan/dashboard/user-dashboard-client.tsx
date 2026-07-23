@@ -15,9 +15,11 @@ import {
   type UserPlaylist,
 } from '@/lib/user-playlists'
 import {
+  activatePremiumAccess,
   claimBonusStars,
   claimDailyStars,
   fetchUserAccessState,
+  getPremiumAccess,
   type StoredUserProfile,
   type UserAccessState,
 } from '@/lib/client-user-access'
@@ -60,6 +62,8 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [shareMessage, setShareMessage] = useState('')
   const [rewardMessage, setRewardMessage] = useState('')
+  const [premiumAccessUntil, setPremiumAccessUntil] = useState('')
+  const [isActivatingPremium, setIsActivatingPremium] = useState(false)
   const [accessState, setAccessState] = useState<UserAccessState>(initialAccessState)
   const [profile, setProfile] = useState<StoredUserProfile>(initialProfile)
   const [selectedTopupPackageId, setSelectedTopupPackageId] = useState<string>(topUpPlans[0]?.id ?? 'star-50')
@@ -83,6 +87,8 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
       setAccessState(snapshot.state)
       if (snapshot.profile) setProfile(snapshot.profile)
       if (snapshot.state.isAuthenticated) {
+        const premium = await getPremiumAccess()
+        setPremiumAccessUntil(premium.premiumAccess?.expiresAt ?? '')
         const referrals = await getReferralSummary()
         if (referrals.summary) setReferralSummary(referrals.summary)
       }
@@ -122,13 +128,43 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
     setRewardMessage('Bạn vừa nhận thêm +5 sao bonus. Hãy dùng thật khéo cho lượt vote hoặc mở nhạc tiếp theo.')
   }
 
+  const handleActivatePremium = async () => {
+    if (!accessState.isAuthenticated) {
+      setRewardMessage('Hãy đăng nhập để mở Premium Drop.')
+      return
+    }
+
+    setIsActivatingPremium(true)
+    try {
+      const result = await activatePremiumAccess()
+      if (result.state) setAccessState(result.state)
+      setPremiumAccessUntil(result.premiumAccess?.expiresAt ?? '')
+      setRewardMessage(result.message ?? (result.ok
+        ? 'Đã kích hoạt Premium Drop trong 24 giờ.'
+        : 'Không thể kích hoạt Premium Drop lúc này.'))
+    } catch {
+      setRewardMessage('Không thể kết nối để kích hoạt Premium Drop. Vui lòng thử lại.')
+    } finally {
+      setIsActivatingPremium(false)
+    }
+  }
+
   const handleCreatePlaylist = () => {
-    const created = createUserPlaylist(newPlaylistName)
-    if (!created) return
-    setNewPlaylistName('')
-    setSelectedPlaylistId(created.id)
-    setShareMessage(`Đã tạo playlist "${created.name}".`)
-    refreshPlaylists()
+    if (!newPlaylistName.trim()) {
+      setShareMessage('Vui lòng nhập tên playlist trước khi tạo.')
+      return
+    }
+
+    try {
+      const created = createUserPlaylist(newPlaylistName)
+      if (!created) return
+      setNewPlaylistName('')
+      setSelectedPlaylistId(created.id)
+      setShareMessage(`Đã tạo playlist "${created.name}".`)
+      refreshPlaylists()
+    } catch {
+      setShareMessage('Trình duyệt không thể lưu playlist. Hãy kiểm tra quyền lưu dữ liệu hoặc xóa bớt playlist cũ.')
+    }
   }
 
   const handleAddTrack = (trackIndex: number) => {
@@ -340,8 +376,10 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <p>Dùng 10 sao để mở các track, nonstop, album và playlist được gắn Premium Drop. Thành viên VIP Community được truy cập trọn tháng.</p>
             </div>
             <div className="user-dashboard-premium-drop-actions">
-              <strong>10 sao / 24 giờ</strong>
-              <button type="button" className="button" onClick={() => setRewardMessage(accessState.isAuthenticated ? 'Premium Drop sẽ được kích hoạt sau khi hệ thống xác nhận 10 sao.' : 'Hãy đăng nhập để mở Premium Drop.')}>Kích hoạt Premium 24h</button>
+              <strong>{premiumAccessUntil ? `Đã mở đến ${new Date(premiumAccessUntil).toLocaleString('vi-VN')}` : '10 sao / 24 giờ'}</strong>
+              <button type="button" className="button" disabled={isActivatingPremium} onClick={() => void handleActivatePremium()}>
+                {isActivatingPremium ? 'Đang kích hoạt...' : premiumAccessUntil ? 'Kiểm tra quyền Premium' : 'Kích hoạt Premium 24h'}
+              </button>
             </div>
           </article>
           {rewardMessage ? <p className="user-dashboard-premium-drop-message">{rewardMessage}</p> : null}

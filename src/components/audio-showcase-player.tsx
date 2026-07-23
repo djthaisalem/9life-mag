@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
+import { getPremiumAccess } from '@/lib/client-user-access'
 
 type AudioShowcasePlayerProps = {
   title: string
@@ -41,10 +42,18 @@ export function AudioShowcasePlayer({
   const [premiumPromptOpen, setPremiumPromptOpen] = useState(false)
 
   const sourceType = useMemo<AudioSourceType>(() => (variant === 'remix' ? 'remix' : 'nonstop'), [variant])
-  const requestPlay = (trackIndex: number) => {
+  const requestPlay = async (trackIndex: number) => {
     if (tracks[trackIndex]?.isPremiumDrop) {
-      setPremiumPromptOpen(true)
-      return
+      try {
+        const access = await getPremiumAccess()
+        if (!access.active) {
+          setPremiumPromptOpen(true)
+          return
+        }
+      } catch {
+        setPremiumPromptOpen(true)
+        return
+      }
     }
     playCollection(tracks, trackIndex, sourceType)
   }

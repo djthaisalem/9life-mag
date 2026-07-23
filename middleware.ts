@@ -28,6 +28,7 @@ export async function middleware(request: NextRequest) {
   const isAuthApi = pathname.startsWith('/api/auth/')
   const isCmsLoginRoute = pathname === '/api/cms/session/login'
   const isContactRequestRoute = pathname === '/api/contact-requests'
+  const isBookingRequestRoute = pathname === '/api/booking-requests'
   const isPortalApi = pathname.startsWith('/api/portal/')
   const isReferralRoute = pathname === '/api/referrals'
   const isMediaRoute = pathname.startsWith('/api/media/')
@@ -41,7 +42,7 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  if ((isCmsApi || isAuthApi || isContactRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
+  if ((isCmsApi || isAuthApi || isContactRequestRoute || isBookingRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
     return NextResponse.json(
       {
         ok: false,
@@ -65,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/student-applications'],
+  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/booking-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/student-applications'],
 }

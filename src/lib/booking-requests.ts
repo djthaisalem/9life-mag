@@ -245,6 +245,50 @@ export async function createContactRequest(input: {
   return request
 }
 
+export async function createPublicBookingRequest(input: {
+  type: 'artist' | 'outlet'
+  title: string
+  requester: string
+  location: string
+  schedule: string
+  detail: string
+  href: string
+  submittedFields: BookingField[]
+}) {
+  const store = await ensureStore()
+  const request: BookingRequestRecord = {
+    id: `${input.type}-${Date.now()}`,
+    type: input.type,
+    typeLabel: input.type === 'artist' ? 'Booking nghệ sĩ' : 'Đặt bàn',
+    title: input.title,
+    requester: input.requester,
+    location: input.location,
+    schedule: input.schedule || new Date().toISOString().slice(0, 10),
+    detail: input.detail,
+    status: 'Mới',
+    href: input.href,
+    submittedFields: input.submittedFields,
+    internalNotes: ['Yêu cầu mới từ form ngoài site, cần kiểm tra thông tin liên hệ và phản hồi sớm.'],
+    reminderConfig: {
+      telegramChannel: cmsTelegramBookingConfig.globalChannel,
+      profileChannel: '',
+      reminderAt: '',
+      soundcheckAt: '',
+      checkinAt: '',
+      followUpAt: '',
+      assistantNote:
+        input.type === 'artist'
+          ? 'Nhắc đội booking kiểm tra lịch nghệ sĩ, ngân sách, rider và thời gian soundcheck.'
+          : 'Nhắc outlet xác nhận tình trạng bàn, số khách, ngân sách và đầu mối check-in.',
+    },
+    reminderDispatch: {},
+  }
+
+  store.requests.push(request)
+  await saveStore(store)
+  return request
+}
+
 export async function updateBookingStatus(input: {
   requestId: string
   status: BookingStatus

@@ -1,5 +1,6 @@
 import { Scale, ShieldCheck } from 'lucide-react'
 import { PageHero } from '@/components/page-hero'
+import { CopyrightReportSubmitForm } from '@/components/site-public-submit-form'
 
 type CopyrightReportPageProps = {
   searchParams: Promise<{
@@ -28,7 +29,7 @@ export default async function CopyrightReportPage({ searchParams }: CopyrightRep
       <section className="section">
         <div className="container contact-page-grid">
           <div className="contact-page-main">
-            <form className="form-shell contact-form-shell">
+            <CopyrightReportSubmitForm>
               <div className="contact-form-head">
                 <div>
                   <p className="section-eyebrow">Copyright Intake</p>
@@ -42,12 +43,12 @@ export default async function CopyrightReportPage({ searchParams }: CopyrightRep
               <div className="contact-form-grid">
                 <div className="field">
                   <label htmlFor="copyrightName">Họ và tên</label>
-                  <input id="copyrightName" name="copyrightName" placeholder="Nguyễn Văn A" />
+                  <input id="copyrightName" name="copyrightName" placeholder="Nguyễn Văn A" required />
                 </div>
 
                 <div className="field">
                   <label htmlFor="copyrightEmail">Email liên hệ</label>
-                  <input id="copyrightEmail" name="copyrightEmail" type="email" placeholder="name@example.com" />
+                  <input id="copyrightEmail" name="copyrightEmail" type="email" placeholder="name@example.com" required />
                 </div>
 
                 <div className="field">
@@ -93,9 +94,10 @@ export default async function CopyrightReportPage({ searchParams }: CopyrightRep
 
               <div className="field">
                 <label htmlFor="copyrightDetails">Nội dung chi tiết</label>
-                <textarea
-                  id="copyrightDetails"
-                  name="copyrightDetails"
+                  <textarea
+                    id="copyrightDetails"
+                    name="copyrightDetails"
+                    required
                   placeholder="Vui lòng mô tả rõ nội dung quyền sở hữu, phạm vi tranh chấp, chủ thể quyền liên quan và thông tin cần đội vận hành ưu tiên xác minh."
                 />
               </div>
@@ -108,12 +110,12 @@ export default async function CopyrightReportPage({ searchParams }: CopyrightRep
               </div>
 
               <div className="artist-profile-cta-row">
-                <button type="button" className="button">Gửi báo cáo bản quyền</button>
+                <button type="submit" className="button">Gửi báo cáo bản quyền</button>
                 <a href="mailto:copyright@9lifemag.com" className="button-secondary">
                   copyright@9lifemag.com
                 </a>
               </div>
-            </form>
+            </CopyrightReportSubmitForm>
           </div>
 
           <aside className="contact-page-side">

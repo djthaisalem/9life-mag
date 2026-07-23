@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { Check, Clock3, Download, ImagePlus, LibraryBig, Link2, ListMusic, Play, Plus, Search, Share2, Sparkles, Trash2 } from 'lucide-react'
-import { ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
+import { copyText } from '@/lib/client-share'
 import { getDownloadHistory, getListeningHistory, type MusicHistoryItem } from '@/lib/music-history'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import {
@@ -94,12 +95,14 @@ export default function MusicLibraryPage() {
   const [listeningHistory, setListeningHistory] = useState<MusicHistoryItem[]>([])
   const [downloadHistory, setDownloadHistory] = useState<MusicHistoryItem[]>([])
   const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [createFeedback, setCreateFeedback] = useState('')
   const [coverPreview, setCoverPreview] = useState('')
   const [feedback, setFeedback] = useState('')
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('all')
   const [catalogQuery, setCatalogQuery] = useState('')
   const [catalogVisibleCount, setCatalogVisibleCount] = useState(catalogPageSize)
   const [catalogTracks, setCatalogTracks] = useState<CatalogTrack[]>([])
+  const playlistNameInputRef = useRef<HTMLInputElement>(null)
 
   const selectedPlaylist = useMemo(() => playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null, [playlists, selectedPlaylistId])
   const filteredCatalogTracks = useMemo(() => {
@@ -142,16 +145,27 @@ export default function MusicLibraryPage() {
     }
   }
 
-  const handleCreatePlaylist = () => {
-    const created = createUserPlaylist(newPlaylistName, coverPreview || undefined)
-    if (!created) {
-      setFeedback('Hãy nhập tên cho playlist mới.')
+  const handleCreatePlaylist = (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault()
+    setCreateFeedback('')
+
+    if (!newPlaylistName.trim()) {
+      setCreateFeedback('Vui lòng nhập tên playlist trước khi tạo.')
+      playlistNameInputRef.current?.focus()
       return
     }
-    setNewPlaylistName('')
-    setCoverPreview('')
-    setFeedback(`Đã tạo playlist “${created.name}”.`)
-    refreshPlaylists(created.id)
+
+    try {
+      const created = createUserPlaylist(newPlaylistName, coverPreview || undefined)
+      if (!created) return
+      setNewPlaylistName('')
+      setCoverPreview('')
+      setCreateFeedback(`Đã tạo playlist “${created.name}”.`)
+      setFeedback('')
+      refreshPlaylists(created.id)
+    } catch {
+      setCreateFeedback('Trình duyệt không thể lưu playlist. Hãy xóa bớt ảnh bìa cũ hoặc kiểm tra quyền lưu dữ liệu của trình duyệt.')
+    }
   }
 
   const handleAddTrack = (track: AudioTrack) => {
@@ -171,8 +185,10 @@ export default function MusicLibraryPage() {
   const handleCopyShare = async () => {
     if (!selectedPlaylist || typeof window === 'undefined') return
     const shareUrl = `${window.location.origin}${buildPlaylistSharePath(selectedPlaylist.shareCode)}`
-    await navigator.clipboard?.writeText(shareUrl)
-    setFeedback('Đã sao chép URL chia sẻ thân thiện cho playlist này.')
+    const copied = await copyText(shareUrl)
+    setFeedback(copied
+      ? 'Đã sao chép URL chia sẻ thân thiện cho playlist này.'
+      : `Không thể tự sao chép. Link playlist: ${shareUrl}`)
   }
 
   const playTrack = (track: AudioTrack, sourceType: AudioSourceType) => playCollection([track], 0, sourceType)
@@ -206,7 +222,22 @@ export default function MusicLibraryPage() {
             <div className="music-library-manager-head"><div><p className="eyebrow">Playlist studio</p><h3>Tạo và quản lý playlist</h3></div><span>+ Playlist</span></div>
             <div className="music-library-create-grid">
               <label className="music-library-cover-upload">{coverPreview ? <img src={coverPreview} alt="Xem trước ảnh bìa playlist" /> : <><ImagePlus size={22} /><span>Ảnh bìa</span><small>Tự crop vuông</small></>}<input type="file" accept="image/*" onChange={(event) => void handleCoverChange(event)} /></label>
-              <div className="music-library-create-fields"><label>Tên playlist<input value={newPlaylistName} onChange={(event) => setNewPlaylistName(event.target.value)} placeholder="Ví dụ: Friday Rooftop" /></label><button type="button" className="button" onClick={handleCreatePlaylist}><Plus size={16} /> Tạo playlist</button></div>
+              <form className="music-library-create-fields" onSubmit={handleCreatePlaylist}>
+                <label>
+                  Tên playlist
+                  <input
+                    ref={playlistNameInputRef}
+                    value={newPlaylistName}
+                    onChange={(event) => {
+                      setNewPlaylistName(event.target.value)
+                      if (createFeedback) setCreateFeedback('')
+                    }}
+                    placeholder="Ví dụ: Friday Rooftop"
+                  />
+                </label>
+                <button type="submit" className="button"><Plus size={16} /> Tạo playlist</button>
+                {createFeedback ? <p className="music-library-feedback" aria-live="polite"><Check size={15} /> {createFeedback}</p> : null}
+              </form>
             </div>
 
             {playlists.length > 0 ? <div className="music-library-playlist-list">{playlists.map((playlist) => <article key={playlist.id} className={selectedPlaylist?.id === playlist.id ? 'music-library-playlist-row is-selected' : 'music-library-playlist-row'}><button type="button" className="music-library-playlist-select" onClick={() => setSelectedPlaylistId(playlist.id)}><img src={getPlaylistCover(playlist)} alt="" /><span><strong>{playlist.name}</strong><small>{playlist.items.length} bản nhạc · {playlist.favorites ?? 0} yêu thích</small></span></button><span className="music-library-playlist-listens">{playlist.listens.toLocaleString('vi-VN')} lượt nghe</span><button type="button" className="music-library-play" disabled={playlist.items.length === 0} onClick={() => playCollection(playlist.items, 0, playlist.items[0]?.sourceType ?? 'track')} aria-label={`Phát playlist ${playlist.name}`}><Play size={15} fill="currentColor" /></button></article>)}</div> : <EmptyLibrary message="Tạo playlist đầu tiên để bắt đầu lưu các track và nonstop bạn yêu thích." />}
