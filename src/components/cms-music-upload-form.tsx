@@ -22,7 +22,12 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
     setResult(null)
 
     try {
-      const response = await fetch('/api/cms/music/upload', { method: 'POST', body: new FormData(event.currentTarget) })
+      const response = await fetch('/api/cms/music/upload', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        body: new FormData(event.currentTarget),
+      })
       const payload = await response.json() as { ok?: boolean; message?: string; result?: UploadResult }
       if (!response.ok || !payload.ok || !payload.result) {
         setMessage(payload.message ?? 'Không thể xử lý file nhạc.')

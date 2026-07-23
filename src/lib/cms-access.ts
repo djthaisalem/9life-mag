@@ -18,9 +18,14 @@ export async function requireCmsApiAccess(scope: CmsScope): Promise<
     }
 > {
   const cookieStore = await cookies()
-  const session = await verifyCmsSessionToken(cookieStore.get(CMS_SESSION_COOKIE)?.value)
+  const token = cookieStore.get(CMS_SESSION_COOKIE)?.value
+  const session = await verifyCmsSessionToken(token)
 
   if (!session) {
+    console.warn('CMS API session rejected', {
+      reason: token ? 'invalid_or_expired' : 'missing_cookie',
+      scope,
+    })
     return {
       ok: false,
       response: NextResponse.json(

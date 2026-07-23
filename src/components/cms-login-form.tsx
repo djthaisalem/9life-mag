@@ -20,6 +20,7 @@ export function CmsLoginForm() {
     startTransition(async () => {
       const response = await fetch('/api/cms/session/login', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
