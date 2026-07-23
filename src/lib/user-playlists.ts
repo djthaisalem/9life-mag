@@ -161,3 +161,18 @@ export function findPlaylistByShareCode(playlists: UserPlaylist[], shareCode: st
   if (!shareCode) return null
   return playlists.find((playlist) => playlist.shareCode === shareCode) ?? null
 }
+
+export async function publishUserPlaylist(playlist: UserPlaylist) {
+  const response = await fetch('/api/user-playlists/share', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(playlist),
+  })
+
+  return (await response.json()) as {
+    ok: boolean
+    message: string
+    path?: string
+  }
+}

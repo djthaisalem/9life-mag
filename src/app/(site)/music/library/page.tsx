@@ -15,6 +15,7 @@ import {
   createUserPlaylist,
   deleteUserPlaylist,
   getUserPlaylists,
+  publishUserPlaylist,
   removeTrackFromPlaylist,
   updateUserPlaylist,
   type UserPlaylist,
@@ -184,11 +185,29 @@ export default function MusicLibraryPage() {
 
   const handleCopyShare = async () => {
     if (!selectedPlaylist || typeof window === 'undefined') return
+    setFeedback('Đang đồng bộ playlist để chia sẻ...')
+    const published = await publishUserPlaylist(selectedPlaylist)
+    if (!published.ok) {
+      setFeedback(published.message)
+      return
+    }
     const shareUrl = `${window.location.origin}${buildPlaylistSharePath(selectedPlaylist.shareCode)}`
     const copied = await copyText(shareUrl)
     setFeedback(copied
       ? 'Đã sao chép URL chia sẻ thân thiện cho playlist này.'
       : `Không thể tự sao chép. Link playlist: ${shareUrl}`)
+  }
+
+  const handleOpenSharePage = async () => {
+    if (!selectedPlaylist || typeof window === 'undefined') return
+    setFeedback('Đang đồng bộ playlist để mở trang chia sẻ...')
+    const published = await publishUserPlaylist(selectedPlaylist)
+    if (!published.ok) {
+      setFeedback(published.message)
+      return
+    }
+    window.open(buildPlaylistSharePath(selectedPlaylist.shareCode), '_blank', 'noopener,noreferrer')
+    setFeedback('Playlist đã được xuất bản. Bạn có thể chia sẻ link này trên mọi thiết bị.')
   }
 
   const playTrack = (track: AudioTrack, sourceType: AudioSourceType) => playCollection([track], 0, sourceType)
@@ -244,7 +263,7 @@ export default function MusicLibraryPage() {
 
             {selectedPlaylist ? <section className="music-library-editor">
               <div className="music-library-editor-head"><div><p className="eyebrow">Đang chỉnh sửa</p><h3>{selectedPlaylist.name}</h3></div><button type="button" className="music-library-delete" onClick={() => { deleteUserPlaylist(selectedPlaylist.id); setFeedback(`Đã xoá playlist “${selectedPlaylist.name}”.`); refreshPlaylists('') }}><Trash2 size={15} /> Xoá playlist</button></div>
-              <div className="music-library-share-box"><div><Link2 size={16} /><span>{buildPlaylistSharePath(selectedPlaylist.shareCode)}</span></div><button type="button" onClick={() => void handleCopyShare()}><Share2 size={15} /> Sao chép link</button><Link href={buildPlaylistSharePath(selectedPlaylist.shareCode)} target="_blank">Mở trang</Link></div>
+              <div className="music-library-share-box"><div><Link2 size={16} /><span>{buildPlaylistSharePath(selectedPlaylist.shareCode)}</span></div><button type="button" onClick={() => void handleCopyShare()}><Share2 size={15} /> Xuất bản & sao chép</button><button type="button" onClick={() => void handleOpenSharePage()}>Mở trang</button></div>
               <div className="music-library-editor-grid"><div><h4>Nhạc trong playlist</h4><div className="music-library-track-list">{selectedPlaylist.items.length ? selectedPlaylist.items.map((track, index) => <article key={track.id} className="music-library-track-row"><span className="music-library-track-number">{String(index + 1).padStart(2, '0')}</span><img src={track.cover ?? '/music-legacy/bg/14.jpg'} alt="" /><div className="music-library-track-copy"><strong>{track.title}</strong><span>{track.artist}</span></div><button type="button" className="music-library-remove-track" onClick={() => handleRemoveTrack(track)}><Trash2 size={14} /> Xoá</button></article>) : <p className="music-library-empty-copy">Playlist chưa có nhạc. Chọn từ catalog bên cạnh hoặc dùng nút + Playlist tại bất kỳ track nào trên site.</p>}</div></div><div><h4>Thêm từ Music catalog</h4><div className="music-library-catalog-controls"><div className="music-library-catalog-tabs" role="tablist" aria-label="Lọc Music catalog">{(['all', 'nonstop', 'remix'] as const).map((filter) => <button key={filter} type="button" className={catalogFilter === filter ? 'is-active' : ''} onClick={() => { setCatalogFilter(filter); setCatalogVisibleCount(catalogPageSize) }}>{filter === 'all' ? 'Tất cả' : filter === 'nonstop' ? 'Nonstop' : 'Remix'}</button>)}</div><label className="music-library-catalog-search"><Search size={15} /><input value={catalogQuery} onChange={(event) => { setCatalogQuery(event.target.value); setCatalogVisibleCount(catalogPageSize) }} placeholder="Tìm theo tên bài nhạc" /></label></div><div className="music-library-catalog-list">{visibleCatalogTracks.map((track) => <article key={track.id}><img src={track.cover ?? '/music-legacy/bg/14.jpg'} alt="" /><div><strong>{track.title}</strong><span>{track.artist}</span></div><button type="button" onClick={() => handleAddTrack(track)} aria-label={`Thêm ${track.title}`}><Plus size={15} /></button></article>)}</div>{visibleCatalogTracks.length === 0 ? <p className="music-library-catalog-empty">Không tìm thấy bài nhạc phù hợp.</p> : null}{visibleCatalogTracks.length < filteredCatalogTracks.length ? <button type="button" className="music-library-catalog-more" onClick={() => setCatalogVisibleCount((count) => count + catalogPageSize)}>Xem thêm</button> : null}</div></div>
             </section> : null}
             {feedback ? <p className="music-library-feedback"><Check size={15} /> {feedback}</p> : null}

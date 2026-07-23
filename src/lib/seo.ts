@@ -10,7 +10,7 @@ function absoluteUrl(value: string) {
 
 export function createShareMetadata(input: { title: string; description: string; path: string; image?: string; type?: 'website' | 'article' }): Metadata {
   const url = absoluteUrl(input.path)
-  const image = input.image?.trim() || defaultImage
+  const image = absoluteUrl(input.image?.trim() || defaultImage)
   return {
     title: input.title,
     description: input.description,

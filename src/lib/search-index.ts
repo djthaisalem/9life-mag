@@ -49,7 +49,7 @@ export const searchIndex: SearchItem[] = [
     title: track.title,
     description: `${track.artist} · ${track.duration}`,
     image: track.cover ?? '/music-legacy/bg/14.jpg',
-    href: `/music?track=${encodeURIComponent(track.id)}`,
+    href: `/music/track/${encodeURIComponent(track.id)}`,
     label: 'Music',
   })),
 ]

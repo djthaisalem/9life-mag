@@ -10,6 +10,7 @@ import {
   createUserPlaylist,
   findPlaylistByShareCode,
   getUserPlaylists,
+  publishUserPlaylist,
   removeTrackFromPlaylist,
   saveUserPlaylists,
   type UserPlaylist,
@@ -23,6 +24,7 @@ import {
   type StoredUserProfile,
   type UserAccessState,
 } from '@/lib/client-user-access'
+import { copyText } from '@/lib/client-share'
 import { createReferralShareUrl, getReferralSummary, type ReferralSummary } from '@/lib/client-referrals'
 import { paymentProviders, starPackages, type PaymentProviderId, type StarTopupRequest } from '@/lib/star-payment-shared'
 
@@ -183,15 +185,18 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
 
   const handleCopyShare = async (playlist: UserPlaylist) => {
     if (typeof window === 'undefined') return
-    const shareUrl = `${window.location.origin}${buildPlaylistSharePath(playlist.shareCode)}`
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(shareUrl)
-      setShareMessage(`Đã copy link chia sẻ cho "${playlist.name}".`)
+    setShareMessage('Đang đồng bộ playlist để chia sẻ...')
+    const published = await publishUserPlaylist(playlist)
+    if (!published.ok) {
+      setShareMessage(published.message)
       return
     }
+    const shareUrl = `${window.location.origin}${buildPlaylistSharePath(playlist.shareCode)}`
 
-    setShareMessage(shareUrl)
+    const copied = await copyText(shareUrl)
+    setShareMessage(copied
+      ? `Đã copy link chia sẻ cho "${playlist.name}".`
+      : `Không thể tự sao chép. Link playlist: ${shareUrl}`)
   }
 
   const handleReferralShare = async () => {

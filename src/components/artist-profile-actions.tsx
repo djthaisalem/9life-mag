@@ -5,6 +5,7 @@ import { Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
+import { copyText } from '@/lib/client-share'
 
 const artistVoteSeed: Record<string, number> = {
   'neon-viper': 12847,
@@ -103,18 +104,14 @@ export function ArtistProfileActions({
           url: shareUrl,
         })
         return
-      } catch {
-        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
       }
     }
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(shareUrl)
-      window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link chia sẻ profile nghệ sĩ.')
-      return
-    }
-
-    window.prompt('Copy link profile nghệ sĩ', shareUrl)
+    const copied = await copyText(shareUrl)
+    if (!copied) window.prompt('Copy link profile nghệ sĩ', shareUrl)
+    window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link chia sẻ profile nghệ sĩ.')
   }
 
   return (

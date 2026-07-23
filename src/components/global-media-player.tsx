@@ -21,6 +21,7 @@ import {
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { accessTrackWithStars, fetchUserAccessState, loginDemoUser } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
+import { copyText } from '@/lib/client-share'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import {
   addTrackToPlaylist,
@@ -514,15 +515,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     setShowLoginModal(true)
   }
 
-  const buildTrackShareUrl = (track: AudioTrack, sourceType: AudioSourceType) => {
-    if (typeof window === 'undefined') return `/music?track=${encodeURIComponent(track.id)}`
-
-    const url = new URL('/music', window.location.origin)
-    url.searchParams.set('track', track.id)
-    url.searchParams.set('source', sourceType)
-    return url.toString()
-  }
-
   const buildCopyrightReportHref = (track: AudioTrack, sourceType: AudioSourceType) => {
     const params = new URLSearchParams({
       track: track.title,
@@ -535,8 +527,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   }
 
   const shareTrack = async (track: AudioTrack, sourceType: AudioSourceType) => {
-    const fallbackUrl = buildTrackShareUrl(track, sourceType)
-    const referral = await createReferralShareUrl(`/music?track=${encodeURIComponent(track.id)}&source=${sourceType}`)
+    const sharePath = `/music/track/${encodeURIComponent(track.id)}`
+    const fallbackUrl = typeof window === 'undefined' ? sharePath : `${window.location.origin}${sharePath}`
+    const referral = await createReferralShareUrl(sharePath)
     const shareUrl = referral.url ?? fallbackUrl
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -547,18 +540,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           url: shareUrl,
         })
         return
-      } catch {
-        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
       }
     }
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(shareUrl)
-      window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link chia sẻ track.')
-      return
-    }
-
-    window.prompt('Copy link chia sẻ track', shareUrl)
+    const copied = await copyText(shareUrl)
+    if (!copied) window.prompt('Copy link chia sẻ track', shareUrl)
+    window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link chia sẻ track.')
   }
 
   const openReportModal = (track: AudioTrack, sourceType: AudioSourceType) => {

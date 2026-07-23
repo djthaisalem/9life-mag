@@ -34,7 +34,7 @@ function SearchPageContent() {
         title: track.title,
         description: `${track.artist} · ${track.genre} · ${track.duration}${track.musicCode ? ` · Mã ${track.musicCode}` : ''}`,
         image: '/images/default-music-cover.png',
-        href: `/music?track=${encodeURIComponent(track.id)}#listen-now`,
+        href: `/music/track/${encodeURIComponent(track.id)}`,
         label: `Music · ${track.type === 'track' ? 'Track' : track.type}`,
       })))
     }).catch(() => setDatabaseMusicItems([]))

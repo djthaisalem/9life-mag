@@ -1,46 +1,44 @@
-'use client'
+import type { Metadata } from 'next'
 
-import Link from 'next/link'
-import { LibraryBig, Play, Share2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { SharedPlaylistClient } from '@/components/shared-playlist-client'
+import { createShareMetadata } from '@/lib/seo'
+import { getSharedUserPlaylist } from '@/lib/shared-user-playlists'
 
-import { useMediaPlayer } from '@/components/global-media-player'
-import { copyText } from '@/lib/client-share'
-import { findPlaylistByShareCode, getUserPlaylists, type UserPlaylist } from '@/lib/user-playlists'
+type SharedPlaylistPageProps = {
+  params: Promise<{ shareCode: string }>
+}
 
-export default function SharedPlaylistPage({ params }: { params: Promise<{ shareCode: string }> }) {
-  const { playCollection } = useMediaPlayer()
-  const [playlist, setPlaylist] = useState<UserPlaylist | null>(null)
-  const [shareCode, setShareCode] = useState('')
-  const [shareMessage, setShareMessage] = useState('')
+function getShareImage(value?: string) {
+  return value && (/^\/(?!\/)/.test(value) || /^https:\/\//i.test(value))
+    ? value
+    : '/images/default-music-cover.png'
+}
 
-  useEffect(() => {
-    void params.then(({ shareCode: nextShareCode }) => {
-      setShareCode(nextShareCode)
-      setPlaylist(findPlaylistByShareCode(getUserPlaylists(), nextShareCode))
-    })
-  }, [params])
-
-  if (!shareCode) return null
-
+export async function generateMetadata({ params }: SharedPlaylistPageProps): Promise<Metadata> {
+  const { shareCode } = await params
+  const playlist = await getSharedUserPlaylist(shareCode)
   if (!playlist) {
-    return <main className="music-library-page"><section className="music-library-shared-empty"><LibraryBig size={30} /><h1>Playlist chưa khả dụng</h1><p>Liên kết này cần được mở từ thiết bị hoặc tài khoản đã tạo playlist.</p><Link href="/music/library" className="button">Mở thư viện của bạn</Link></section></main>
+    return createShareMetadata({
+      title: 'Playlist cộng đồng | 9LIFE Music',
+      description: 'Khám phá playlist do cộng đồng 9LIFE Music tuyển chọn và chia sẻ.',
+      path: `/music/library/${shareCode}`,
+      image: '/images/default-music-cover.png',
+    })
   }
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: playlist.name, url: window.location.href })
-        setShareMessage('Đã mở bảng chia sẻ playlist.')
-        return
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return
-      }
-    }
+  const description = playlist.note || `Nghe ${playlist.items.length} bản nhạc trong playlist ${playlist.name} trên 9LIFE Music.`
+  const image = getShareImage(playlist.cover || playlist.items.find((item) => item.cover)?.cover)
 
-    const copied = await copyText(window.location.href)
-    setShareMessage(copied ? 'Đã sao chép link playlist.' : `Link playlist: ${window.location.href}`)
-  }
+  return createShareMetadata({
+    title: `${playlist.name} | 9LIFE Music`,
+    description,
+    path: `/music/library/${shareCode}`,
+    image,
+  })
+}
 
-  return <main className="music-library-page"><section className="music-library-shared-page"><img src={playlist.cover ?? playlist.items[0]?.cover ?? '/images/default-music-cover.png'} alt="" /><div><p className="eyebrow">9Life Community Playlist</p><h1>{playlist.name}</h1><p>{playlist.items.length} bản nhạc · {playlist.listens.toLocaleString('vi-VN')} lượt nghe · {playlist.favorites ?? 0} yêu thích</p><div className="music-library-hero-actions"><button type="button" className="button" disabled={!playlist.items.length} onClick={() => playCollection(playlist.items, 0, playlist.items[0]?.sourceType ?? 'track')}><Play size={16} fill="currentColor" /> Nghe playlist</button><button type="button" className="button-secondary" onClick={() => void handleShare()}><Share2 size={16} /> Chia sẻ</button></div>{shareMessage ? <p className="muted">{shareMessage}</p> : null}</div></section></main>
+export default async function SharedPlaylistPage({ params }: SharedPlaylistPageProps) {
+  const { shareCode } = await params
+  const playlist = await getSharedUserPlaylist(shareCode)
+  return <SharedPlaylistClient initialPlaylist={playlist} shareCode={shareCode} />
 }

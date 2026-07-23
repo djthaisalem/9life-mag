@@ -77,6 +77,30 @@ export const Playlists: CollectionConfig = {
       name: 'shareCode',
       type: 'text'
     },
+    {
+      name: 'ownerSiteUserId',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'ID tài khoản sở hữu playlist user đã publish.'
+      }
+    },
+    {
+      name: 'isUserPlaylist',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        readOnly: true
+      }
+    },
+    {
+      name: 'userSnapshot',
+      type: 'json',
+      admin: {
+        readOnly: true,
+        description: 'Snapshot an toàn dùng để phát và tạo metadata cho link chia sẻ.'
+      }
+    },
     ...publishFields,
     ...seoFields
   ]

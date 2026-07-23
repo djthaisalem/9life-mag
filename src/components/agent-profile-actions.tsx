@@ -4,6 +4,7 @@ import { Heart, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetchUserAccessState, toggleFollowedAgent } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
+import { copyText } from '@/lib/client-share'
 
 type AgentProfileActionsProps = {
   agentName: string
@@ -45,18 +46,14 @@ export function AgentProfileActions({ agentName, agentSlug }: AgentProfileAction
           url: shareUrl,
         })
         return
-      } catch {
-        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
       }
     }
 
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(shareUrl)
-      window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link profile Agent để chia sẻ.')
-      return
-    }
-
-    window.prompt('Copy link profile Agent', shareUrl)
+    const copied = await copyText(shareUrl)
+    if (!copied) window.prompt('Copy link profile Agent', shareUrl)
+    window.alert(referral.ok ? 'Đã copy link chia sẻ. Sao sẽ được cộng khi có lượt truy cập hợp lệ.' : 'Đã copy link profile Agent để chia sẻ.')
   }
 
   return <div className="agent-profile-actions">
