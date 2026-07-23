@@ -77,7 +77,7 @@ function getFairGenreTracks(tab: GenreTab, nonstopTracks: readonly AudioTrack[],
 }
 
 export default function MusicPage() {
-  const { playCollection, openPlaylistModal } = useMediaPlayer()
+  const { activeTrack, playCollection, openPlaylistModal } = useMediaPlayer()
   const [activeHeroSlide, setActiveHeroSlide] = useState(0)
   const [artistSpotlights, setArtistSpotlights] = useState<ArtistSpotlight[]>([])
   const [activeGenreTab, setActiveGenreTab] = useState<GenreTab>('all')
@@ -144,6 +144,10 @@ export default function MusicPage() {
     if (!publishedCatalog.length || typeof window === 'undefined') return
     const trackId = new URLSearchParams(window.location.search).get('track')?.trim()
     if (!trackId || openedTrackIdRef.current === trackId) return
+    if (activeTrack?.id === trackId) {
+      openedTrackIdRef.current = trackId
+      return
+    }
     const catalogItem = publishedCatalog.find((track) => track.id === trackId)
     if (!catalogItem) return
 
@@ -153,7 +157,7 @@ export default function MusicPage() {
     window.setTimeout(() => {
       document.querySelector('.global-media-player-shell')?.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }, 250)
-  }, [publishedCatalog, playCollection])
+  }, [activeTrack?.id, publishedCatalog, playCollection])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {

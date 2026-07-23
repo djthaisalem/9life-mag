@@ -261,11 +261,19 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     audio.load()
     setProgress(0)
     setDuration(0)
+  }, [activeIndex, activeTrack?.audioUrl, activeTrack?.id])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !activeTrack?.audioUrl) return
 
     if (isPlaying) {
-      void audio.play()
+      void audio.play().catch(() => setIsPlaying(false))
+      return
     }
-  }, [activeIndex, activeTrack, isPlaying])
+
+    audio.pause()
+  }, [activeTrack?.audioUrl, activeTrack?.id, isPlaying])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -329,7 +337,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
     if (!targetTrack) return
 
-    if (targetTrack.protectedMedia) {
+    if (targetTrack.protectedMedia && !targetTrack.audioUrl) {
       const protectedResult = await requestProtectedMedia(targetTrack, 'preview')
       if (!protectedResult.ok || !protectedResult.url) {
         if (protectedResult.status === 401) {
