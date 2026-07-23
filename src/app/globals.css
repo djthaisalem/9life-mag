@@ -3121,6 +3121,51 @@ button.artist-dashboard-module-card {
   white-space: nowrap;
 }
 
+.home-featured-artist-card .artist-profile-media {
+  aspect-ratio: 1 / 1.04;
+}
+
+.home-featured-artist-card .artist-profile-body {
+  gap: 12px;
+  padding: 16px;
+}
+
+.home-featured-artist-card .artist-profile-head {
+  min-width: 0;
+  gap: 10px;
+}
+
+.home-featured-artist-card .artist-profile-head > div {
+  min-width: 0;
+}
+
+.home-featured-artist-card .artist-profile-head h3 {
+  margin: 0 0 6px;
+  overflow: hidden;
+  font-size: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-featured-artist-card .artist-profile-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.home-featured-artist-card .artist-profile-actions .mini-button {
+  min-width: 0;
+  justify-content: center;
+  padding-inline: 7px;
+  overflow: hidden;
+}
+
+.home-featured-artist-card .artist-profile-actions .mini-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .artist-directory-vote-button {
   border-color: rgba(255, 214, 102, 0.32);
   background: rgba(255, 214, 102, 0.1);
@@ -11469,6 +11514,11 @@ body:has(.global-media-player-shell) .dashboard-support-assistant {
     content: '\2665';
     margin-right: 3px;
     color: #ff8ab3;
+  }
+
+  .home-featured-artist-card .artist-profile-followers::before {
+    content: '\2605';
+    color: #ffd666;
   }
 }
 

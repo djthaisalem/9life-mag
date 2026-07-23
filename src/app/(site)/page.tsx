@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Eye, Gem, Medal, Trophy } from 'lucide-react'
+import { CalendarCheck2, Eye, Gem, Medal, Star, Trophy } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { clubOutlets } from '@/lib/club-booking-data'
@@ -915,35 +915,60 @@ export default function HomePage() {
 
           <div className="home-grid home-grid-4">
             {visibleArtists.map((artist) => (
-              <article key={artist.id} className="glass-card-9life artist-card-9life">
-                <div className="artist-avatar-wrap">
-                  <Link href={`/nghe-si/${artist.slug}`} className="artist-avatar-link" aria-label={`Xem hồ sơ ${artist.name}`}>
-                    <img src={artist.image} alt={artist.name} className="artist-avatar" />
+              <article key={artist.id} className="artist-profile-card home-featured-artist-card">
+                <div className="artist-profile-media">
+                  <Link
+                    href={`/nghe-si/${artist.slug}`}
+                    className="artist-profile-image-link"
+                    aria-label={`Xem hồ sơ ${artist.name}`}
+                  >
+                    <img src={artist.image} alt={artist.name} />
                   </Link>
-                  <Link href={`/nghe-si/${artist.slug}`} className="artist-profile-icon" aria-label={`Xem hồ sơ ${artist.name}`}>
-                    <Eye size={16} />
-                  </Link>
-                </div>
-                <div className="tag-row">
-                  <span className="pill">{artist.roleLabel}</span>
-                  <span className="pill">{artist.location}</span>
-                </div>
-                <h3><Link href={`/nghe-si/${artist.slug}`}>{artist.name}</Link></h3>
-                <p className="muted">{artist.genre}</p>
-                <div className="artist-footer">
-                  <div>
-                    <strong>{artistVotes[artist.id].toLocaleString('en-US')}</strong>
-                    <span className="muted"> votes</span>
+                  <div className="artist-profile-gradient" />
+                  <div className="artist-profile-tags">
+                    <span className="pill">{artist.roleLabel}</span>
+                    <span className="pill">{artist.location}</span>
                   </div>
-                  <div className="artist-actions">
+                </div>
+
+                <div className="artist-profile-body">
+                  <div className="artist-profile-head">
+                    <div>
+                      <h3>
+                        <Link href={`/nghe-si/${artist.slug}`}>{artist.name}</Link>
+                      </h3>
+                      <span className="artist-profile-role">{artist.roleLabel}</span>
+                      <p>{artist.genre}</p>
+                    </div>
+                    <span className="artist-profile-followers">
+                      {artistVotes[artist.id].toLocaleString('en-US')} vote
+                    </span>
+                  </div>
+
+                  <div className="artist-profile-actions">
+                    <Link href={`/nghe-si/${artist.slug}`} className="mini-button">
+                      <Eye size={15} />
+                      <span>Profile</span>
+                    </Link>
+                    <Link href={`/booking?artist=${artist.slug}`} className="mini-button mini-button-alt">
+                      <CalendarCheck2 size={15} />
+                      <span>Booking</span>
+                    </Link>
                     <button
                       type="button"
-                      className={votedTargets.includes(getVoteKey({ kind: 'artist', id: artist.id })) ? 'mini-button mini-button-liked' : 'mini-button'}
+                      className={
+                        votedTargets.includes(getVoteKey({ kind: 'artist', id: artist.id }))
+                          ? 'mini-button artist-directory-vote-button artist-directory-vote-button-active'
+                          : 'mini-button artist-directory-vote-button'
+                      }
                       onClick={() => performVote({ kind: 'artist', id: artist.id })}
                     >
-                      Vote
+                      <Star
+                        size={15}
+                        fill={votedTargets.includes(getVoteKey({ kind: 'artist', id: artist.id })) ? 'currentColor' : 'none'}
+                      />
+                      <span>Vote</span>
                     </button>
-                    <Link href="/booking" className="mini-button mini-button-alt">Book</Link>
                   </div>
                 </div>
               </article>
