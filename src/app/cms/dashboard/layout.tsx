@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { CmsCapabilityProvider } from '@/components/cms-capability-provider'
+import { CmsSessionKeeper } from '@/components/cms-session-keeper'
 import { createCmsCapabilityToken } from '@/lib/cms-capability'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { getCmsDashboardScope, hasCmsScope } from '@/lib/cms-role-policy'
@@ -30,6 +31,7 @@ export default async function CmsDashboardLayout({ children }: Readonly<{ childr
 
   return (
     <CmsCapabilityProvider musicCapability={musicCapability}>
+      <CmsSessionKeeper />
       {children}
     </CmsCapabilityProvider>
   )

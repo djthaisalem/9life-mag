@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { hasTrustedCmsRequestOrigin, requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
+import { CMS_SESSION_COOKIE, createCmsSessionToken, getCmsSessionCookieOptions } from '@/lib/cms-session'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 const updateMusicSchema = z.object({
@@ -20,7 +21,10 @@ const updateMusicSchema = z.object({
 
 async function requireMusicAccess(request: Request) {
   if (!await hasTrustedCmsRequestOrigin()) {
-    return NextResponse.json({ ok: false, message: 'Origin không hợp lệ cho thao tác nhạy cảm.' }, { status: 403 })
+    return {
+      ok: false as const,
+      response: NextResponse.json({ ok: false, message: 'Origin không hợp lệ cho thao tác nhạy cảm.' }, { status: 403 }),
+    }
   }
 
   const authorization = request.headers.get('authorization')
@@ -28,15 +32,17 @@ async function requireMusicAccess(request: Request) {
     authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
     'music',
   )
-  if (capability) return null
+  if (capability) return { ok: true as const, principal: capability }
 
   const access = await requireCmsApiAccess('music')
-  return access.ok ? null : access.response
+  return access.ok
+    ? { ok: true as const, principal: access.session }
+    : { ok: false as const, response: access.response }
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string }> }) {
-  const denied = await requireMusicAccess(request)
-  if (denied) return denied
+  const access = await requireMusicAccess(request)
+  if (!access.ok) return access.response
 
   try {
     const { slug } = await context.params
@@ -80,11 +86,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
       },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       message: input.visibility === 'draft' ? 'Đã lưu track vào bản nháp.' : 'Đã lưu thay đổi track.',
       track: { id: updated.id, slug: updated.slug, updatedAt: updated.updatedAt },
     })
+    response.cookies.set(
+      CMS_SESSION_COOKIE,
+      await createCmsSessionToken({ email: access.principal.email, role: access.principal.role }),
+      getCmsSessionCookieOptions(),
+    )
+    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: 'Thông tin chỉnh sửa chưa hợp lệ. Vui lòng kiểm tra lại các trường.' }, { status: 400 })

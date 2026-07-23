@@ -1,4 +1,4 @@
-import { cookies, headers } from 'next/headers'
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
@@ -53,10 +53,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const cookieStore = await cookies()
-    cookieStore.set(SITE_SESSION_COOKIE, result.token, getSiteSessionCookieOptions())
-
-    return json({
+    const response = json({
       ok: true,
       state: {
         isAuthenticated: true,
@@ -71,6 +68,8 @@ export async function POST(request: Request) {
       portalRole: result.account.portalRole,
       portalAccessStatus: result.account.portalAccessStatus,
     })
+    response.cookies.set(SITE_SESSION_COOKIE, result.token, getSiteSessionCookieOptions())
+    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return json(

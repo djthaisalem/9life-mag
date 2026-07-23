@@ -93,10 +93,11 @@ export async function verifyCmsSessionToken(token?: string | null) {
 export function getCmsSessionCookieOptions() {
   return {
     httpOnly: true,
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: CMS_SESSION_TTL_SECONDS,
+    priority: 'high' as const,
   }
 }
 

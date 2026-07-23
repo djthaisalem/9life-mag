@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useCmsMusicCapability } from '@/components/cms-capability-provider'
 
 type Option = { value: string; label: string }
@@ -40,7 +39,6 @@ export function CmsMusicEditForm({
   accessOptions: readonly Option[]
   visibilityOptions: readonly Option[]
 }) {
-  const router = useRouter()
   const musicCapability = useCmsMusicCapability()
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -89,7 +87,6 @@ export function CmsMusicEditForm({
       }
 
       setMessage(result.message ?? 'Đã lưu thay đổi.')
-      router.refresh()
     } catch {
       setIsError(true)
       setMessage('Không kết nối được đến tiến trình lưu track.')

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { hasTrustedCmsRequestOrigin, requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
+import { CMS_SESSION_COOKIE, createCmsSessionToken, getCmsSessionCookieOptions } from '@/lib/cms-session'
 import { processMusicUpload } from '@/lib/music-upload-pipeline'
 
 export const runtime = 'nodejs'
@@ -24,9 +25,11 @@ export async function POST(request: Request) {
     'music',
   )
 
-  if (!capability) {
+  let principal: { email: string; role: string } | null = capability
+  if (!principal) {
     const access = await requireCmsApiAccess('music')
     if (!access.ok) return access.response
+    principal = access.session
   }
 
   const maxBytes = Math.max(1, Number(process.env.MUSIC_MAX_UPLOAD_MB ?? 1024)) * 1024 * 1024
@@ -59,7 +62,13 @@ export async function POST(request: Request) {
       audio,
     })
 
-    return NextResponse.json({ ok: true, result: { ...result, visibility } })
+    const response = NextResponse.json({ ok: true, result: { ...result, visibility } })
+    response.cookies.set(
+      CMS_SESSION_COOKIE,
+      await createCmsSessionToken({ email: principal.email, role: principal.role }),
+      getCmsSessionCookieOptions(),
+    )
+    return response
   } catch (error) {
     const code = error instanceof Error ? error.message.split(':')[0] : ''
     const ffmpegUnavailable = code === 'ffmpeg_unavailable' || code === 'ffprobe_unavailable' || code === 'ffmpeg_failed' || code === 'ffprobe_failed'

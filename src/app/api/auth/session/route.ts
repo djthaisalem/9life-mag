@@ -2,15 +2,18 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import {
   getSiteSessionCookieOptions,
+  createSiteSessionToken,
+  getAuthenticatedSiteSession,
   getSiteSessionSnapshot,
   SITE_SESSION_COOKIE,
 } from '@/lib/site-user-session'
 
 export async function GET() {
   const cookieStore = await cookies()
-  const snapshot = await getSiteSessionSnapshot(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+  const token = cookieStore.get(SITE_SESSION_COOKIE)?.value
+  const snapshot = await getSiteSessionSnapshot(token)
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       ...snapshot,
     },
@@ -20,6 +23,15 @@ export async function GET() {
       },
     }
   )
+  const authenticated = await getAuthenticatedSiteSession(token)
+  if (authenticated) {
+    const refreshedToken = await createSiteSessionToken({
+      userId: authenticated.session.userId,
+      accountType: authenticated.account.accountType,
+    })
+    response.cookies.set(SITE_SESSION_COOKIE, refreshedToken, getSiteSessionCookieOptions())
+  }
+  return response
 }
 
 export async function DELETE() {

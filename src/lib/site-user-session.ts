@@ -751,10 +751,11 @@ export function getSiteSessionCookieOptions() {
 
   return {
     httpOnly: true,
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
     secure: process.env.NODE_ENV === 'production' && !allowInsecureHttpDemo,
     path: '/',
     maxAge: SITE_SESSION_TTL_SECONDS,
+    priority: 'high' as const,
   }
 }
 
