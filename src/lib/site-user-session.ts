@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { randomUUID, scryptSync, timingSafeEqual } from 'crypto'
+import { createHash, randomUUID, scryptSync, timingSafeEqual } from 'crypto'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { env } from '@/lib/env'
@@ -102,8 +102,8 @@ type AccessResult = {
 }
 
 type RegisterSiteAccountInput = {
-  fullName: string
-  email: string
+  fullName?: string
+  email?: string
   password: string
   phone?: string
   accountType?: SiteAccountType
@@ -144,7 +144,23 @@ function normalizePortalAccessStatus(value: unknown, portalRole: ArtistPortalRol
 }
 
 function normalizePhone(phone: string) {
-  return phone.replace(/\s+/g, '')
+  return phone.replace(/[^\d+]/g, '')
+}
+
+function createPhoneAccountEmail(phone: string) {
+  const digest = createHash('sha256').update(phone).digest('hex').slice(0, 32)
+  return `phone.${digest}@accounts.9lifemag.invalid`
+}
+
+function isPhoneAccountEmail(email: string) {
+  return email.endsWith('@accounts.9lifemag.invalid')
+}
+
+function getRegistrationName(input: RegisterSiteAccountInput, email: string, phone: string) {
+  const suppliedName = input.fullName?.trim()
+  if (suppliedName) return suppliedName
+  if (email && !isPhoneAccountEmail(email)) return email.split('@')[0] || 'Thành viên 9LIFE'
+  return phone ? `Thành viên ${phone.slice(-4)}` : 'Thành viên 9LIFE'
 }
 
 function normalizeLookupIdentity(identity: string) {
@@ -405,8 +421,18 @@ function normalizePayloadUser(doc: Record<string, unknown> | null | undefined): 
       doc.socialProvider === 'google' || doc.socialProvider === 'facebook'
         ? doc.socialProvider
         : 'local',
-    identity: typeof doc.email === 'string' && doc.email ? doc.email : typeof doc.phone === 'string' ? doc.phone : String(doc.id),
-    email: typeof doc.email === 'string' ? doc.email : undefined,
+    identity:
+      typeof doc.phone === 'string' && typeof doc.email === 'string' && isPhoneAccountEmail(doc.email)
+        ? doc.phone
+        : typeof doc.email === 'string' && doc.email
+          ? doc.email
+          : typeof doc.phone === 'string'
+            ? doc.phone
+            : String(doc.id),
+    email:
+      typeof doc.email === 'string' && !isPhoneAccountEmail(doc.email)
+        ? doc.email
+        : undefined,
     phone: typeof doc.phone === 'string' ? doc.phone : undefined,
     fullName: typeof doc.fullName === 'string' && doc.fullName ? doc.fullName : '9LIFE Member',
     avatarUrl: undefined,
@@ -580,14 +606,17 @@ function mapFollowedArtistsToPayload(slugs: string[]) {
 async function registerPayloadAccount(input: RegisterSiteAccountInput): Promise<RegisterSiteAccountResult> {
   await ensurePayloadSeedUsers()
   const payload = await loadPayloadClient()
-  const email = normalizeIdentity(input.email)
+  const providedEmail = normalizeIdentity(input.email ?? '')
+  const phone = normalizePhone(input.phone ?? '')
+  const email = providedEmail || createPhoneAccountEmail(phone)
 
   const existing = await payload.find({
     collection: 'users',
     where: {
-      email: {
-        equals: email,
-      },
+      or: [
+        { email: { equals: email } },
+        ...(phone ? [{ phone: { equals: phone } }] : []),
+      ],
     },
     limit: 1,
     depth: 0,
@@ -606,8 +635,8 @@ async function registerPayloadAccount(input: RegisterSiteAccountInput): Promise<
     data: {
       email,
       password: input.password,
-      fullName: input.fullName.trim(),
-      phone: input.phone ? normalizePhone(input.phone) : undefined,
+      fullName: getRegistrationName(input, email, phone),
+      phone: phone || undefined,
       accountType: input.accountType ?? 'user',
       role: 'customer',
       portalRole: normalizePortalRole(input.portalRole),
@@ -653,9 +682,15 @@ async function registerPayloadAccount(input: RegisterSiteAccountInput): Promise<
 }
 
 async function registerFileAccount(input: RegisterSiteAccountInput): Promise<RegisterSiteAccountResult> {
-  const email = normalizeIdentity(input.email)
+  const providedEmail = normalizeIdentity(input.email ?? '')
+  const phone = normalizePhone(input.phone ?? '')
+  const email = providedEmail || createPhoneAccountEmail(phone)
   const store = await readFileStore()
-  const exists = store.accounts.some((account) => normalizeIdentity(account.email ?? '') === email)
+  const exists = store.accounts.some(
+    (account) =>
+      normalizeIdentity(account.email ?? '') === email ||
+      Boolean(phone && normalizePhone(account.phone ?? '') === phone)
+  )
 
   if (exists) {
     return {
@@ -673,10 +708,10 @@ async function registerFileAccount(input: RegisterSiteAccountInput): Promise<Reg
       ? normalizePortalAccessStatus(undefined, normalizePortalRole(input.portalRole))
       : 'approved',
     provider: 'local',
-    identity: email,
-    email,
-    phone: input.phone ? normalizePhone(input.phone) : undefined,
-    fullName: input.fullName.trim(),
+    identity: providedEmail || phone,
+    email: providedEmail || undefined,
+    phone: phone || undefined,
+    fullName: getRegistrationName(input, email, phone),
     passwordHash: hashPassword(input.password),
     stars: input.accountType === 'artist' ? 0 : SIGNUP_STARS,
     followedArtists: [],
@@ -760,7 +795,13 @@ export function getSiteSessionCookieOptions() {
 }
 
 export async function registerSiteAccount(input: RegisterSiteAccountInput) {
-  if (!input.fullName.trim() || !input.email.trim() || !input.password.trim()) {
+  const email = input.email?.trim() ?? ''
+  const phone = normalizePhone(input.phone ?? '')
+  const accountType = input.accountType ?? 'user'
+  const missingUserIdentity = accountType === 'user' && !email && !phone
+  const invalidArtistIdentity = accountType === 'artist' && (!input.fullName?.trim() || !email)
+
+  if (missingUserIdentity || invalidArtistIdentity || !input.password.trim()) {
     return {
       ok: false,
       reason: 'invalid_input',

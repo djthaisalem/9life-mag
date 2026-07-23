@@ -18,12 +18,7 @@ export function SiteUserRegisterForm() {
     setMessage('')
 
     startTransition(async () => {
-      const result = await registerUserAccount({
-        fullName,
-        email,
-        phone,
-        password,
-      })
+      const result = await registerUserAccount({ fullName, email, phone, password })
 
       if (!result.ok) {
         setMessage(result.message ?? 'Không thể tạo tài khoản lúc này.')
@@ -38,7 +33,7 @@ export function SiteUserRegisterForm() {
   return (
     <form className="form-shell account-login-form" onSubmit={handleSubmit}>
       <div className="field">
-        <label htmlFor="registerFullName">Tên hiển thị</label>
+        <label htmlFor="registerFullName">Tên hiển thị (không bắt buộc)</label>
         <input
           id="registerFullName"
           value={fullName}
@@ -73,6 +68,7 @@ export function SiteUserRegisterForm() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="Ít nhất 8 ký tự"
+          required
         />
       </div>
 
@@ -83,6 +79,9 @@ export function SiteUserRegisterForm() {
       </div>
 
       {message ? <p className="muted" style={{ color: '#ffd0d0' }}>{message}</p> : null}
+      <p className="muted">
+        Chỉ cần email hoặc số điện thoại chưa được đăng ký. Tài khoản user được duyệt ngay sau khi tạo.
+      </p>
     </form>
   )
 }

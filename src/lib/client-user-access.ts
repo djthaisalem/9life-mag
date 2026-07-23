@@ -89,8 +89,8 @@ export async function loginDemoUser(identity: string, password: string) {
 }
 
 export async function registerUserAccount(input: {
-  fullName: string
-  email: string
+  fullName?: string
+  email?: string
   password: string
   phone?: string
 }) {
