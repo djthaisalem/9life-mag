@@ -11,6 +11,7 @@ import { artistProfiles } from '@/lib/artist-directory-data'
 import type { AudioTrack } from '@/lib/audio-types'
 import { curateMusicCatalog } from '@/lib/music-curation'
 import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
+import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 
 type NewsCategory = 'all' | 'events' | 'music' | 'nightlife' | 'interview' | 'review' | 'tech'
@@ -611,8 +612,19 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    setHomeNonstopTracks(curateMusicCatalog(homeNonstopCatalog, 'nine-life-home-nonstop-rotation-v1'))
-    setHomeRemixTracks(curateMusicCatalog(homeRemixCatalog, 'nine-life-home-remix-rotation-v1'))
+    void fetchPublicMusicCatalog().then((tracks) => {
+      const mappedNonstop = tracks
+        .filter((track) => track.displayMap.includes('Trang chủ - Nonstop picks'))
+        .map(catalogItemToAudioTrack)
+      const mappedRemix = tracks
+        .filter((track) => track.displayMap.includes('Trang chủ - Top Remix'))
+        .map(catalogItemToAudioTrack)
+      setHomeNonstopTracks(curateMusicCatalog([...mappedNonstop, ...homeNonstopCatalog], 'nine-life-home-nonstop-rotation-v1'))
+      setHomeRemixTracks(curateMusicCatalog([...mappedRemix, ...homeRemixCatalog], 'nine-life-home-remix-rotation-v1'))
+    }).catch(() => {
+      setHomeNonstopTracks(curateMusicCatalog(homeNonstopCatalog, 'nine-life-home-nonstop-rotation-v1'))
+      setHomeRemixTracks(curateMusicCatalog(homeRemixCatalog, 'nine-life-home-remix-rotation-v1'))
+    })
   }, [])
 
   useEffect(() => {

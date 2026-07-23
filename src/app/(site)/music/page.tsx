@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Play, Plus } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { useMediaPlayer } from '@/components/global-media-player'
@@ -9,6 +9,7 @@ import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { artistProfiles } from '@/lib/artist-directory-data'
 import { curateMusicCatalog, getFairRotation } from '@/lib/music-curation'
 import { getUserPlaylists } from '@/lib/user-playlists'
+import { catalogItemToAudioTrack, fetchPublicMusicCatalog, type PublicMusicCatalogItem } from '@/lib/public-music-catalog'
 import {
   tidalAlbums,
   tidalFeatured,
@@ -65,15 +66,15 @@ const genreTabs: { label: string; value: GenreTab }[] = [
   { label: 'After hours', value: 'afterhours' },
 ]
 
-function getGenreCatalog(tab: GenreTab) {
-  if (tab === 'nonstop') return [...tidalNonstopTracks]
-  if (tab === 'remix') return [...tidalRemixTracks]
-  if (tab === 'afterhours') return [...tidalNonstopTracks.slice(3), ...tidalRemixTracks.slice(2), ...tidalNonstopTracks.slice(0, 3)]
-  return allMusicTracks
+function getGenreCatalog(tab: GenreTab, nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
+  if (tab === 'nonstop') return [...nonstopTracks]
+  if (tab === 'remix') return [...remixTracks]
+  if (tab === 'afterhours') return [...nonstopTracks.slice(3), ...remixTracks.slice(2), ...nonstopTracks.slice(0, 3)]
+  return [...nonstopTracks, ...remixTracks]
 }
 
-function getFairGenreTracks(tab: GenreTab) {
-  const catalog = getGenreCatalog(tab)
+function getFairGenreTracks(tab: GenreTab, nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
+  const catalog = getGenreCatalog(tab, nonstopTracks, remixTracks)
   return curateMusicCatalog(catalog, `${genreRotationPrefix}:${tab}`)
 }
 
@@ -96,6 +97,17 @@ export default function MusicPage() {
   const [featuredPlaylists, setFeaturedPlaylists] = useState<FeaturedUserPlaylist[]>(communityPlaylistFallbacks)
   const [communityMixOrder, setCommunityMixOrder] = useState<number[]>(() => tidalMixes.map((_, index) => index))
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
+  const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
+  const publishedNonstopTracks = useMemo(
+    () => publishedCatalog.filter((track) => track.type !== 'remix').map(catalogItemToAudioTrack),
+    [publishedCatalog],
+  )
+  const publishedRemixTracks = useMemo(
+    () => publishedCatalog.filter((track) => track.type === 'remix').map(catalogItemToAudioTrack),
+    [publishedCatalog],
+  )
+  const liveNonstopTracks = useMemo(() => [...publishedNonstopTracks, ...tidalNonstopTracks], [publishedNonstopTracks])
+  const liveRemixTracks = useMemo(() => [...publishedRemixTracks, ...tidalRemixTracks], [publishedRemixTracks])
   const sidebarLinks = [
     { label: 'Trang chủ music', href: '#music-home' },
     { label: 'Dành cho bạn', href: '#for-you' },
@@ -136,6 +148,10 @@ export default function MusicPage() {
   const playSet = (config: PlayCollectionConfig, startIndex = 0) => {
     playCollection(config.tracks, startIndex, config.sourceType)
   }
+
+  useEffect(() => {
+    void fetchPublicMusicCatalog().then(setPublishedCatalog).catch(() => setPublishedCatalog([]))
+  }, [])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -196,8 +212,8 @@ export default function MusicPage() {
   }, [])
 
   useEffect(() => {
-    setGenreTracks(getFairGenreTracks(activeGenreTab))
-  }, [activeGenreTab])
+    setGenreTracks(getFairGenreTracks(activeGenreTab, liveNonstopTracks, liveRemixTracks))
+  }, [activeGenreTab, liveNonstopTracks, liveRemixTracks])
 
   const currentHeroSlide = tidalHeroSlides[activeHeroSlide] ?? tidalHeroSlides[0]
 
@@ -390,7 +406,7 @@ export default function MusicPage() {
               </div>
 
               <div className="tidal-remix-rail tidal-remix-rail-compact">
-                {tidalRemixTracks.slice(0, 5).map((item, index) => (
+                {liveRemixTracks.slice(0, 5).map((item, index) => (
                   <article key={item.title} className="tidal-remix-row">
                     <span className="tidal-remix-rank">0{index + 1}</span>
                     <div>
@@ -400,7 +416,7 @@ export default function MusicPage() {
                     <button
                       type="button"
                       className="tidal-play-chip tidal-play-chip-inline"
-                      onClick={() => playCollection(tidalRemixTracks, index, 'remix')}
+                      onClick={() => playCollection(liveRemixTracks, index, 'remix')}
                     >
                       <Play size={14} />
                     </button>
@@ -531,7 +547,7 @@ export default function MusicPage() {
               <AudioShowcasePlayer
                 title="Nonstop Playlist"
                 subtitle="Nhiều nonstop hơn để user lướt nhanh ngay trên tab music."
-                tracks={tidalNonstopTracks}
+                tracks={liveNonstopTracks}
                 density="compact"
               />
             </div>
@@ -549,7 +565,7 @@ export default function MusicPage() {
               <AudioShowcasePlayer
                 title="Top Remix"
                 subtitle="List remix dày hơn để tận dụng chiều ngang tốt hơn."
-                tracks={tidalRemixTracks}
+                tracks={liveRemixTracks}
                 variant="remix"
                 density="compact"
               />

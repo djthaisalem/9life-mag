@@ -61,11 +61,12 @@ function normalizeSearchText(value: string) {
     .toLowerCase()
 }
 
-export function findSearchItems(query: string, category: SearchCategory | 'all') {
+export function findSearchItems(query: string, category: SearchCategory | 'all', additionalItems: readonly SearchItem[] = []) {
   const keywords = normalizeSearchText(query).trim().split(/\s+/).filter(Boolean)
   if (!keywords.length) return []
 
-  return searchIndex.filter((item) => {
+  return [...additionalItems, ...searchIndex].filter((item, index, items) => {
+    if (items.findIndex((candidate) => candidate.id === item.id) !== index) return false
     if (category !== 'all' && item.category !== category) return false
     const content = normalizeSearchText(`${item.title} ${item.description} ${item.label}`)
     return keywords.every((keyword) => content.includes(keyword))

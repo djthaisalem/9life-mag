@@ -307,8 +307,20 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     })
   }
 
+  const requestProtectedMedia = async (track: AudioTrack, kind: 'preview' | 'download') => {
+    const response = await fetch(`/api/media/${encodeURIComponent(track.id)}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind }),
+    })
+    const result = await response.json() as { ok?: boolean; url?: string; message?: string }
+    return { ok: response.ok && result.ok === true && Boolean(result.url), url: result.url, message: result.message, status: response.status }
+  }
+
   const playNow = async (action: PendingPlaybackAction) => {
-    const targetTrack =
+    let targetTrack =
       action.type === 'toggle'
         ? activeTrack
         : action.type === 'track'
@@ -317,25 +329,40 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
     if (!targetTrack) return
 
-    const result = await accessTrackWithStars(targetTrack.id, 'playback')
+    if (targetTrack.protectedMedia) {
+      const protectedResult = await requestProtectedMedia(targetTrack, 'preview')
+      if (!protectedResult.ok || !protectedResult.url) {
+        if (protectedResult.status === 401) {
+          setPendingPlaybackAction(action)
+          setShowLoginModal(true)
+          return
+        }
+        window.alert(protectedResult.message ?? 'Không thể cấp quyền phát track này.')
+        return
+      }
+      targetTrack = { ...targetTrack, audioUrl: protectedResult.url }
+      setQueue((current) => current.map((track) => track.id === targetTrack.id ? targetTrack : track))
+    } else {
+      const result = await accessTrackWithStars(targetTrack.id, 'playback')
 
-    if (!result.ok) {
-      if (result.reason === 'not_authenticated') {
-        setPendingPlaybackAction(action)
-        setShowLoginModal(true)
+      if (!result.ok) {
+        if (result.reason === 'not_authenticated') {
+          setPendingPlaybackAction(action)
+          setShowLoginModal(true)
+          return
+        }
+
+        if (result.reason !== 'insufficient_stars') {
+          window.alert(result.message ?? 'Không thể xác thực quyền phát nhạc lúc này. Vui lòng thử lại sau.')
+          return
+        }
+
+        window.alert('Bạn không đủ sao để phát nhạc. Hãy nạp thêm sao trong tài khoản.')
         return
       }
 
-      if (result.reason !== 'insufficient_stars') {
-        window.alert(result.message ?? 'Không thể xác thực quyền phát nhạc lúc này. Vui lòng thử lại sau.')
-        return
-      }
-
-      window.alert('Bạn không đủ sao để phát nhạc. Hãy nạp thêm sao trong tài khoản.')
-      return
+      setStarBalance(result.state.stars)
     }
-
-    setStarBalance(result.state.stars)
 
     if (action.type === 'toggle') {
       const audio = audioRef.current
@@ -438,6 +465,16 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   }
 
   const openDownloadRequest = async (track: AudioTrack) => {
+    if (track.protectedMedia) {
+      const result = await requestProtectedMedia(track, 'download')
+      if (!result.ok || !result.url) {
+        window.alert(result.message ?? 'Không thể cấp quyền download lúc này.')
+        return
+      }
+      openDownload({ ...track, downloadUrl: result.url })
+      return
+    }
+
     if (isAuthenticated) {
       const result = await accessTrackWithStars(track.id, 'download')
       if (!result.ok) {

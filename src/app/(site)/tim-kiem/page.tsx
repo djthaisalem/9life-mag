@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { FormEvent, Suspense, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { findSearchItems, type SearchCategory } from '@/lib/search-index'
+import { fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
+import type { SearchItem } from '@/lib/search-index'
 
 const tabs: { label: string; value: SearchCategory | 'all' }[] = [
   { label: 'Tất cả', value: 'all' },
@@ -21,7 +23,22 @@ function SearchPageContent() {
   const requestedTab = searchParams.get('tab')
   const activeTab = tabs.some((tab) => tab.value === requestedTab) ? requestedTab as SearchCategory | 'all' : 'all'
   const [input, setInput] = useState(query)
-  const results = useMemo(() => findSearchItems(query, activeTab), [query, activeTab])
+  const [databaseMusicItems, setDatabaseMusicItems] = useState<SearchItem[]>([])
+  const results = useMemo(() => findSearchItems(query, activeTab, databaseMusicItems), [query, activeTab, databaseMusicItems])
+
+  useEffect(() => {
+    void fetchPublicMusicCatalog().then((tracks) => {
+      setDatabaseMusicItems(tracks.map((track) => ({
+        id: `music:${track.id}`,
+        category: 'music',
+        title: track.title,
+        description: `${track.artist} · ${track.genre} · ${track.duration}${track.musicCode ? ` · Mã ${track.musicCode}` : ''}`,
+        image: '/images/default-music-cover.png',
+        href: `/music?track=${encodeURIComponent(track.id)}`,
+        label: `Music · ${track.type === 'track' ? 'Track' : track.type}`,
+      })))
+    }).catch(() => setDatabaseMusicItems([]))
+  }, [])
 
   const updateSearch = (nextQuery: string, nextTab = activeTab) => {
     const params = new URLSearchParams()

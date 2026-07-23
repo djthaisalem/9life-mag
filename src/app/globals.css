@@ -8217,6 +8217,21 @@ button.artist-dashboard-module-card {
   gap: 12px;
 }
 
+.cms-form-message {
+  margin: 0;
+  padding: 12px 14px;
+  color: #dff8e7;
+  border: 1px solid rgba(87, 211, 132, 0.34);
+  border-radius: 12px;
+  background: rgba(32, 118, 67, 0.16);
+}
+
+.cms-form-message-error {
+  color: #ffd6d6;
+  border-color: rgba(255, 105, 105, 0.4);
+  background: rgba(146, 31, 45, 0.2);
+}
+
 .cms-music-upload-action {
   display: inline-flex;
   align-items: center;

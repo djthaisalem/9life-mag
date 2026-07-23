@@ -12,6 +12,7 @@ type TrackDocument = {
   trackType?: string
   submittedArtistSlug?: string
   genreLabel?: string
+  albumLabel?: string
   accessLevel?: string
   visibility?: string
   displayMap?: string
@@ -26,7 +27,15 @@ export type CmsMusicLibraryRow = CmsMusicRow & {
   source: 'database' | 'sample'
   musicCode?: string
   masterR2Key?: string
+  trackTypeValue: 'track' | 'nonstop' | 'remix' | 'album'
+  accessLevelValue: 'public' | 'stars' | 'premium' | 'internal'
+  visibilityValue: 'draft' | 'pending' | 'public' | 'hidden'
+  albumLabel?: string
 }
+
+type EditableTrackType = CmsMusicLibraryRow['trackTypeValue']
+type MusicAccessLevel = CmsMusicLibraryRow['accessLevelValue']
+type MusicVisibility = CmsMusicLibraryRow['visibilityValue']
 
 const visibilityLabels: Record<string, string> = {
   draft: 'Nháp nội bộ',
@@ -42,18 +51,42 @@ const accessLabels: Record<string, string> = {
   internal: 'Chỉ nội bộ CMS',
 }
 
-function normalizeTrackType(value?: string): CmsMusicRow['type'] {
+function normalizeTrackType(value?: string): EditableTrackType {
   if (value === 'single') return 'track'
   if (value === 'nonstop' || value === 'remix' || value === 'album') return value
   return 'track'
 }
 
+function normalizeSampleTrack(row: CmsMusicRow): CmsMusicLibraryRow {
+  const accessText = row.access.toLocaleLowerCase('vi-VN')
+  const visibilityText = row.visibility.toLocaleLowerCase('vi-VN')
+  const trackTypeValue: EditableTrackType = row.type === 'album' || row.type === 'nonstop' || row.type === 'remix' ? row.type : 'track'
+  const accessLevelValue: MusicAccessLevel = row.access.includes('Premium') ? 'premium' : accessText.includes('sao') ? 'stars' : accessText.includes('nội bộ') ? 'internal' : 'public'
+  const visibilityValue: MusicVisibility = visibilityText.includes('public') ? 'public' : visibilityText.includes('duyệt') || visibilityText.includes('rà soát') ? 'pending' : visibilityText.includes('ẩn') ? 'hidden' : 'draft'
+
+  return {
+    ...row,
+    source: 'sample',
+    trackTypeValue,
+    accessLevelValue,
+    visibilityValue,
+  }
+}
+
 function normalizeDatabaseTrack(doc: TrackDocument): CmsMusicLibraryRow {
+  const trackTypeValue = normalizeTrackType(doc.trackType)
+  const accessLevelValue = doc.accessLevel === 'stars' || doc.accessLevel === 'premium' || doc.accessLevel === 'internal'
+    ? doc.accessLevel
+    : 'public'
+  const visibilityValue = doc.visibility === 'pending' || doc.visibility === 'public' || doc.visibility === 'hidden'
+    ? doc.visibility
+    : 'draft'
+
   return {
     id: String(doc.id),
     slug: doc.slug || String(doc.id),
     title: doc.title || 'Chưa đặt tên',
-    type: normalizeTrackType(doc.trackType),
+    type: trackTypeValue,
     artist: doc.submittedArtistSlug || 'Chưa gắn nghệ sĩ',
     genre: doc.genreLabel || 'Chưa phân loại',
     access: accessLabels[doc.accessLevel || ''] || doc.accessLevel || 'Công khai',
@@ -66,6 +99,10 @@ function normalizeDatabaseTrack(doc: TrackDocument): CmsMusicLibraryRow {
     source: 'database',
     musicCode: doc.musicCode,
     masterR2Key: doc.masterR2Key,
+    trackTypeValue,
+    accessLevelValue,
+    visibilityValue,
+    albumLabel: doc.albumLabel,
   }
 }
 
@@ -79,7 +116,7 @@ function getSampleRows(tab: CmsMusicTabKey, query: string): CmsMusicLibraryRow[]
   return cmsMusicRows
     .filter((row) => tab === 'all' || row.type === tab)
     .filter((row) => matchesQuery(row, query))
-    .map((row) => ({ ...row, source: 'sample' as const }))
+    .map(normalizeSampleTrack)
 }
 
 function getDatabaseWhere(tab: CmsMusicTabKey, query: string) {
@@ -149,7 +186,7 @@ export async function getCmsMusicLibraryPage(input: {
   }
 }
 
-export async function getCmsMusicLibraryRowBySlug(slug: string) {
+export async function getCmsMusicLibraryRowBySlug(slug: string): Promise<CmsMusicLibraryRow | null> {
   try {
     const payload = await loadPayloadClient()
     const result = await payload.find({
@@ -165,5 +202,6 @@ export async function getCmsMusicLibraryRowBySlug(slug: string) {
   }
 
   const sample = cmsMusicRows.find((row) => row.slug === slug)
-  return sample ? { ...sample, source: 'sample' as const } : null
+  if (!sample) return null
+  return normalizeSampleTrack(sample)
 }

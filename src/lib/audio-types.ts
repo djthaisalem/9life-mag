@@ -9,6 +9,7 @@ export type AudioTrack = {
   downloads?: number
   downloadUrl?: string
   isPremiumDrop?: boolean
+  protectedMedia?: boolean
 }
 
 export type AudioSourceType = 'nonstop' | 'track' | 'remix'

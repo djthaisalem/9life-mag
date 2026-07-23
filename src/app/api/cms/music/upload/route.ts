@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       audio,
     })
 
-    return NextResponse.json({ ok: true, result })
+    return NextResponse.json({ ok: true, result: { ...result, visibility } })
   } catch (error) {
     const code = error instanceof Error ? error.message.split(':')[0] : ''
     const ffmpegUnavailable = code === 'ffmpeg_unavailable' || code === 'ffprobe_unavailable' || code === 'ffmpeg_failed' || code === 'ffprobe_failed'
