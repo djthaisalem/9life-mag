@@ -1,6 +1,6 @@
 import { getRuntimeSecret } from '@/lib/runtime-security'
 
-export const CMS_SESSION_COOKIE = 'nine_life_cms_session'
+export const CMS_SESSION_COOKIE = 'nine_life_cms_session_v2'
 const CMS_SESSION_TTL_SECONDS = 60 * 60 * 8
 
 export type CmsSession = {

@@ -8,7 +8,7 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { assertProductionPersistence, canUseDevelopmentSeeds, getRuntimeSecret } from '@/lib/runtime-security'
 import { getRecentPremiumAccess, hasRecentMediaStarCharge, recordWalletLedgerEntry, type WalletEventType } from '@/lib/wallet-ledger'
 
-export const SITE_SESSION_COOKIE = 'nine_life_site_session'
+export const SITE_SESSION_COOKIE = 'nine_life_site_session_v2'
 
 const SITE_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 const SIGNUP_STARS = 100
