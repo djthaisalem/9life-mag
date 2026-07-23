@@ -22,7 +22,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
     setResult(null)
 
     try {
-      const response = await fetch('/api/cms/music/upload', {
+      const response = await fetch('/cms/api/music/upload', {
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',
