@@ -7,7 +7,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { getDownloadHistory, getListeningHistory, type MusicHistoryItem } from '@/lib/music-history'
-import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
+import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import {
   addTrackToPlaylist,
   buildPlaylistSharePath,
@@ -21,6 +21,7 @@ import {
 
 type LibraryTab = 'playlists' | 'listening' | 'downloads'
 type CatalogFilter = 'all' | 'nonstop' | 'remix'
+type CatalogTrack = AudioTrack & { sourceType: AudioSourceType }
 
 const tabs: Array<{ id: LibraryTab; label: string; icon: typeof ListMusic }> = [
   { id: 'playlists', label: 'Playlist của bạn', icon: ListMusic },
@@ -28,7 +29,6 @@ const tabs: Array<{ id: LibraryTab; label: string; icon: typeof ListMusic }> = [
   { id: 'downloads', label: 'Đã tải xuống', icon: Download }
 ]
 
-const catalogTracks = [...tidalRemixTracks, ...tidalNonstopTracks]
 const catalogPageSize = 10
 
 function formatDate(value: string) {
@@ -41,8 +41,8 @@ function sourceLabel(sourceType: AudioSourceType) {
   return 'Track'
 }
 
-function getSourceType(track: AudioTrack): AudioSourceType {
-  return track.id.includes('remix') ? 'remix' : 'nonstop'
+function getSourceType(track: AudioTrack | CatalogTrack): AudioSourceType {
+  return 'sourceType' in track ? track.sourceType : track.id.includes('remix') ? 'remix' : 'nonstop'
 }
 
 function getPlaylistCover(playlist: UserPlaylist) {
@@ -99,12 +99,13 @@ export default function MusicLibraryPage() {
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('all')
   const [catalogQuery, setCatalogQuery] = useState('')
   const [catalogVisibleCount, setCatalogVisibleCount] = useState(catalogPageSize)
+  const [catalogTracks, setCatalogTracks] = useState<CatalogTrack[]>([])
 
   const selectedPlaylist = useMemo(() => playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null, [playlists, selectedPlaylistId])
   const filteredCatalogTracks = useMemo(() => {
     const query = catalogQuery.trim().toLocaleLowerCase('vi-VN')
     return catalogTracks.filter((track) => {
-      const matchesFilter = catalogFilter === 'all' || track.id.includes(catalogFilter)
+      const matchesFilter = catalogFilter === 'all' || track.sourceType === catalogFilter
       return matchesFilter && (!query || track.title.toLocaleLowerCase('vi-VN').includes(query))
     })
   }, [catalogFilter, catalogQuery])
@@ -122,6 +123,12 @@ export default function MusicLibraryPage() {
     setSelectedPlaylistId(next[0]?.id ?? '')
     setListeningHistory(getListeningHistory())
     setDownloadHistory(getDownloadHistory())
+    void fetchPublicMusicCatalog().then((tracks) => {
+      setCatalogTracks(tracks.map((track) => ({
+        ...catalogItemToAudioTrack(track),
+        sourceType: track.type,
+      })))
+    }).catch(() => setCatalogTracks([]))
   }, [])
 
   const handleCoverChange = async (event: ChangeEvent<HTMLInputElement>) => {

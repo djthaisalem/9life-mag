@@ -47,8 +47,6 @@ type GenreTab = 'all' | 'nonstop' | 'remix' | 'afterhours'
 
 const featuredArtistRotationKey = 'nine-life-music-artist-rotation-v1'
 const genreRotationPrefix = 'nine-life-music-genre-rotation-v1'
-const allMusicTracks = [...tidalNonstopTracks, ...tidalRemixTracks]
-
 const communityPlaylistFallbacks: FeaturedUserPlaylist[] = tidalFeatured.map((item, index) => ({
   id: `community-playlist-${index + 1}`,
   title: item.title,
@@ -76,16 +74,6 @@ function getGenreCatalog(tab: GenreTab, nonstopTracks: readonly AudioTrack[], re
 function getFairGenreTracks(tab: GenreTab, nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
   const catalog = getGenreCatalog(tab, nonstopTracks, remixTracks)
   return curateMusicCatalog(catalog, `${genreRotationPrefix}:${tab}`)
-}
-
-function getArtistCollection(artistName: string): PlayCollectionConfig {
-  const artistTracks = allMusicTracks.filter((track) => track.artist.toLocaleLowerCase('vi-VN').includes(artistName.toLocaleLowerCase('vi-VN')))
-  const firstTrack = artistTracks[0]
-
-  return {
-    tracks: artistTracks,
-    sourceType: firstTrack?.id.includes('remix') ? 'remix' : 'nonstop',
-  }
 }
 
 export default function MusicPage() {
@@ -134,17 +122,15 @@ export default function MusicPage() {
   ]
 
   const chartRows = [
-    { rank: '01', title: 'Water Lily Club Remix', artist: 'Luna Flux x Neon Viper', plays: '48K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 0 } },
-    { rank: '02', title: 'Rooftop Pulse', artist: 'Mixed by Neon Viper', plays: '42K', collection: { tracks: tidalNonstopTracks, sourceType: 'nonstop' as const, index: 1 } },
-    { rank: '03', title: 'After Hours Rework', artist: 'Ghost Frequency', plays: '36K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 1 } },
-    { rank: '04', title: 'Gold Pulse Ride', artist: '9Life Rooftop Unit', plays: '31K', collection: { tracks: tidalNonstopTracks, sourceType: 'nonstop' as const, index: 3 } },
-    { rank: '05', title: 'Saigon Neon Edit', artist: '9Life Community Lab', plays: '28K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 2 } },
-    { rank: '06', title: 'Club Gold Refix', artist: 'Neon Viper x Ghost Frequency', plays: '24K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 3 } },
-    { rank: '07', title: 'Late Checkpoint', artist: 'Neon Viper', plays: '22K', collection: { tracks: tidalNonstopTracks, sourceType: 'nonstop' as const, index: 4 } },
-    { rank: '08', title: 'Nightcall Edit', artist: 'Luna Flux', plays: '20K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 4 } },
-    { rank: '09', title: 'Sunrise Return', artist: 'Luna Flux', plays: '18K', collection: { tracks: tidalNonstopTracks, sourceType: 'nonstop' as const, index: 5 } },
-    { rank: '10', title: 'Afterglow Vocal Flip', artist: 'Echo Violet', plays: '16K', collection: { tracks: tidalRemixTracks, sourceType: 'remix' as const, index: 5 } },
-  ] as const
+    ...liveRemixTracks.map((track) => ({ track, sourceType: 'remix' as const })),
+    ...liveNonstopTracks.map((track) => ({ track, sourceType: 'nonstop' as const })),
+  ].slice(0, 10).map(({ track, sourceType }, index) => ({
+    rank: String(index + 1).padStart(2, '0'),
+    title: track.title,
+    artist: track.artist,
+    plays: track.likes ?? 'Mới',
+    collection: { tracks: [track], sourceType, index: 0 },
+  }))
 
   const playSet = (config: PlayCollectionConfig, startIndex = 0) => {
     playCollection(config.tracks, startIndex, config.sourceType)
@@ -178,9 +164,10 @@ export default function MusicPage() {
   }, [])
 
   useEffect(() => {
-    const uploadedArtists = artistProfiles.filter((artist) =>
-      allMusicTracks.some((track) => track.artist.toLowerCase().includes(artist.name.toLowerCase())),
-    )
+    const uploadedArtists = artistProfiles.filter((artist) => publishedCatalog.some((track) =>
+      track.artist.toLocaleLowerCase('vi-VN') === artist.slug.toLocaleLowerCase('vi-VN')
+      || track.artist.toLocaleLowerCase('vi-VN').includes(artist.name.toLocaleLowerCase('vi-VN')),
+    ))
     const artistBySlug = new Map(uploadedArtists.map((artist) => [artist.slug, artist]))
     const selectedArtists = getFairRotation(featuredArtistRotationKey, uploadedArtists.map((artist) => artist.slug), 4)
       .map((slug) => artistBySlug.get(slug))
@@ -192,7 +179,12 @@ export default function MusicPage() {
       note: `${artist.genres} · Có nội dung đang phát trên 9Life Music.`,
       image: artist.image,
       href: `/nghe-si/${artist.slug}`,
-      collection: getArtistCollection(artist.name),
+      collection: {
+        tracks: publishedCatalog
+          .filter((track) => track.artist === artist.slug || track.artist.toLocaleLowerCase('vi-VN').includes(artist.name.toLocaleLowerCase('vi-VN')))
+          .map(catalogItemToAudioTrack),
+        sourceType: publishedCatalog.some((track) => track.artist === artist.slug && track.type === 'remix') ? 'remix' : 'nonstop',
+      },
     })))
 
     const userPlaylists = getUserPlaylists().filter((playlist) => playlist.items.length > 0)
@@ -225,7 +217,7 @@ export default function MusicPage() {
         .map((title) => albumIndexById.get(title))
         .filter((index): index is number => index !== undefined)
     )
-  }, [])
+  }, [publishedCatalog])
 
   useEffect(() => {
     setGenreTracks(getFairGenreTracks(activeGenreTab, liveNonstopTracks, liveRemixTracks))
