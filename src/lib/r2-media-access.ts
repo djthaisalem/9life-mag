@@ -15,7 +15,7 @@ function getClient() {
 }
 
 export async function getPreviewPlaybackUrl(key: string) {
-  if (!key.startsWith('music/preview/')) throw new Error('invalid_preview_key')
+  if (!key.startsWith('music/preview/') && !key.startsWith('music/master/')) throw new Error('invalid_playback_key')
   // Preview URLs must remain private when playback can consume stars.
   // A public CDN URL can be copied and reused without passing access checks.
   return getPrivateObjectUrl(key, 60 * 30)

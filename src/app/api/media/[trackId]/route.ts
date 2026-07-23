@@ -8,8 +8,8 @@ import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession 
 type TrackDocument = { id: string | number; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number }
 const mediaRequestSchema = z.object({ kind: z.enum(['preview', 'download']) })
 
-function isExpectedR2Key(key: string | undefined, prefix: 'music/preview/' | 'music/master/'): key is string {
-  return typeof key === 'string' && key.startsWith(prefix)
+function isExpectedR2Key(key: string | undefined, prefixes: readonly string[]): key is string {
+  return typeof key === 'string' && prefixes.some((prefix) => key.startsWith(prefix))
 }
 
 function getStarCost(value: number | undefined) {
@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
 
     if (kind === 'preview') {
       if (track.accessLevel === 'premium') return NextResponse.json({ ok: false, message: 'Track này cần quyền Premium.' }, { status: 403 })
-      if (!isExpectedR2Key(track.previewR2Key, 'music/preview/')) return NextResponse.json({ ok: false, message: 'Track chưa có file preview.' }, { status: 404 })
+      if (!isExpectedR2Key(track.previewR2Key, ['music/preview/', 'music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file phát.' }, { status: 404 })
       const playbackUrl = await getPreviewPlaybackUrl(track.previewR2Key)
       const playbackCost = getStarCost(track.playbackStarCost)
       if (playbackCost > 0) {
@@ -45,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     const cookieStore = await cookies()
     const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
     if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để tải file.' }, { status: 401 })
-    if (!isExpectedR2Key(track.masterR2Key, 'music/master/')) return NextResponse.json({ ok: false, message: 'Track chưa có file master để tải.' }, { status: 404 })
+    if (!isExpectedR2Key(track.masterR2Key, ['music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file master để tải.' }, { status: 404 })
 
     // Generate the short-lived URL first so a storage failure never charges the user.
     const downloadUrl = await getPrivateObjectUrl(track.masterR2Key, 60 * 5)

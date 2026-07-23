@@ -632,9 +632,18 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       audio.pause()
     }
 
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(PLAYER_RESUME_STORAGE_KEY)
+    }
+
+    resumePositionRef.current = null
     setIsPlaying(false)
     setIsQueueOpen(false)
     setIsDismissed(true)
+    setQueue([])
+    setActiveIndex(0)
+    setProgress(0)
+    setDuration(0)
   }
 
   useEffect(() => {
@@ -703,6 +712,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
       {activeTrack && !isDismissed ? (
         <div className="global-media-player-shell">
+          <button type="button" className="global-media-player-dismiss" onClick={dismissPlayer} aria-label="Tắt media player">
+            <X size={18} />
+          </button>
           {isQueueOpen ? (
             <div className="global-media-player-queue">
               <div className="global-media-player-queue-head">
@@ -844,9 +856,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 <span>{favoriteTrackIds.length} liked</span>
                 <span>{(downloadCounts[activeTrack.id] ?? activeTrack.downloads ?? 0).toLocaleString('en-US')} downloads</span>
               </div>
-              <button type="button" className="player-icon-button" onClick={dismissPlayer} aria-label="Tắt media player">
-                <X size={16} />
-              </button>
             </div>
 
             <audio ref={audioRef} preload="auto" playsInline>

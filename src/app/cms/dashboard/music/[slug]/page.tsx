@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
-import { cmsArtistRows, cmsMusicGenreRows, cmsMusicRows, getCmsMusicBySlug } from '@/lib/cms-dashboard-data'
+import { cmsArtistRows, cmsMusicGenreRows, cmsMusicRows } from '@/lib/cms-dashboard-data'
+import { getCmsMusicLibraryRowBySlug } from '@/lib/cms-music-library'
 
 const displayMapOptions = [
   'Trang chủ - Nonstop picks',
@@ -26,7 +27,7 @@ const visibilityOptions = ['Nháp nội bộ', 'Chờ admin duyệt', 'Đang pub
 
 export default async function CmsMusicDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const music = getCmsMusicBySlug(slug)
+  const music = await getCmsMusicLibraryRowBySlug(slug)
   if (!music) notFound()
 
   const albums = cmsMusicRows.filter((item) => item.type === 'album')
@@ -63,7 +64,7 @@ export default async function CmsMusicDetailPage({ params }: { params: Promise<{
           {!isAlbum ? <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" defaultValue=""><option value="">Không thuộc album</option>{albums.map((album) => <option key={album.id} value={album.id}>{album.title} · {album.artist}</option>)}</select><span className="cms-muted">Upload từng track trước, sau đó chọn album ở đây để đưa track vào release tương ứng.</span></div> : <div className="cms-security-panel"><strong>Album / EP là một release container</strong><p>Không upload một file MP3 cho Album. Hãy upload từng track, sau đó mở từng track và chọn “Gắn vào Album / EP” để tập hợp danh sách phát hành.</p></div>}
 
           <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Tick các khu vực được phép hiển thị nội dung này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" defaultChecked={selectedMaps.some((selected) => option.toLocaleLowerCase('vi-VN').includes(selected) || selected.includes(option.toLocaleLowerCase('vi-VN')))} />{option}</label>)}</div></fieldset>
-          <div className="field"><label htmlFor="musicSource">Nguồn file / R2 key</label><input id="musicSource" defaultValue={`r2://music/${music.updatedAt.slice(0, 10)}/${music.slug}.mp3`} /></div>
+          <div className="field"><label htmlFor="musicSource">Nguồn file / R2 key</label><input id="musicSource" defaultValue={music.masterR2Key || `r2://music/${music.updatedAt.slice(0, 10)}/${music.slug}.mp3`} readOnly={music.source === 'database'} /></div>
           <div className="cms-inline-actions"><button type="button" className="button">Lưu thay đổi</button><button type="button" className="button-secondary">Lưu nháp</button></div>
         </form>
       </article>

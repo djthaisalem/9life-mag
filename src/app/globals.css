@@ -4828,6 +4828,24 @@ button.artist-dashboard-module-card {
   pointer-events: none;
 }
 
+.global-media-player-dismiss {
+  position: absolute;
+  left: 20px;
+  top: -18px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 95, 109, 0.42);
+  border-radius: 999px;
+  color: #fff;
+  background: #a91f2c;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .global-media-player,
 .global-media-player-queue {
   width: min(1400px, 100%);
@@ -5105,6 +5123,10 @@ button.artist-dashboard-module-card {
 @media (max-width: 1100px) {
   .global-media-player {
     grid-template-columns: 1fr;
+  }
+
+  body:has(.global-media-player-shell) .dashboard-support-assistant {
+    bottom: 250px;
   }
 
   .global-media-player-actions,
@@ -11082,6 +11104,10 @@ button.artist-dashboard-module-card {
   z-index: 80;
 }
 
+body:has(.global-media-player-shell) .dashboard-support-assistant {
+  bottom: 112px;
+}
+
 .dashboard-support-assistant-toggle,
 .dashboard-support-assistant-head button,
 .dashboard-support-assistant form button,
@@ -11218,6 +11244,10 @@ button.artist-dashboard-module-card {
   .dashboard-support-assistant {
     right: 12px;
     bottom: 12px;
+  }
+
+  body:has(.global-media-player-shell) .dashboard-support-assistant {
+    bottom: 180px;
   }
 
   .dashboard-support-assistant-toggle span {

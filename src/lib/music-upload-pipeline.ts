@@ -15,6 +15,9 @@ const ALLOWED_AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.flac', '.m4a', '.aac
 const DEFAULT_MAX_UPLOAD_MB = 1024
 const MUSIC_METADATA_URL = 'https://9lifemag.com/music'
 const DEFAULT_COVER_KEY = 'music/covers/default-music-cover.png'
+// Temporarily stream the master directly to avoid storing a second audio object.
+// Keep the preview pipeline available for a later 192/128 kbps comparison.
+const CREATE_SEPARATE_PREVIEW = false
 
 type MusicUploadInput = {
   title: string
@@ -189,15 +192,20 @@ export async function processMusicUpload(input: MusicUploadInput) {
   try {
     await pipeline(Readable.fromWeb(input.audio.stream() as never), createWriteStream(sourcePath, { flags: 'wx' }))
     const durationSeconds = await readDurationSeconds(sourcePath)
-    await createPreview(sourcePath, previewPath, input.title.trim(), musicCode)
+    if (CREATE_SEPARATE_PREVIEW) {
+      await createPreview(sourcePath, previewPath, input.title.trim(), musicCode)
+    }
     await createDownloadMaster(sourcePath, masterPath, input.title.trim(), musicCode)
 
     const { client, bucket } = getR2Client()
     const coverR2Key = await uploadDefaultCover(client, bucket)
-    await uploadR2Object(client, bucket, previewKey, previewPath, 'audio/mpeg')
-    uploadedPreview = true
+    if (CREATE_SEPARATE_PREVIEW) {
+      await uploadR2Object(client, bucket, previewKey, previewPath, 'audio/mpeg')
+      uploadedPreview = true
+    }
     await uploadR2Object(client, bucket, masterKey, masterPath, input.audio.type || 'application/octet-stream')
     uploadedMaster = true
+    const playbackKey = CREATE_SEPARATE_PREVIEW ? previewKey : masterKey
 
     const payload = await loadPayloadClient()
     const track = await payload.create({
@@ -210,7 +218,7 @@ export async function processMusicUpload(input: MusicUploadInput) {
         trackType: trackTypeFromUploadType(input.type),
         durationLabel: formatDuration(durationSeconds),
         durationSeconds: Math.round(durationSeconds),
-        previewR2Key: previewKey,
+        previewR2Key: playbackKey,
         masterR2Key: masterKey,
         sourceFormat: extension.slice(1).toUpperCase(),
         submittedArtistSlug: input.artistSlug.trim(),
@@ -232,7 +240,7 @@ export async function processMusicUpload(input: MusicUploadInput) {
       musicCode,
       durationSeconds: Math.round(durationSeconds),
       durationLabel: formatDuration(durationSeconds),
-      previewKey,
+      previewKey: playbackKey,
       masterKey,
       coverR2Key: DEFAULT_COVER_KEY,
     }
