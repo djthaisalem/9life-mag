@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createPortalNotifications } from '@/lib/portal-notifications'
 import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
 import {
   getSiteSessionCookieOptions,
@@ -69,6 +70,19 @@ export async function POST(request: Request) {
         },
         result.reason === 'duplicate_identity' ? 409 : 400
       )
+    }
+
+    try {
+      await createPortalNotifications([
+        {
+          recipientKey: 'admin',
+          title: 'Tài khoản mới đăng ký',
+          body: `${result.account.fullName} vừa tạo tài khoản ${result.account.accountType === 'artist' ? 'nghệ sĩ' : 'user'}${result.account.email ? ` bằng ${result.account.email}` : ''}.`,
+          href: `/cms/dashboard/users/${result.account.id}`,
+        },
+      ])
+    } catch (notificationError) {
+      console.error('Could not create CMS signup notification', notificationError)
     }
 
     const response = json({

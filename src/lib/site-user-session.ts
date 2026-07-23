@@ -89,6 +89,22 @@ type SiteAccountRecord = {
   updatedAt: string
 }
 
+export type CmsSiteAccount = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  accountType: SiteAccountType
+  portalRole?: ArtistPortalRole
+  portalAccessStatus?: ArtistPortalAccessStatus
+  role: string
+  stars: number
+  isPremium: boolean
+  isActive: boolean
+  createdAt: string
+  followedArtists: number
+}
+
 type SiteAccountStore = {
   accounts: SiteAccountRecord[]
 }
@@ -784,6 +800,17 @@ export function getSiteSessionCookieOptions() {
     && process.env.SITE_USER_STORAGE_DRIVER === 'file'
     && process.env.ALLOW_FILE_STORAGE_IN_PRODUCTION === 'true'
 
+  const configuredHostname = (() => {
+    try {
+      return new URL(env.NEXT_PUBLIC_SITE_URL).hostname.toLowerCase()
+    } catch {
+      return ''
+    }
+  })()
+  const sharedDomain = configuredHostname === '9lifemag.com' || configuredHostname.endsWith('.9lifemag.com')
+    ? '.9lifemag.com'
+    : undefined
+
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
@@ -791,7 +818,98 @@ export function getSiteSessionCookieOptions() {
     path: '/',
     maxAge: SITE_SESSION_TTL_SECONDS,
     priority: 'high' as const,
+    ...(sharedDomain ? { domain: sharedDomain } : {}),
   }
+}
+
+function toCmsSiteAccount(account: SiteAccountRecord, role = 'customer', isPremium = false): CmsSiteAccount {
+  return {
+    id: account.id,
+    name: account.fullName,
+    email: account.email ?? '',
+    phone: account.phone ?? '',
+    accountType: account.accountType,
+    portalRole: account.portalRole,
+    portalAccessStatus: account.portalAccessStatus,
+    role,
+    stars: account.stars,
+    isPremium,
+    isActive: account.isActive !== false,
+    createdAt: account.createdAt,
+    followedArtists: account.followedArtists.length,
+  }
+}
+
+export async function listSiteAccountsForCms(input: { page: number; limit: number }) {
+  const page = Math.max(1, Math.floor(input.page))
+  const limit = Math.min(100, Math.max(1, Math.floor(input.limit)))
+
+  if (getStorageDriver() === 'payload') {
+    const payload = await loadPayloadClient()
+    const result = await payload.find({
+      collection: 'users',
+      sort: '-createdAt',
+      page,
+      limit,
+      depth: 0,
+    })
+    const users = (result.docs as Array<Record<string, unknown>>)
+      .map((doc) => {
+        const account = normalizePayloadUser(doc)
+        return account
+          ? toCmsSiteAccount(
+              account,
+              typeof doc.role === 'string' ? doc.role : 'customer',
+              doc.isPremium === true,
+            )
+          : null
+      })
+      .filter((account): account is CmsSiteAccount => Boolean(account))
+
+    return {
+      users,
+      totalDocs: result.totalDocs,
+      totalPages: result.totalPages,
+      page: result.page ?? page,
+    }
+  }
+
+  const accounts = (await readFileStore()).accounts
+    .slice()
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+  const start = (page - 1) * limit
+  return {
+    users: accounts.slice(start, start + limit).map((account) => toCmsSiteAccount(account)),
+    totalDocs: accounts.length,
+    totalPages: Math.max(1, Math.ceil(accounts.length / limit)),
+    page,
+  }
+}
+
+export async function getSiteAccountForCms(accountId: string) {
+  if (getStorageDriver() === 'payload') {
+    const payload = await loadPayloadClient()
+    try {
+      const doc = await payload.findByID({
+        collection: 'users',
+        id: accountId,
+        depth: 0,
+      }) as Record<string, unknown>
+      const account = normalizePayloadUser(doc)
+      return account
+        ? toCmsSiteAccount(
+            account,
+            typeof doc.role === 'string' ? doc.role : 'customer',
+            doc.isPremium === true,
+          )
+        : null
+    } catch {
+      return null
+    }
+  }
+
+  const account = (await readFileStore()).accounts.find((item) => item.id === accountId)
+  return account ? toCmsSiteAccount(account) : null
 }
 
 export async function registerSiteAccount(input: RegisterSiteAccountInput) {

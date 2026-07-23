@@ -303,7 +303,8 @@ export async function requestPasswordReset(input: {
   method?: DeliveryMethod
 }) {
   const identity = normalizeIdentity(input.identity)
-  const method = input.method ?? 'email'
+  // Email delivery is intentionally paused; recovery is handled only by Telegram.
+  const method = 'telegram' as DeliveryMethod
   const account = await findSiteAccountByIdentity(identity, input.accountType)
 
   if (!account) {

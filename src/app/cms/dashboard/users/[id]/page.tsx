@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
-import { cmsPermissionOptions, getCmsUserById } from '@/lib/cms-dashboard-data'
 import { CmsPortalRoleMapping } from '@/components/cms-portal-role-mapping'
+import { getSiteAccountForCms } from '@/lib/site-user-session'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function CmsUserDetailPage({
   params,
@@ -10,7 +13,7 @@ export default async function CmsUserDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const user = getCmsUserById(id)
+  const user = await getSiteAccountForCms(id)
 
   if (!user) notFound()
 
@@ -18,7 +21,7 @@ export default async function CmsUserDetailPage({
     <CmsDashboardShell
       activeKey="users"
       title={`User: ${user.name}`}
-      description="Trang chi tiết để xem hồ sơ user, duyệt quyền admin và gắn những mục CMS mà tài khoản đó được phép truy cập."
+      description="Thông tin tài khoản được đọc trực tiếp từ database vận hành."
     >
       <div className="cms-split-grid">
         <article className="panel">
@@ -32,135 +35,72 @@ export default async function CmsUserDetailPage({
                 Quay lại user
               </Link>
               <Link href="/cms/dashboard/admin-access" className="button-secondary">
-                Sang duyệt admin
+                Phân quyền admin
               </Link>
             </div>
           </div>
 
-          <form className="form-shell cms-embedded-form">
+          <div className="form-shell cms-embedded-form">
             <div className="field">
-              <label htmlFor="userName">Tên hiển thị</label>
-              <input id="userName" defaultValue={user.name} />
-            </div>
-            <div className="field">
-              <label htmlFor="userEmail">Email</label>
-              <input id="userEmail" defaultValue={user.email} />
+              <label>Tên hiển thị</label>
+              <input value={user.name} readOnly />
             </div>
             <div className="cms-form-two">
               <div className="field">
-                <label htmlFor="userType">Loại tài khoản</label>
-                <select id="userType" defaultValue={user.type}>
-                  <option>User</option>
-                  <option>Artist account</option>
-                  <option>Agent</option>
-                  <option>Admin</option>
-                </select>
+                <label>Email</label>
+                <input value={user.email || 'Chưa cập nhật'} readOnly />
               </div>
               <div className="field">
-                <label htmlFor="userStatus">Trạng thái</label>
-                <select id="userStatus" defaultValue={user.status}>
-                  <option>Đang hoạt động</option>
-                  <option>Tạm khóa</option>
-                  <option>Chờ nạp thêm</option>
-                  <option>Có bonus chờ nhận</option>
-                  <option>Cần rà soát payload</option>
-                  <option>Đã xác minh</option>
-                </select>
+                <label>Số điện thoại</label>
+                <input value={user.phone || 'Chưa cập nhật'} readOnly />
               </div>
             </div>
             <div className="cms-form-two">
               <div className="field">
-                <label htmlFor="userStars">Số sao</label>
-                <input id="userStars" defaultValue={user.stars} />
+                <label>Loại tài khoản</label>
+                <input value={user.accountType === 'artist' ? 'Artist portal' : 'User'} readOnly />
               </div>
               <div className="field">
-                <label htmlFor="userPremium">Gói</label>
-                <input id="userPremium" defaultValue={user.premium} />
+                <label>Trạng thái</label>
+                <input value={user.isActive ? 'Đang hoạt động' : 'Tạm khóa'} readOnly />
               </div>
             </div>
-            <div className="field">
-              <label htmlFor="userActivity">Hoạt động nổi bật</label>
-              <textarea id="userActivity" defaultValue={user.activity} />
+            <div className="cms-form-two">
+              <div className="field">
+                <label>Số sao</label>
+                <input value={`${user.stars} sao`} readOnly />
+              </div>
+              <div className="field">
+                <label>Gói</label>
+                <input value={user.isPremium ? 'Premium' : 'Free'} readOnly />
+              </div>
             </div>
 
-            <article className="cms-access-card">
-              <div className="cms-panel-head-inline cms-panel-head-inline-stretch">
-                <div>
-                  <p className="section-eyebrow">Admin Approval</p>
-                  <h2>Duyệt cấp admin và stick quyền truy cập</h2>
-                </div>
-              </div>
-
-              <div className="cms-form-two">
-                <div className="field">
-                  <label htmlFor="adminRequest">Trạng thái cấp admin</label>
-                  <select id="adminRequest" defaultValue={user.adminRequest}>
-                    <option>Không có</option>
-                    <option>Chờ duyệt</option>
-                    <option>Đã cấp</option>
-                    <option>Từ chối</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="adminRole">Vai trò sau khi cấp</label>
-                  <select id="adminRole" defaultValue={user.type === 'Admin' ? 'Admin đầy đủ' : 'Ops giới hạn'}>
-                    <option>Admin đầy đủ</option>
-                    <option>Ops giới hạn</option>
-                    <option>Artist Ops</option>
-                    <option>Editorial Ops</option>
-                    <option>Finance Ops</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="cms-permission-grid">
-                {cmsPermissionOptions.map((permission) => (
-                  <label key={permission} className="cms-permission-chip">
-                    <input type="checkbox" defaultChecked={user.accessScope.includes(permission)} />
-                    <span>{permission}</span>
-                  </label>
-                ))}
-              </div>
-            </article>
-
-            <CmsPortalRoleMapping accountId={id} />
-
-            <div className="cms-inline-actions">
-              <button type="button" className="button">
-                Lưu thay đổi
-              </button>
-            </div>
-          </form>
+            {user.accountType === 'artist' ? <CmsPortalRoleMapping accountId={id} /> : null}
+          </div>
         </article>
 
         <article className="panel">
-          <p className="section-eyebrow">Quick Stats</p>
-          <h2>Tóm tắt hành vi</h2>
+          <p className="section-eyebrow">Account Status</p>
+          <h2>Tóm tắt tài khoản</h2>
           <div className="cms-overview-stats cms-overview-stats-2">
             <article className="metric">
               <strong>{user.followedArtists}</strong>
-              <span>nghệ sĩ đang follow</span>
+              <span>nghệ sĩ đang theo dõi</span>
             </article>
             <article className="metric">
-              <strong>{user.votes}</strong>
-              <span>lượt vote</span>
+              <strong>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</strong>
+              <span>ngày tạo tài khoản</span>
             </article>
           </div>
-
           <article className="cms-access-card">
             <p className="section-eyebrow">Current Access</p>
             <h2>Phạm vi hiện tại</h2>
-            <div className="cms-permission-grid">
-              {user.accessScope.length > 0 ? (
-                user.accessScope.map((permission) => (
-                  <span key={permission} className="cms-permission-chip cms-permission-chip-readonly">
-                    {permission}
-                  </span>
-                ))
-              ) : (
-                <span className="muted">Tài khoản này chưa được cấp quyền vào CMS.</span>
-              )}
-            </div>
+            <p className="muted">
+              {user.role === 'customer'
+                ? 'Tài khoản không có quyền truy cập CMS.'
+                : `Vai trò CMS hiện tại: ${user.role}.`}
+            </p>
           </article>
         </article>
       </div>

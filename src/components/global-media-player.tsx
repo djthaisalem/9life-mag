@@ -157,6 +157,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
   const lastPersistedProgressRef = useRef(0)
+  const autoAdvanceRef = useRef<(index: number, track: AudioTrack) => void>(() => undefined)
   const activeTrack = queue[activeIndex] ?? null
 
   useEffect(() => {
@@ -234,8 +235,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
       if (queue.length > 1) {
         const nextIndex = (activeIndex + 1) % queue.length
-        setActiveIndex(nextIndex)
-        setIsPlaying(true)
+        const nextTrack = queue[nextIndex]
+        setIsPlaying(false)
+        if (nextTrack) autoAdvanceRef.current(nextIndex, nextTrack)
         return
       }
 
@@ -252,7 +254,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       audio.removeEventListener('loadedmetadata', syncDuration)
       audio.removeEventListener('ended', onEnded)
     }
-  }, [activeIndex, activeTrack, isRepeatOn, queue.length])
+  }, [activeIndex, activeTrack, isRepeatOn, queue])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -324,8 +326,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ kind }),
     })
-    const result = await response.json() as { ok?: boolean; url?: string; message?: string }
-    return { ok: response.ok && result.ok === true && Boolean(result.url), url: result.url, message: result.message, status: response.status }
+    const result = await response.json() as { ok?: boolean; url?: string; message?: string; stars?: number }
+    return {
+      ok: response.ok && result.ok === true && Boolean(result.url),
+      url: result.url,
+      message: result.message,
+      stars: result.stars,
+      status: response.status,
+    }
   }
 
   const playNow = async (action: PendingPlaybackAction) => {
@@ -351,6 +359,10 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       }
       targetTrack = { ...targetTrack, audioUrl: protectedResult.url }
       setQueue((current) => current.map((track) => track.id === targetTrack.id ? targetTrack : track))
+      if (typeof protectedResult.stars === 'number') {
+        setIsAuthenticated(true)
+        setStarBalance(protectedResult.stars)
+      }
     } else {
       const result = await accessTrackWithStars(targetTrack.id, 'playback')
 
@@ -391,6 +403,10 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     const nextIndex = (activeIndex + action.direction + queue.length) % queue.length
     setActiveIndex(nextIndex)
     setIsPlaying(true)
+  }
+
+  autoAdvanceRef.current = (index, track) => {
+    void playNow({ type: 'track', index, track })
   }
 
   const playCollection = (tracks: readonly AudioTrack[], startIndex: number, sourceType: AudioSourceType) => {
@@ -809,6 +825,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                   {isAuthenticated ? `Còn ${starBalance} sao trong ví` : 'Nhấn play sẽ yêu cầu đăng nhập và trừ 1 sao'}
                 </small>
               </div>
+              <span className="global-media-player-wallet" aria-live="polite">
+                {isAuthenticated ? `${starBalance} sao` : 'Đăng nhập'}
+              </span>
             </div>
 
             <div className="global-media-player-center">

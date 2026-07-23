@@ -82,10 +82,16 @@ export async function loginDemoUser(identity: string, password: string) {
     }),
   })
 
-  return readJson<{
+  const result = await readJson<{
     ok: boolean
     message?: string
   }>(response)
+
+  if (!result.ok) return result
+  const session = await fetchUserAccessState()
+  return session.state.isAuthenticated
+    ? result
+    : { ok: false, message: 'Phiên đăng nhập chưa được lưu. Vui lòng thử lại sau khi tải lại trang.' }
 }
 
 export async function registerUserAccount(input: {
@@ -106,10 +112,16 @@ export async function registerUserAccount(input: {
     }),
   })
 
-  return readJson<{
+  const result = await readJson<{
     ok: boolean
     message?: string
   }>(response)
+
+  if (!result.ok) return result
+  const session = await fetchUserAccessState()
+  return session.state.isAuthenticated
+    ? result
+    : { ok: false, message: 'Tài khoản đã tạo nhưng phiên đăng nhập chưa được lưu. Vui lòng đăng nhập lại.' }
 }
 
 export async function logoutUser() {

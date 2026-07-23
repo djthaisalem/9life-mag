@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { SocialLoginButtons } from '@/components/social-login-buttons'
+import { loginDemoUser } from '@/lib/client-user-access'
 
 export function SiteUserLoginForm() {
   const router = useRouter()
@@ -16,23 +17,7 @@ export function SiteUserLoginForm() {
     setMessage('')
 
     startTransition(async () => {
-      const response = await fetch('/api/auth/session/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          identity,
-          password,
-          accountType: 'user',
-        }),
-      })
-
-      const result = (await response.json()) as {
-        ok: boolean
-        message?: string
-      }
+      const result = await loginDemoUser(identity, password)
 
       if (!result.ok) {
         setMessage(result.message ?? 'Không thể đăng nhập lúc này.')

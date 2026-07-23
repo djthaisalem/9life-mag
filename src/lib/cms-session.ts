@@ -91,6 +91,17 @@ export async function verifyCmsSessionToken(token?: string | null) {
 }
 
 export function getCmsSessionCookieOptions() {
+  const configuredHostname = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? '').hostname.toLowerCase()
+    } catch {
+      return ''
+    }
+  })()
+  const sharedDomain = configuredHostname === '9lifemag.com' || configuredHostname.endsWith('.9lifemag.com')
+    ? '.9lifemag.com'
+    : undefined
+
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
@@ -98,6 +109,7 @@ export function getCmsSessionCookieOptions() {
     path: '/',
     maxAge: CMS_SESSION_TTL_SECONDS,
     priority: 'high' as const,
+    ...(sharedDomain ? { domain: sharedDomain } : {}),
   }
 }
 

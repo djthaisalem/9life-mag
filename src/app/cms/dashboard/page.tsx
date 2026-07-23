@@ -8,9 +8,8 @@ import {
   cmsMusicRows,
   cmsOutletBookingRows,
   cmsOutletRows,
-  cmsUserRows,
 } from '@/lib/cms-dashboard-data'
-import { getSiteStarBalanceSummary } from '@/lib/site-user-session'
+import { getSiteStarBalanceSummary, listSiteAccountsForCms } from '@/lib/site-user-session'
 import { getWalletLedgerSnapshot } from '@/lib/wallet-ledger'
 
 const workspaceLinks = [
@@ -28,12 +27,27 @@ const publishChecks = [
   { label: 'Music', detail: 'Xác minh tệp nghe, quyền tải xuống, metadata và vị trí hiển thị.', href: '/cms/dashboard/music' },
 ] as const
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function CmsDashboardOverviewPage() {
-  const [walletEntries, starBalanceSummary] = await Promise.all([getWalletLedgerSnapshot(), getSiteStarBalanceSummary()])
+  const [walletEntries, starBalanceSummary, recentUsers] = await Promise.all([
+    getWalletLedgerSnapshot(),
+    getSiteStarBalanceSummary(),
+    listSiteAccountsForCms({ page: 1, limit: 5 }),
+  ])
   const bookingTotal = cmsArtistBookingRows.length + cmsOutletBookingRows.length
   const pendingAccess = cmsAdminApprovalRows.filter((item) => item.id !== 'minh-anh' && item.id !== 'hai-nam').length
   const pendingArtistProfiles = cmsArtistRows.slice(10).length
   const recentActivity = [
+    ...(recentUsers.users[0]
+      ? [{
+          title: 'Tài khoản mới đăng ký',
+          detail: `${recentUsers.users[0].name} · ${recentUsers.users[0].email || recentUsers.users[0].phone || 'Chưa có thông tin liên hệ'}`,
+          href: `/cms/dashboard/users/${recentUsers.users[0].id}`,
+          status: 'Mới',
+        }]
+      : []),
     { title: 'Booking nghệ sĩ mới', detail: `${cmsArtistBookingRows[0]?.artistName ?? 'Nghệ sĩ'} · ${cmsArtistBookingRows[0]?.showDate ?? 'Chưa có lịch'}`, href: '/cms/dashboard/booking/artists', status: 'Cần tiếp nhận' },
     { title: 'Đặt bàn mới', detail: `${cmsOutletBookingRows[0]?.outletName ?? 'Outlet'} · ${cmsOutletBookingRows[0]?.bookingDate ?? 'Chưa có lịch'}`, href: '/cms/dashboard/booking/outlets', status: 'Cần xác nhận' },
     { title: 'Duyệt hồ sơ nghệ sĩ', detail: `${pendingArtistProfiles} hồ sơ nháp đã tạo profile, cần admin duyệt trước khi hiển thị trên site`, href: '/cms/dashboard/artists', status: 'Chờ duyệt' },
@@ -97,7 +111,7 @@ export default async function CmsDashboardOverviewPage() {
           <h2>Tình trạng catalog</h2>
           <div className="cms-overview-health-list">
             <div><span>Hồ sơ outlet</span><strong>{cmsOutletRows.length}</strong><small>venue trong danh sách quản lý</small></div>
-            <div><span>Thành viên</span><strong>{cmsUserRows.length}</strong><small>tài khoản mẫu đang quản lý</small></div>
+            <div><span>Thành viên</span><strong>{recentUsers.totalDocs}</strong><small>tài khoản thật trong database</small></div>
             <div><span>Phân quyền chờ duyệt</span><strong>{pendingAccess}</strong><small>cần rà soát phạm vi truy cập</small></div>
           </div>
           <Link href="/cms/dashboard/api" className="cms-overview-security-link">Kiểm tra API và bảo mật <span>→</span></Link>

@@ -4927,6 +4927,18 @@ button.artist-dashboard-module-card {
   color: var(--muted);
 }
 
+.global-media-player-wallet {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 204, 82, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 184, 0, 0.12);
+  color: #ffe49a;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .global-media-player-center {
   display: grid;
   gap: 8px;

@@ -39,6 +39,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     if (kind === 'preview') {
       const cookieStore = await cookies()
       const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+      let remainingStars = authenticated?.account.stars
       if (track.accessLevel === 'premium') {
         if (!authenticated) {
           return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để mở Premium Drop.' }, { status: 401 })
@@ -55,8 +56,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
         if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để mở track này.' }, { status: 401 })
         const result = await accessMediaWithStars(authenticated.session.userId, trackId, 'playback', playbackCost)
         if (!result.ok) return NextResponse.json({ ok: false, message: `Bạn cần ${playbackCost} sao để nghe track này.` }, { status: 402 })
+        remainingStars = result.state.stars
       }
-      return NextResponse.json({ ok: true, kind, url: playbackUrl, expiresInSeconds: 60 * 30 })
+      return NextResponse.json({ ok: true, kind, url: playbackUrl, stars: remainingStars, expiresInSeconds: 60 * 30 })
     }
 
     const cookieStore = await cookies()
