@@ -1,5 +1,7 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { CmsCapabilityProvider } from '@/components/cms-capability-provider'
+import { createCmsCapabilityToken } from '@/lib/cms-capability'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { getCmsDashboardScope, hasCmsScope } from '@/lib/cms-role-policy'
 
@@ -20,5 +22,15 @@ export default async function CmsDashboardLayout({ children }: Readonly<{ childr
     redirect('/cms/forbidden')
   }
 
-  return children
+  const musicCapability = createCmsCapabilityToken({
+    email: session.email,
+    role: session.role,
+    scope: 'music',
+  })
+
+  return (
+    <CmsCapabilityProvider musicCapability={musicCapability}>
+      {children}
+    </CmsCapabilityProvider>
+  )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import { useCmsMusicCapability } from '@/components/cms-capability-provider'
 
 type ArtistOption = { slug: string; name: string }
 type GenreOption = { id: string; slug: string; name: string }
@@ -10,7 +11,8 @@ type UploadResult = { durationLabel: string; previewKey: string; masterKey: stri
 
 const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
 
-export function CmsMusicUploadForm({ artists, genres, albums, uploadCapability }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[]; uploadCapability?: string }) {
+export function CmsMusicUploadForm({ artists, genres, albums }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[] }) {
+  const uploadCapability = useCmsMusicCapability()
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
   const [result, setResult] = useState<UploadResult | null>(null)
