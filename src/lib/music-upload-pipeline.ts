@@ -15,9 +15,6 @@ const ALLOWED_AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.flac', '.m4a', '.aac
 const DEFAULT_MAX_UPLOAD_MB = 1024
 const MUSIC_METADATA_URL = 'https://9lifemag.com/music'
 const DEFAULT_COVER_KEY = 'music/covers/default-music-cover.png'
-// Temporarily stream the master directly to avoid storing a second audio object.
-// Keep the preview pipeline available for a later 192/128 kbps comparison.
-const CREATE_SEPARATE_PREVIEW = false
 
 type MusicUploadInput = {
   title: string
@@ -161,6 +158,7 @@ async function uploadDefaultCover(client: S3Client, bucket: string) {
 
 export async function processMusicUpload(input: MusicUploadInput) {
   const extension = path.extname(input.audio.name).toLowerCase()
+  const shouldCreatePreview = extension !== '.mp3'
   if (!ALLOWED_AUDIO_EXTENSIONS.has(extension) || (input.audio.type && !input.audio.type.startsWith('audio/'))) {
     throw new Error('unsupported_audio_format')
   }
@@ -192,20 +190,20 @@ export async function processMusicUpload(input: MusicUploadInput) {
   try {
     await pipeline(Readable.fromWeb(input.audio.stream() as never), createWriteStream(sourcePath, { flags: 'wx' }))
     const durationSeconds = await readDurationSeconds(sourcePath)
-    if (CREATE_SEPARATE_PREVIEW) {
+    if (shouldCreatePreview) {
       await createPreview(sourcePath, previewPath, input.title.trim(), musicCode)
     }
     await createDownloadMaster(sourcePath, masterPath, input.title.trim(), musicCode)
 
     const { client, bucket } = getR2Client()
     const coverR2Key = await uploadDefaultCover(client, bucket)
-    if (CREATE_SEPARATE_PREVIEW) {
+    if (shouldCreatePreview) {
       await uploadR2Object(client, bucket, previewKey, previewPath, 'audio/mpeg')
       uploadedPreview = true
     }
     await uploadR2Object(client, bucket, masterKey, masterPath, input.audio.type || 'application/octet-stream')
     uploadedMaster = true
-    const playbackKey = CREATE_SEPARATE_PREVIEW ? previewKey : masterKey
+    const playbackKey = shouldCreatePreview ? previewKey : masterKey
 
     const payload = await loadPayloadClient()
     const track = await payload.create({

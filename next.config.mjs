@@ -6,6 +6,10 @@ const scriptSource = process.env.NODE_ENV === 'production'
 const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
+  experimental: {
+    // Multipart audio uploads need headroom beyond MUSIC_MAX_UPLOAD_MB.
+    proxyClientMaxBodySize: 1100 * 1024 * 1024,
+  },
   serverExternalPackages: [
     'payload',
     '@payloadcms/db-postgres',

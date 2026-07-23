@@ -21,7 +21,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
     event.preventDefault()
     const form = event.currentTarget
     setIsPending(true)
-    setMessage('Đang tạo mã nhạc, chuẩn hóa metadata, xuất MP3 256 kbps và upload lên R2...')
+    setMessage('Đang tạo mã nhạc, kiểm tra định dạng, chuẩn hóa metadata và upload lên R2...')
     setResult(null)
 
     try {
@@ -32,16 +32,22 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
         headers: uploadCapability ? { Authorization: `Bearer ${uploadCapability}` } : undefined,
         body: new FormData(form),
       })
-      const payload = await response.json() as { ok?: boolean; message?: string; result?: UploadResult }
-      if (!response.ok || !payload.ok || !payload.result) {
-        setMessage(payload.message ?? 'Không thể xử lý file nhạc.')
+      const contentType = response.headers.get('content-type') ?? ''
+      const payload = contentType.includes('application/json')
+        ? await response.json() as { ok?: boolean; message?: string; result?: UploadResult }
+        : null
+      if (!response.ok || !payload?.ok || !payload.result) {
+        const fallbackMessage = response.status === 413
+          ? 'File nhạc vượt giới hạn upload của server hoặc proxy.'
+          : `Server từ chối upload (HTTP ${response.status}).`
+        setMessage(payload?.message ?? fallbackMessage)
         return
       }
       setResult(payload.result)
       setMessage(`Đã xử lý xong. Mã nhạc: ${payload.result.musicCode}. Thời lượng: ${payload.result.durationLabel}.`)
       form.reset()
     } catch {
-      setMessage('Không kết nối được đến tiến trình xử lý nhạc.')
+      setMessage('Kết nối upload bị ngắt trước khi server phản hồi. Với file WAV lớn, hãy kiểm tra giới hạn upload của IIS/Cloudflare.')
     } finally {
       setIsPending(false)
     }
@@ -62,7 +68,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
         <div className="field"><label htmlFor="musicVisibility">Hiển thị</label><select id="musicVisibility" name="visibility" defaultValue="draft"><option value="draft">Nháp nội bộ</option><option value="pending">Chờ admin duyệt</option><option value="public">Đang public</option><option value="hidden">Tạm ẩn</option></select><span className="cms-muted">Map vị trí không tự public. Track chỉ xuất hiện ngoài site khi chọn “Đang public”.</span></div>
         <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue=""><option value="">Không thuộc album</option>{albums.map((album) => <option key={album.id} value={album.title}>{album.title} · {album.artist}</option>)}</select></div>
       </div>
-      <div className="field"><label htmlFor="musicAudio">File nhạc gốc</label><input id="musicAudio" name="audio" type="file" required accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac" /><span className="cms-muted">Hỗ trợ MP3, WAV, FLAC, M4A, AAC. Hệ thống tự tạo bản phát MP3 256 kbps và giữ master riêng cho download.</span></div>
+      <div className="field"><label htmlFor="musicAudio">File nhạc gốc</label><input id="musicAudio" name="audio" type="file" required accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac" /><span className="cms-muted">Hỗ trợ MP3, WAV, FLAC, M4A, AAC. MP3 dùng trực tiếp master để phát; các định dạng còn lại sẽ tạo thêm preview MP3 256 kbps. Master gốc vẫn được giữ cho download.</span></div>
       <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Chọn các khu vực được phép hiển thị nội dung này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" name="displayMap" value={option} />{option}</label>)}</div></fieldset>
       <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending}>{isPending ? 'Đang xử lý...' : 'Xử lý và upload nhạc'}</button></div>
       {message ? <p className="cms-muted" role="status">{message}</p> : null}
