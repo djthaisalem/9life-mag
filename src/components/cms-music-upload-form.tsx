@@ -10,7 +10,7 @@ type UploadResult = { durationLabel: string; previewKey: string; masterKey: stri
 
 const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
 
-export function CmsMusicUploadForm({ artists, genres, albums }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[] }) {
+export function CmsMusicUploadForm({ artists, genres, albums, uploadCapability }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[]; uploadCapability?: string }) {
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
   const [result, setResult] = useState<UploadResult | null>(null)
@@ -26,6 +26,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',
+        headers: uploadCapability ? { Authorization: `Bearer ${uploadCapability}` } : undefined,
         body: new FormData(event.currentTarget),
       })
       const payload = await response.json() as { ok?: boolean; message?: string; result?: UploadResult }

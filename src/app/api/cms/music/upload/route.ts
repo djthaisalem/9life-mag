@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { requireCmsApiAccess } from '@/lib/cms-access'
+import { hasTrustedCmsRequestOrigin, requireCmsApiAccess } from '@/lib/cms-access'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { processMusicUpload } from '@/lib/music-upload-pipeline'
 
 export const runtime = 'nodejs'
@@ -13,8 +14,20 @@ const messageByError: Record<string, string> = {
 }
 
 export async function POST(request: Request) {
-  const access = await requireCmsApiAccess('music')
-  if (!access.ok) return access.response
+  if (!await hasTrustedCmsRequestOrigin()) {
+    return NextResponse.json({ ok: false, message: 'Origin không hợp lệ cho thao tác nhạy cảm.' }, { status: 403 })
+  }
+
+  const authorization = request.headers.get('authorization')
+  const capability = verifyCmsCapabilityToken(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+    'music',
+  )
+
+  if (!capability) {
+    const access = await requireCmsApiAccess('music')
+    if (!access.ok) return access.response
+  }
 
   const maxBytes = Math.max(1, Number(process.env.MUSIC_MAX_UPLOAD_MB ?? 1024)) * 1024 * 1024
   const contentLength = Number(request.headers.get('content-length') ?? 0)

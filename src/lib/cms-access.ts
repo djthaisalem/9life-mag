@@ -7,7 +7,7 @@ import { hasCmsScope, type CmsScope } from '@/lib/cms-role-policy'
 
 export type { CmsScope } from '@/lib/cms-role-policy'
 
-async function hasTrustedRequestOrigin() {
+export async function hasTrustedCmsRequestOrigin() {
   const headerStore = await headers()
   const origin = headerStore.get('origin')
   if (!origin) return true
@@ -37,7 +37,7 @@ export async function requireCmsApiAccess(scope: CmsScope): Promise<
       response: NextResponse
     }
 > {
-  if (!await hasTrustedRequestOrigin()) {
+  if (!await hasTrustedCmsRequestOrigin()) {
     return {
       ok: false,
       response: NextResponse.json(
