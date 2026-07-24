@@ -17,8 +17,8 @@ async function getVisitorKey(request: Request) {
   const cookieStore = await cookies()
   let visitorId = cookieStore.get('nine_life_share_visitor')?.value
   if (!visitorId) visitorId = crypto.randomUUID()
-  const ip = getTrustedClientIp(request.headers)
-  return { visitorId, value: `${visitorId}|${ip}`, isNew: !cookieStore.get('nine_life_share_visitor') }
+  // Keep qualification stable when Cloudflare or a mobile network changes the observed IP.
+  return { visitorId, value: visitorId, isNew: !cookieStore.get('nine_life_share_visitor') }
 }
 
 export async function GET() {

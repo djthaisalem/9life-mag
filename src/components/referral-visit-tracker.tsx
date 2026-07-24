@@ -4,7 +4,8 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 const QUALIFY_DELAY_MS = 31_500
-const QUALIFY_RETRY_DELAY_MS = 2_000
+const QUALIFY_RETRY_DELAY_MS = 5_000
+const QUALIFY_MAX_RETRIES = 12
 const STORAGE_KEY = 'nine_life_active_referral'
 
 type ActiveReferral = {
@@ -57,14 +58,16 @@ export function ReferralVisitTracker() {
       activeRef.current = active
       saveStoredReferral(active)
 
-      const qualify = async () => {
+      const qualify = async (attempt = 0) => {
         const result = await sendReferralEvent('qualify', token)
         if (result.ok) {
           if (activeRef.current?.token === token) activeRef.current = null
           window.sessionStorage.removeItem(STORAGE_KEY)
           return
         }
-        window.setTimeout(() => { void sendReferralEvent('qualify', token) }, QUALIFY_RETRY_DELAY_MS)
+        if (attempt < QUALIFY_MAX_RETRIES && activeRef.current?.token === token) {
+          active.timer = window.setTimeout(() => { void qualify(attempt + 1) }, QUALIFY_RETRY_DELAY_MS)
+        }
       }
 
       active.timer = window.setTimeout(() => { void qualify() }, QUALIFY_DELAY_MS)

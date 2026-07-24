@@ -98,6 +98,20 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
     })()
   }, [searchParams])
 
+  useEffect(() => {
+    const refreshReferralRewards = async () => {
+      const snapshot = await fetchUserAccessState()
+      setAccessState(snapshot.state)
+      if (snapshot.profile) setProfile(snapshot.profile)
+      if (!snapshot.state.isAuthenticated) return
+      const referrals = await getReferralSummary()
+      if (referrals.summary) setReferralSummary(referrals.summary)
+    }
+
+    const timer = window.setInterval(() => { void refreshReferralRewards() }, 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const selectedPlaylist = useMemo(
     () => playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? playlists[0] ?? null,
     [playlists, selectedPlaylistId]

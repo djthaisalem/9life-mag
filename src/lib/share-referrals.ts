@@ -141,9 +141,18 @@ export async function registerReferralVisit(token: string, visitorKey: string, v
     row.visitorFingerprints = [...row.visitorFingerprints, visitorFingerprint]
     row.visitCount = row.visitorFingerprints.length
   }
-  if (row.status === 'rewarded' || row.status === 'visited') {
+  if (row.status === 'rewarded') {
     if (!isKnownVisitor) await saveReferral(row)
-    return { ok: row.visitorFingerprint === visitorFingerprint }
+    return { ok: false as const }
+  }
+  if (row.status === 'visited') {
+    if (row.visitorFingerprint !== visitorFingerprint) {
+      // A later independent visitor can complete an unfinished referral.
+      row.visitorFingerprint = visitorFingerprint
+      row.visitedAt = new Date().toISOString()
+    }
+    await saveReferral(row)
+    return { ok: true as const }
   }
   if (row.status !== 'pending') return { ok: false as const }
   if (!isFirstVisitor) {
@@ -162,11 +171,12 @@ export async function qualifyReferralVisit(token: string, visitorKey: string, vi
   const row = await getReferral(token)
   if (!row || row.status !== 'visited' || row.ownerId === visitorAccountId || !row.visitedAt || row.visitorFingerprint !== fingerprint(visitorKey)) return { ok: false as const }
   if (Date.now() - new Date(row.visitedAt).getTime() < QUALIFY_AFTER_MS) return { ok: false as const }
+  const account = await awardShareStarsToUser({ accountId: row.ownerId, reference: `share-${row.id}` })
+  if (!account) return { ok: false as const }
   row.status = 'rewarded'
   row.rewardedAt = new Date().toISOString()
   await saveReferral(row)
-  const account = await awardShareStarsToUser({ accountId: row.ownerId, reference: `share-${row.id}` })
-  return { ok: Boolean(account) as true }
+  return { ok: true as const }
 }
 
 export async function getReferralSummary(ownerId: string) {
