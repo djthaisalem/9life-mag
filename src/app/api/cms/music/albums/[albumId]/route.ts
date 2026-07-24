@@ -31,13 +31,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ album
     const nextTrackIds = [...new Set(trackIds)]
     const trackResult = await payload.find({ collection: 'tracks', where: { id: { in: nextTrackIds } }, limit: nextTrackIds.length, depth: 0, pagination: false, overrideAccess: true })
     if (trackResult.docs.length !== nextTrackIds.length) return NextResponse.json({ ok: false, message: 'Có track không còn tồn tại.' }, { status: 400 })
-    const albumCoverId = typeof album.coverImage === 'object' && album.coverImage
-      ? String(album.coverImage.id)
-      : typeof album.coverImage === 'string' ? album.coverImage : null
+    const albumCoverValue = typeof album.coverImage === 'object' && album.coverImage
+      ? album.coverImage.id
+      : album.coverImage
+    const albumCoverId = Number(albumCoverValue)
+    const hasAlbumCover = Number.isSafeInteger(albumCoverId) && albumCoverId > 0
 
     await Promise.all([
       payload.update({ collection: 'albums', id: albumId, depth: 0, overrideAccess: true, data: { tracks: nextTrackIds } }),
-      ...trackResult.docs.map((track) => payload.update({ collection: 'tracks', id: track.id, depth: 0, overrideAccess: true, data: { albumLabel: album.title, trackType: 'single', coverImage: albumCoverId, visibility: album.isPublic ? 'public' : 'draft', isPublic: album.isPublic === true, status: album.isPublic ? 'published' : 'draft' } })),
+      ...trackResult.docs.map((track) => payload.update({ collection: 'tracks', id: track.id, depth: 0, overrideAccess: true, data: { albumLabel: album.title, trackType: 'single', ...(hasAlbumCover ? { coverImage: albumCoverId } : {}), visibility: album.isPublic ? 'public' : 'draft', isPublic: album.isPublic === true, status: album.isPublic ? 'published' : 'draft' } })),
       ...existingTrackIds.filter((id) => !nextTrackIds.includes(id)).map((trackId) => payload.update({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true, data: { albumLabel: undefined } })),
     ])
 

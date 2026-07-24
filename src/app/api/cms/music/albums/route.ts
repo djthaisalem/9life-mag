@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         seoDescription: input.description || undefined,
       },
     })
-    let albumCoverId: string | null = null
+    let albumCoverId: number | null = null
 
     if (cover) {
       const extension = cover.mimeType === 'image/png' ? 'png' : cover.mimeType === 'image/webp' ? 'webp' : 'jpg'
@@ -112,7 +112,10 @@ export async function POST(request: Request) {
           size: cover.data.length,
         },
       })
-      albumCoverId = String(media.id)
+      albumCoverId = Number(media.id)
+      if (!Number.isSafeInteger(albumCoverId) || albumCoverId <= 0) {
+        throw new Error('album_cover_relation_invalid')
+      }
       await payload.update({ collection: 'albums', id: album.id, depth: 0, overrideAccess: true, data: { coverImage: media.id } })
     }
 
