@@ -12,14 +12,14 @@ const DAILY_LIMIT = 10
 const QUALIFY_AFTER_MS = 30_000
 
 type ReferralStatus = 'pending' | 'visited' | 'rewarded' | 'rejected'
-type Referral = { id: string; ownerId: string; token: string; path: string; status: ReferralStatus; visitorFingerprint?: string; visitedAt?: string; rewardedAt?: string; createdAt: string }
+type Referral = { id: string; ownerId: string; token: string; path: string; status: ReferralStatus; visitorFingerprint?: string; visitorFingerprints: string[]; visitCount: number; visitedAt?: string; rewardedAt?: string; createdAt: string }
 
 export type CmsReferralSnapshot = {
   total: number
   page: number
   totalPages: number
   counts: Record<ReferralStatus, number>
-  rows: Array<Pick<Referral, 'id' | 'ownerId' | 'path' | 'status' | 'createdAt' | 'visitedAt' | 'rewardedAt'>>
+  rows: Array<Pick<Referral, 'id' | 'ownerId' | 'path' | 'status' | 'visitCount' | 'createdAt' | 'visitedAt' | 'rewardedAt'>>
 }
 
 export type CmsReferralRange = 'all' | 'today' | 'week' | 'custom'
@@ -52,7 +52,26 @@ async function writeFileStore(rows: Referral[]) {
 function getTodayKey(value = new Date()) { return value.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }) }
 function fingerprint(value: string) { return createHash('sha256').update(value).digest('hex') }
 function normalize(doc: Record<string, unknown>): Referral {
-  return { id: String(doc.id), ownerId: String(doc.ownerId ?? ''), token: String(doc.token ?? ''), path: String(doc.path ?? '/'), status: doc.status === 'visited' || doc.status === 'rewarded' || doc.status === 'rejected' ? doc.status : 'pending', visitorFingerprint: typeof doc.visitorFingerprint === 'string' ? doc.visitorFingerprint : undefined, visitedAt: typeof doc.visitedAt === 'string' ? doc.visitedAt : undefined, rewardedAt: typeof doc.rewardedAt === 'string' ? doc.rewardedAt : undefined, createdAt: typeof doc.createdAt === 'string' ? doc.createdAt : new Date().toISOString() }
+  const visitorFingerprint = typeof doc.visitorFingerprint === 'string' ? doc.visitorFingerprint : undefined
+  const storedFingerprints = Array.isArray(doc.visitorFingerprints)
+    ? doc.visitorFingerprints.filter((value): value is string => typeof value === 'string')
+    : []
+  const visitorFingerprints = [...new Set([visitorFingerprint, ...storedFingerprints].filter((value): value is string => Boolean(value)))]
+  const storedCount = typeof doc.visitCount === 'number' && Number.isFinite(doc.visitCount) ? Math.max(0, Math.floor(doc.visitCount)) : 0
+
+  return {
+    id: String(doc.id),
+    ownerId: String(doc.ownerId ?? ''),
+    token: String(doc.token ?? ''),
+    path: String(doc.path ?? '/'),
+    status: doc.status === 'visited' || doc.status === 'rewarded' || doc.status === 'rejected' ? doc.status : 'pending',
+    visitorFingerprint,
+    visitorFingerprints,
+    visitCount: Math.max(storedCount, visitorFingerprints.length),
+    visitedAt: typeof doc.visitedAt === 'string' ? doc.visitedAt : undefined,
+    rewardedAt: typeof doc.rewardedAt === 'string' ? doc.rewardedAt : undefined,
+    createdAt: typeof doc.createdAt === 'string' ? doc.createdAt : new Date().toISOString(),
+  }
 }
 
 function validPath(value: string) { return value.startsWith('/') && !value.startsWith('//') && value.length <= 500 }
@@ -85,7 +104,7 @@ export async function createShareReferral(ownerId: string, targetPath: string) {
   const issuedToday = todayRows.length
   if (todayRows.some((row) => row.path === targetPath)) return { ok: false as const, message: 'Bạn đã tạo link thưởng cho nội dung này hôm nay. Không thể chia sẻ lại cùng một link để nhận sao.' }
   if (issuedToday >= DAILY_LIMIT) return { ok: false as const, message: 'Bạn đã dùng hết 10 lượt chia sẻ hôm nay. Hạn mức sẽ làm mới vào 12AM.' }
-  const referral: Referral = { id: `share-${Date.now()}-${randomUUID().slice(0, 8)}`, ownerId, token: randomUUID().replace(/-/g, ''), path: targetPath, status: 'pending', createdAt: now }
+  const referral: Referral = { id: `share-${Date.now()}-${randomUUID().slice(0, 8)}`, ownerId, token: randomUUID().replace(/-/g, ''), path: targetPath, status: 'pending', visitorFingerprints: [], visitCount: 0, createdAt: now }
   await writeFileStore([referral, ...rows].slice(0, 5000))
   return { ok: true as const, referral, remaining: DAILY_LIMIT - issuedToday - 1 }
 }
@@ -103,7 +122,7 @@ async function getReferral(token: string) {
 async function saveReferral(row: Referral) {
   if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
     const payload = await loadPayloadClient()
-    await payload.update({ collection: 'share-referrals', id: row.id, data: { status: row.status, visitorFingerprint: row.visitorFingerprint, visitedAt: row.visitedAt, rewardedAt: row.rewardedAt } })
+    await payload.update({ collection: 'share-referrals', id: row.id, data: { status: row.status, visitorFingerprint: row.visitorFingerprint, visitorFingerprints: row.visitorFingerprints, visitCount: row.visitCount, visitedAt: row.visitedAt, rewardedAt: row.rewardedAt } })
     return
   }
   const rows = await readFileStore()
@@ -116,12 +135,24 @@ export async function registerReferralVisit(token: string, visitorKey: string, v
   const row = await getReferral(token)
   if (!row || row.ownerId === visitorAccountId) return { ok: false as const }
   const visitorFingerprint = fingerprint(visitorKey)
-  if (row.visitorFingerprint && row.visitorFingerprint !== visitorFingerprint) return { ok: false as const }
-  if (row.status === 'rewarded') return { ok: true as const }
-  if (row.status === 'visited') return { ok: true as const }
+  const isFirstVisitor = !row.visitorFingerprint
+  const isKnownVisitor = row.visitorFingerprints.includes(visitorFingerprint)
+  if (!isKnownVisitor) {
+    row.visitorFingerprints = [...row.visitorFingerprints, visitorFingerprint]
+    row.visitCount = row.visitorFingerprints.length
+  }
+  if (row.status === 'rewarded' || row.status === 'visited') {
+    if (!isKnownVisitor) await saveReferral(row)
+    return { ok: row.visitorFingerprint === visitorFingerprint }
+  }
   if (row.status !== 'pending') return { ok: false as const }
+  if (!isFirstVisitor) {
+    if (!isKnownVisitor) await saveReferral(row)
+    return { ok: false as const }
+  }
   row.status = 'visited'
   row.visitorFingerprint = visitorFingerprint
+  row.visitCount = Math.max(row.visitCount, 1)
   row.visitedAt ??= new Date().toISOString()
   await saveReferral(row)
   return { ok: true as const }
@@ -208,6 +239,7 @@ export async function getCmsReferralSnapshot(page = 1, limit = 20, filters: { qu
       ownerId: row.ownerId,
       path: row.path,
       status: row.status,
+      visitCount: row.visitCount,
       createdAt: row.createdAt,
       visitedAt: row.visitedAt,
       rewardedAt: row.rewardedAt,

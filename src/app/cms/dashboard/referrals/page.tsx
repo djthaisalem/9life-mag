@@ -45,7 +45,7 @@ export default async function CmsReferralsPage({ searchParams }: { searchParams:
           headers={['Người tạo', 'Nội dung chia sẻ', 'Trạng thái', 'Tạo lúc', 'Xác thực / thưởng', 'Thao tác']}
           rows={snapshot.rows.map((row) => ({
             key: row.id,
-            cells: [row.ownerId, row.path, statusLabels[row.status], new Date(row.createdAt).toLocaleString('vi-VN'), row.rewardedAt ? `Thưởng ${new Date(row.rewardedAt).toLocaleString('vi-VN')}` : row.visitedAt ? `Truy cập ${new Date(row.visitedAt).toLocaleString('vi-VN')}` : 'Chưa có lượt hợp lệ', <CmsReferralActions key="actions" referralId={row.id} />],
+            cells: [row.ownerId, row.path, `${row.visitCount} user · ${statusLabels[row.status]}`, new Date(row.createdAt).toLocaleString('vi-VN'), row.rewardedAt ? `Thưởng ${new Date(row.rewardedAt).toLocaleString('vi-VN')}` : row.visitedAt ? `Truy cập ${new Date(row.visitedAt).toLocaleString('vi-VN')}` : 'Chưa có lượt hợp lệ', <CmsReferralActions key="actions" referralId={row.id} />],
           }))}
           emptyLabel="Chưa có link referral nào được tạo."
         />
