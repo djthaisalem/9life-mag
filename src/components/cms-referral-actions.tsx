@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { useCmsStarsCapability } from '@/components/cms-capability-provider'
 
 export function CmsReferralActions({ referralId }: { referralId: string }) {
   const router = useRouter()
+  const starsCapability = useCmsStarsCapability()
   const [message, setMessage] = useState('')
   const [isPending, startTransition] = useTransition()
 
@@ -12,7 +14,11 @@ export function CmsReferralActions({ referralId }: { referralId: string }) {
     if (!window.confirm('Xóa link referral này? Thao tác không thể hoàn tác.')) return
 
     startTransition(async () => {
-      const response = await fetch(`/api/cms/referrals/${referralId}`, { method: 'DELETE' })
+      const response = await fetch(`/api/cms/referrals/${referralId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: starsCapability ? { Authorization: `Bearer ${starsCapability}` } : undefined,
+      })
       const result = (await response.json()) as { ok: boolean; message?: string }
       if (!result.ok) {
         setMessage(result.message ?? 'Không thể xóa link.')

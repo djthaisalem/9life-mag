@@ -80,7 +80,7 @@ export default function CmsArticlesPage() {
 
     <article className="panel">
       <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Tín hiệu tin tức</p><h2>Điểm ưu tiên hiển thị</h2><p className="cms-muted">Chọn vị trí phù hợp để bài viết xuất hiện đúng nhóm nội dung trên trang Tin tức.</p></div></div>
-      <div className="cms-link-grid cms-news-signal-grid">{newsSignalCards.map((signal) => <article key={signal.key} className={signal.key === selectedSignal ? 'cms-link-card cms-link-card-active' : 'cms-link-card'}><strong>{signal.label}</strong><span>{signal.value}</span><span>Chuyên mục: {signal.categories.join(', ')}</span><div className="cms-inline-actions"><button type="button" className="button-secondary" onClick={() => applySignal(signal)}>Áp dụng</button><Link className="cms-table-link" href={`/tin-tuc?signal=${signal.key}`}>Xem</Link></div></article>)}</div>
+      <div className="cms-link-grid cms-news-signal-grid">{newsSignalCards.map((signal) => <article key={signal.key} className={signal.key === selectedSignal ? 'cms-link-card cms-link-card-active' : 'cms-link-card'}><div className="cms-news-signal-card-head"><strong>{signal.label}</strong><button type="button" className="button-secondary" onClick={() => applySignal(signal)}>Áp dụng</button></div><span>{signal.value}</span><Link className="cms-table-link" href={`/tin-tuc?signal=${signal.key}`}>Xem trên site</Link></article>)}</div>
     </article>
 
     <article className="panel cms-article-editor-panel">

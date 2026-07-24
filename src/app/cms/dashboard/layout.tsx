@@ -28,9 +28,14 @@ export default async function CmsDashboardLayout({ children }: Readonly<{ childr
     role: session.role,
     scope: 'music',
   })
+  const starsCapability = createCmsCapabilityToken({
+    email: session.email,
+    role: session.role,
+    scope: 'stars',
+  })
 
   return (
-    <CmsCapabilityProvider musicCapability={musicCapability}>
+    <CmsCapabilityProvider musicCapability={musicCapability} starsCapability={starsCapability}>
       <CmsSessionKeeper />
       {children}
     </CmsCapabilityProvider>

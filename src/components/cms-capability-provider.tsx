@@ -2,19 +2,29 @@
 
 import { createContext, useContext } from 'react'
 
-const CmsMusicCapabilityContext = createContext('')
+type CmsCapabilities = {
+  music: string
+  stars: string
+}
 
-export function CmsCapabilityProvider({ musicCapability, children }: Readonly<{
+const CmsCapabilityContext = createContext<CmsCapabilities>({ music: '', stars: '' })
+
+export function CmsCapabilityProvider({ musicCapability, starsCapability, children }: Readonly<{
   musicCapability: string
+  starsCapability: string
   children: React.ReactNode
 }>) {
   return (
-    <CmsMusicCapabilityContext.Provider value={musicCapability}>
+    <CmsCapabilityContext.Provider value={{ music: musicCapability, stars: starsCapability }}>
       {children}
-    </CmsMusicCapabilityContext.Provider>
+    </CmsCapabilityContext.Provider>
   )
 }
 
 export function useCmsMusicCapability() {
-  return useContext(CmsMusicCapabilityContext)
+  return useContext(CmsCapabilityContext).music
+}
+
+export function useCmsStarsCapability() {
+  return useContext(CmsCapabilityContext).stars
 }
