@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
+type MediaValue = { id?: string | number; url?: string | null }
+
 type PublicTrackDocument = {
   id: string | number
   slug?: string
@@ -12,7 +14,7 @@ type PublicTrackDocument = {
   durationLabel?: string
   displayMap?: string
   albumLabel?: string
-  coverImage?: { url?: string | null } | string | null
+  coverImage?: MediaValue | string | number | null
 }
 
 function normalizeType(value?: string): 'track' | 'nonstop' | 'remix' {
@@ -41,9 +43,10 @@ export async function GET() {
 
     const tracks = result.docs.map((value) => {
       const track = value as PublicTrackDocument
-      const cover = typeof track.coverImage === 'object' && track.coverImage
-        ? track.coverImage.url || undefined
-        : undefined
+      const coverId = typeof track.coverImage === 'object' && track.coverImage
+        ? track.coverImage.id
+        : track.coverImage
+      const cover = coverId ? `/api/public/media/${encodeURIComponent(String(coverId))}` : undefined
       return {
         id: String(track.id),
         slug: track.slug || String(track.id),

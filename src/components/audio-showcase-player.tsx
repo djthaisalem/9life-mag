@@ -11,7 +11,7 @@ type AudioShowcasePlayerProps = {
   title: string
   subtitle: string
   tracks: readonly AudioTrack[]
-  variant?: 'playlist' | 'remix'
+  variant?: 'playlist' | 'remix' | 'track'
   density?: 'default' | 'compact'
 }
 
@@ -41,7 +41,7 @@ export function AudioShowcasePlayer({
   } = useMediaPlayer()
   const [premiumPromptOpen, setPremiumPromptOpen] = useState(false)
 
-  const sourceType = useMemo<AudioSourceType>(() => (variant === 'remix' ? 'remix' : 'nonstop'), [variant])
+  const sourceType = useMemo<AudioSourceType>(() => (variant === 'remix' ? 'remix' : variant === 'track' ? 'track' : 'nonstop'), [variant])
   const requestPlay = async (trackIndex: number) => {
     if (tracks[trackIndex]?.isPremiumDrop) {
       try {
@@ -156,7 +156,7 @@ export function AudioShowcasePlayer({
                   >
                     <Heart size={16} fill={isFavorite(track.id) ? 'currentColor' : 'none'} />
                   </button>
-                  {variant === 'remix' ? (
+                  {variant === 'remix' || variant === 'track' ? (
                     <>
                       <div className="track-stat">
                         <strong>{(downloadCounts[track.id] ?? track.downloads ?? 0).toLocaleString('en-US')}</strong>

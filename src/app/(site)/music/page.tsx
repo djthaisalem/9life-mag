@@ -56,6 +56,7 @@ type PublishedAlbum = {
   title: string
   artist: string
   cover: string
+  href: string
   collection: PlayCollectionConfig
 }
 
@@ -125,6 +126,7 @@ export default function MusicPage() {
       title,
       artist: tracks[0]?.artist || '9LIFE Artist',
       cover: tracks[0]?.cover || '/images/default-music-cover.png',
+      href: `/music/album/${encodeURIComponent(title)}`,
       collection: { tracks: tracks.map(catalogItemToAudioTrack), sourceType: 'track' },
     }))
   }, [publishedCatalog])
@@ -517,12 +519,13 @@ export default function MusicPage() {
                   title: item.title,
                   artist: item.artist,
                   cover: item.cover,
+                  href: `/music/album/${encodeURIComponent(item.title)}`,
                   collection: albumCollections[index] ?? albumCollections[0],
                 } : null
               }).filter((item): item is PublishedAlbum => Boolean(item))).map((item) => {
                 return (
                 <article key={item.title} className="tidal-album-card">
-                  <img src={item.cover} alt={item.title} />
+                  <Link href={item.href} className="tidal-album-cover-link" aria-label={`Mở Album ${item.title}`}><img src={item.cover} alt={item.title} /></Link>
                   <strong>{item.title}</strong>
                   <span>{item.artist}</span>
                   <button
