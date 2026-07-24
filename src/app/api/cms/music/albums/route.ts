@@ -119,8 +119,8 @@ export async function POST(request: Request) {
       overrideAccess: true,
       data: {
         albumLabel: input.title,
-        trackType: 'single',
-        ...(uploadedTrackIds.has(trackId) ? { coverImage: albumCoverId } : {}),
+        trackType: 'album',
+        ...(uploadedTrackIds.has(trackId) && albumCoverId ? { coverImage: albumCoverId } : {}),
         visibility: input.isPublic ? 'public' : 'draft',
         isPublic: input.isPublic,
         status: input.isPublic ? 'published' : 'draft',
@@ -136,7 +136,8 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? 'Album details are invalid.' }, { status: 400 })
     }
-    console.error('CMS album creation failed', error)
-    return NextResponse.json({ ok: false, message: 'Unable to create Album / EP right now.' }, { status: 500 })
+    const code = error instanceof Error ? error.message.split(':')[0] : ''
+    console.error('CMS album creation failed', { code, error })
+    return NextResponse.json({ ok: false, message: `Không thể tạo Album / EP lúc này${code ? ` (${code})` : ''}.` }, { status: 500 })
   }
 }
