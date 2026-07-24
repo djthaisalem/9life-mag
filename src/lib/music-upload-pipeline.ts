@@ -129,7 +129,7 @@ function formatDuration(totalSeconds: number) {
 }
 
 function toSlug(value: string) {
-  const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, (character) => character === 'đ' ? 'd' : 'D')
   return normalized.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 72) || 'untitled-track'
 }
 

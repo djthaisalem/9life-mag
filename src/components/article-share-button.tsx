@@ -4,12 +4,14 @@ import { Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
+import { normalizeSharePath } from '@/lib/url-slug'
 
 export function ArticleShareButton({ slug, title }: { slug: string; title: string }) {
   const [message, setMessage] = useState('')
   const share = async () => {
-    const result = await createReferralShareUrl(`/tin-tuc/${slug}`)
-    const url = result.ok && result.url ? result.url : `${window.location.origin}/tin-tuc/${slug}`
+    const path = normalizeSharePath(`/tin-tuc/${slug}`)
+    const result = await createReferralShareUrl(path)
+    const url = result.ok && result.url ? result.url : new URL(path, window.location.origin).toString()
     if (navigator.share) {
       try {
         await navigator.share({ title, text: 'Đọc bài viết mới trên 9LIFE MAG', url })

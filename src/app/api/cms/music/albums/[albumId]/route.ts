@@ -25,7 +25,7 @@ function parseCoverDataUrl(value?: string) {
 }
 
 function toSlug(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 72) || 'album'
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, (character) => character === 'đ' ? 'd' : 'D').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 72) || 'album'
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ albumId: string }> }) {

@@ -1,4 +1,5 @@
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
+import { toUrlSlug } from '@/lib/url-slug'
 
 export const USER_PLAYLIST_STORAGE_KEY = 'nine-life-user-playlists'
 
@@ -22,12 +23,7 @@ export type UserPlaylist = {
 }
 
 function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+  return toUrlSlug(input)
 }
 
 function randomCode() {

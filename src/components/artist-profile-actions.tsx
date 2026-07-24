@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
+import { normalizeSharePath } from '@/lib/url-slug'
 
 const artistVoteSeed: Record<string, number> = {
   'neon-viper': 12847,
@@ -92,8 +93,9 @@ export function ArtistProfileActions({
   }
 
   const handleShare = async () => {
-    const fallbackUrl = `${window.location.origin}/nghe-si/${artistSlug}`
-    const referral = await createReferralShareUrl(`/nghe-si/${artistSlug}`)
+    const path = normalizeSharePath(`/nghe-si/${artistSlug}`)
+    const fallbackUrl = new URL(path, window.location.origin).toString()
+    const referral = await createReferralShareUrl(path)
     const shareUrl = referral.url ?? fallbackUrl
 
     if (typeof navigator !== 'undefined' && navigator.share) {

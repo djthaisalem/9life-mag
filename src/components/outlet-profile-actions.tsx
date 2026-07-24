@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
+import { normalizeSharePath } from '@/lib/url-slug'
 
 const outletVoteSeed: Record<string, number> = {
   'luxe-district': 4231,
@@ -104,8 +105,9 @@ export function OutletProfileActions({
   }
 
   const handleShare = async () => {
-    const fallbackUrl = `${window.location.origin}/dat-ban/${outletSlug}`
-    const referral = await createReferralShareUrl(`/dat-ban/${outletSlug}`)
+    const path = normalizeSharePath(`/dat-ban/${outletSlug}`)
+    const fallbackUrl = new URL(path, window.location.origin).toString()
+    const referral = await createReferralShareUrl(path)
     const shareUrl = referral.url ?? fallbackUrl
 
     if (typeof navigator !== 'undefined' && navigator.share) {

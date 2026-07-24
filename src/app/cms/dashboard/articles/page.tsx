@@ -9,6 +9,7 @@ import { cmsNewsPlacementOptions, newsSignalCards } from '@/lib/news-taxonomy'
 import { featuredArticles } from '@/lib/site-data'
 import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
+import { toUrlSlug } from '@/lib/url-slug'
 
 type ArticleSeries = { title: string; description: string; placement: string; status: string }
 
@@ -66,6 +67,11 @@ export default function CmsArticlesPage() {
   }
 
   const saveArticle = async () => {
+    const normalizedSlug = toUrlSlug(postSlug || postTitle)
+    if (!normalizedSlug) {
+      setSaveMessage('Nhập tiêu đề bài viết để hệ thống tạo đường dẫn.')
+      return
+    }
     setIsSaving(true)
     setSaveMessage('')
     try {
@@ -73,9 +79,10 @@ export default function CmsArticlesPage() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
-        body: JSON.stringify({ title: postTitle, slug: postSlug, excerpt: postExcerpt, html: articleHtml }),
+        body: JSON.stringify({ title: postTitle, slug: normalizedSlug, excerpt: postExcerpt, html: articleHtml }),
       })
       const result = await response.json() as { message?: string }
+      setPostSlug(normalizedSlug)
       setSaveMessage(result.message ?? 'Không thể lưu bài viết.')
     } catch {
       setSaveMessage('Không thể kết nối tới tiến trình lưu bài viết.')

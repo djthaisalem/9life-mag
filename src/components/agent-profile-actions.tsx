@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { fetchUserAccessState, toggleFollowedAgent } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
+import { normalizeSharePath } from '@/lib/url-slug'
 
 type AgentProfileActionsProps = {
   agentName: string
@@ -34,8 +35,9 @@ export function AgentProfileActions({ agentName, agentSlug }: AgentProfileAction
   }
 
   const handleShare = async () => {
-    const fallbackUrl = `${window.location.origin}/agent/${agentSlug}`
-    const referral = await createReferralShareUrl(`/agent/${agentSlug}`)
+    const path = normalizeSharePath(`/agent/${agentSlug}`)
+    const fallbackUrl = new URL(path, window.location.origin).toString()
+    const referral = await createReferralShareUrl(path)
     const shareUrl = referral.url ?? fallbackUrl
 
     if (navigator.share) {
