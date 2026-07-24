@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
   const isMediaRoute = pathname.startsWith('/api/media/')
   const isStudentApplicationsRoute = pathname === '/api/student-applications'
   const isUserPlaylistRoute = pathname.startsWith('/api/user-playlists/')
+  const isMusicIssueReportRoute = pathname === '/api/music/report-issue'
 
   if (pathname.startsWith('/cms/dashboard')) {
     const requestHeaders = new Headers(request.headers)
@@ -43,7 +44,7 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  if ((isCmsApi || isAuthApi || isContactRequestRoute || isBookingRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute || isUserPlaylistRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
+  if ((isCmsApi || isAuthApi || isContactRequestRoute || isBookingRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute || isUserPlaylistRoute || isMusicIssueReportRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
     return NextResponse.json(
       {
         ok: false,
@@ -67,5 +68,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/booking-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/student-applications', '/api/user-playlists/:path*'],
+  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/booking-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/music/report-issue', '/api/student-applications', '/api/user-playlists/:path*'],
 }

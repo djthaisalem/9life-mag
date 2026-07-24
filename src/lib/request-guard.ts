@@ -246,3 +246,11 @@ export async function guardReferralAttempts(identity: string, ip: string, action
     blockMessage: 'Bạn đã thao tác referral quá nhiều lần. Vui lòng thử lại sau.',
   })
 }
+
+export async function guardMusicIssueReportAttempts(trackId: string, ip: string) {
+  return enforceRule('music-issue-report', [trackId, ip], {
+    maxAttempts: 3,
+    windowMs: 60 * 60 * 1000,
+    blockMessage: 'Báº¡n Ä‘Ã£ gá»­i nhiá»u bÃ¡o cÃ¡o cho track nÃ y. Vui lÃ²ng chá» team kiá»ƒm tra.',
+  })
+}

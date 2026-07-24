@@ -3,6 +3,7 @@ import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsListTable } from '@/components/cms-list-table'
 import { CmsReferralActions } from '@/components/cms-referral-actions'
 import { getCmsReferralSnapshot, type CmsReferralRange } from '@/lib/share-referrals'
+import { CmsListSearchForm } from '@/components/cms-list-search-form'
 
 const statusLabels = {
   pending: 'Chờ truy cập',
@@ -34,13 +35,13 @@ export default async function CmsReferralsPage({ searchParams }: { searchParams:
           <div><p className="section-eyebrow">Referral Ledger</p><h2>Danh sách link chia sẻ</h2><p className="cms-muted">Mỗi link chỉ thưởng sau khi có lượt truy cập độc lập, ở lại tối thiểu 30 giây và không phải chủ link.</p></div>
           <span className="pill">Trang {snapshot.page}/{snapshot.totalPages}</span>
         </div>
-        <form className="cms-form-two" action="/cms/dashboard/referrals" method="get">
+        <CmsListSearchForm className="cms-form-two" action="/cms/dashboard/referrals">
           <div className="field"><label htmlFor="referralSearch">User</label><input id="referralSearch" name="q" defaultValue={query} placeholder="ID user tạo link" /></div>
           <div className="field"><label htmlFor="referralRange">Khoảng thời gian</label><select id="referralRange" name="range" defaultValue={range}><option value="all">Toàn bộ thời gian</option><option value="today">Hôm nay</option><option value="week">Tuần này</option><option value="custom">Tùy chọn ngày</option></select></div>
           <div className="field"><label htmlFor="referralFrom">Từ ngày</label><input id="referralFrom" name="from" type="date" defaultValue={from} /></div>
           <div className="field"><label htmlFor="referralTo">Đến ngày</label><input id="referralTo" name="to" type="date" defaultValue={to} /></div>
           <div className="cms-inline-actions"><button type="submit" className="button-secondary">Lọc danh sách</button></div>
-        </form>
+        </CmsListSearchForm>
         <CmsListTable
           headers={['Người tạo', 'Nội dung chia sẻ', 'Trạng thái', 'Tạo lúc', 'Xác thực / thưởng', 'Thao tác']}
           rows={snapshot.rows.map((row) => ({

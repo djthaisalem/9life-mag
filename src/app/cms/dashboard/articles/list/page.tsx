@@ -5,6 +5,7 @@ import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { featuredArticles } from '@/lib/site-data'
+import { CmsListSearchForm } from '@/components/cms-list-search-form'
 
 export default async function CmsArticleListPage({
   searchParams,
@@ -64,10 +65,10 @@ export default async function CmsArticleListPage({
           <Link href="/cms/dashboard/articles" className="button">Tạo bài viết</Link>
         </div>
 
-        <form className="cms-list-filter" action="/cms/dashboard/articles/list">
+        <CmsListSearchForm className="cms-list-filter" action="/cms/dashboard/articles/list">
           <input name="q" type="search" defaultValue={params.q ?? ''} placeholder="Tìm theo tiêu đề, mô tả, chuyên mục hoặc slug" />
           <button type="submit" className="button-secondary">Tìm kiếm</button>
-        </form>
+        </CmsListSearchForm>
 
         <div className="cms-table-wrap">
           <table className="cms-table cms-table-articles">

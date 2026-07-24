@@ -4,6 +4,7 @@ import { CMS_LIST_PAGE_SIZE, CmsListPagination } from '@/components/cms-list-pag
 import { cmsMusicTabOptions, type CmsMusicTabKey } from '@/lib/cms-dashboard-data'
 import { getCmsMusicLibraryPage } from '@/lib/cms-music-library'
 import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
+import { CmsListSearchForm } from '@/components/cms-list-search-form'
 
 const validTabs = new Set<CmsMusicTabKey>(['all', 'track', 'nonstop', 'remix', 'playlist', 'album'])
 const getTabHref = (tab: CmsMusicTabKey, query = '') => {
@@ -52,7 +53,7 @@ export default async function CmsMusicPage({ searchParams }: { searchParams: Pro
 
       <section className="cms-panel">
         <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Library</p><h2>Danh sách nhạc từ mới đến cũ</h2><p className="cms-muted">Tối đa 20 nội dung mỗi trang trong tab {activeLabel}. Cột chỉnh sửa được đặt đầu tiên để thao tác nhanh.</p></div></div>
-        <form className="cms-form-two" action="/cms/dashboard/music" method="get">
+        <CmsListSearchForm className="cms-form-two" action="/cms/dashboard/music">
           {activeTab !== 'all' ? <input type="hidden" name="tab" value={activeTab} /> : null}
           <div className="field">
             <label htmlFor="musicLibrarySearch">Tìm trong thư viện nhạc</label>
@@ -62,7 +63,7 @@ export default async function CmsMusicPage({ searchParams }: { searchParams: Pro
             <button type="submit" className="button-secondary">Tìm kiếm</button>
             {query ? <Link className="button-secondary" href={getTabHref(activeTab)}>Xóa bộ lọc</Link> : null}
           </div>
-        </form>
+        </CmsListSearchForm>
         <div className="cms-table-wrap">
           <table className="cms-table cms-table-music">
             <thead><tr><th>Chỉnh sửa</th><th>STT</th><th>Tên nhạc</th><th>Loại</th><th>Nghệ sĩ</th><th>Thể loại</th><th>Quyền</th><th>Map hiển thị</th><th>Cập nhật</th></tr></thead>

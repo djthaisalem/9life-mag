@@ -150,12 +150,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const [isShuffled, setIsShuffled] = useState(false)
   const [isRepeatOn, setIsRepeatOn] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
-  const [showIssueModal, setShowIssueModal] = useState(false)
   const [pendingReportTrack, setPendingReportTrack] = useState<AudioTrack | null>(null)
   const [pendingReportSourceType, setPendingReportSourceType] = useState<AudioSourceType>('track')
-  const [issueReporterName, setIssueReporterName] = useState('')
-  const [issueReporterEmail, setIssueReporterEmail] = useState('')
-  const [issueDetails, setIssueDetails] = useState('')
+  const [isReportingIssue, setIsReportingIssue] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
@@ -604,22 +601,44 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     setPendingReportTrack(null)
   }
 
-  const openIssueForm = () => {
-    setShowReportModal(false)
-    setShowIssueModal(true)
-  }
+  const reportBrokenTrack = async () => {
+    if (!pendingReportTrack || isReportingIssue) return
 
-  const closeIssueForm = () => {
-    setShowIssueModal(false)
-    setIssueReporterName('')
-    setIssueReporterEmail('')
-    setIssueDetails('')
-  }
+    setIsReportingIssue(true)
+    try {
+      const response = await fetch('/api/music/report-issue', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackId: pendingReportTrack.id,
+          title: pendingReportTrack.title,
+          artist: pendingReportTrack.artist,
+          sourceType: pendingReportSourceType,
+        }),
+      })
+      const result = await response.json() as { ok?: boolean; message?: string }
+      if (!response.ok || !result.ok) {
+        window.alert(result.message ?? 'Chưa thể gửi báo cáo lúc này. Vui lòng thử lại sau.')
+        return
+      }
 
-  const submitIssueReport = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    window.alert('Đã ghi nhận báo cáo hư nhạc. Team sẽ kiểm tra track này sớm nhất có thể.')
-    closeIssueForm()
+      const reportedTrackIndex = queue.findIndex((track) => track.id === pendingReportTrack.id)
+      closeReportModal()
+      window.alert('Cảm ơn bạn đã báo lỗi. Chúng tôi đã chuyển thông tin đến bộ phận vận hành để kiểm tra sớm nhất. Hệ thống sẽ chuyển sang bài tiếp theo để trải nghiệm nghe của bạn không bị gián đoạn.')
+
+      if (queue.length > 1) {
+        const nextIndex = reportedTrackIndex >= 0
+          ? (reportedTrackIndex + 1) % queue.length
+          : (activeIndex + 1) % queue.length
+        const nextTrack = queue[nextIndex]
+        if (nextTrack) void playNow({ type: 'track', index: nextIndex, track: nextTrack })
+      }
+    } catch {
+      window.alert('Chưa thể gửi báo cáo lúc này. Vui lòng thử lại sau.')
+    } finally {
+      setIsReportingIssue(false)
+    }
   }
 
   const openPlaylistModal = (track: AudioTrack, sourceType: AudioSourceType) => {
@@ -1009,9 +1028,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
             </p>
 
             <div className="report-choice-grid">
-              <button type="button" className="playlist-picker-item" onClick={openIssueForm}>
+              <button type="button" className="playlist-picker-item" onClick={() => void reportBrokenTrack()} disabled={isReportingIssue}>
                 <strong>Hư nhạc / không play được</strong>
-                <span>Báo lỗi kỹ thuật, file hỏng, track load lỗi hoặc không nghe được.</span>
+                <span>{isReportingIssue ? 'Đang gửi báo cáo...' : 'Gửi nhanh báo cáo kỹ thuật, không cần nhập thông tin liên hệ.'}</span>
               </button>
 
               <Link
@@ -1029,47 +1048,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 Đóng
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showIssueModal && pendingReportTrack ? (
-        <div className="login-gate-overlay" role="dialog" aria-modal="true">
-          <div className="login-gate-card">
-            <div className="player-kicker">Báo lỗi nhạc</div>
-            <h3>{pendingReportTrack.title}</h3>
-            <p className="muted">
-              Cho chúng tôi biết track nào đang gặp sự cố để team kỹ thuật kiểm tra nhanh hơn.
-            </p>
-
-            <form className="login-gate-form" onSubmit={submitIssueReport}>
-              <input
-                type="text"
-                placeholder="Họ và tên"
-                value={issueReporterName}
-                onChange={(event) => setIssueReporterName(event.target.value)}
-              />
-              <input
-                type="email"
-                placeholder="Email liên hệ"
-                value={issueReporterEmail}
-                onChange={(event) => setIssueReporterEmail(event.target.value)}
-              />
-              <textarea
-                className="report-textarea"
-                placeholder="Mô tả lỗi: không phát được, phát nhưng không có tiếng, file đứng giữa chừng, lỗi trên thiết bị nào..."
-                value={issueDetails}
-                onChange={(event) => setIssueDetails(event.target.value)}
-              />
-              <div className="login-gate-actions">
-                <button type="button" className="button-secondary" onClick={closeIssueForm}>
-                  Đóng
-                </button>
-                <button type="submit" className="button">
-                  Gửi báo lỗi
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       ) : null}

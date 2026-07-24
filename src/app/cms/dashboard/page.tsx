@@ -10,6 +10,7 @@ import { getBookingRequestsSnapshot } from '@/lib/booking-requests'
 import { getCmsAccessRequests } from '@/lib/cms-access-requests'
 import { getSiteStarBalanceSummary, listSiteAccountsForCms } from '@/lib/site-user-session'
 import { getWalletLedgerSnapshot } from '@/lib/wallet-ledger'
+import { getPortalNotifications } from '@/lib/portal-notifications'
 
 const workspaceLinks = [
   { href: '/cms/dashboard/articles', label: 'Bài viết', detail: 'Biên tập, chuyên đề và vị trí hiển thị', icon: '✦' },
@@ -30,13 +31,14 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CmsDashboardOverviewPage() {
-  const [walletEntries, starBalanceSummary, recentUsers, portalAccounts, bookingRows, accessRequests] = await Promise.all([
+  const [walletEntries, starBalanceSummary, recentUsers, portalAccounts, bookingRows, accessRequests, adminNotifications] = await Promise.all([
     getWalletLedgerSnapshot(),
     getSiteStarBalanceSummary(),
     listSiteAccountsForCms({ page: 1, limit: 5 }),
     listSiteAccountsForCms({ page: 1, limit: 1000 }),
     getBookingRequestsSnapshot(),
     getCmsAccessRequests(),
+    getPortalNotifications(['admin']),
   ])
   const bookingTotal = bookingRows.length
   const pendingAccess = accessRequests.length
@@ -48,7 +50,14 @@ export default async function CmsDashboardOverviewPage() {
   )
   const latestArtistBooking = bookingRows.find((item) => item.type === 'artist')
   const latestOutletBooking = bookingRows.find((item) => item.type === 'outlet')
+  const musicIssueNotifications = adminNotifications.filter((item) => item.href === '/cms/dashboard/music')
   const recentActivity = [
+    ...musicIssueNotifications.slice(0, 3).map((notification) => ({
+      title: notification.title,
+      detail: notification.body,
+      href: notification.href,
+      status: notification.isRead ? 'Đã xem' : 'Cần kiểm tra',
+    })),
     ...(recentUsers.users[0]
       ? [{
           title: 'Tài khoản mới đăng ký',

@@ -27,3 +27,7 @@ export async function sendTelegramPaymentNotice(message: string) {
     return { ok: false, reason: 'request-failed' as const }
   }
 }
+
+export async function sendTelegramOperationsNotice(message: string) {
+  return sendTelegramPaymentNotice(message)
+}
