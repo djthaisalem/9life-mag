@@ -41,6 +41,10 @@ export default async function CmsMusicPage({ searchParams }: { searchParams: Pro
             <Link className="cms-music-upload-action" href="/cms/dashboard/music/upload"><span aria-hidden="true">↑</span><span><strong>Upload nhạc</strong><small>Thêm track, nonstop hoặc remix</small></span></Link>
           </div>
         </div>
+        <div className="cms-booking-tabs">
+          <Link href="/cms/dashboard/music" className="cms-booking-tab cms-booking-tab-active">Track</Link>
+          <Link href="/cms/dashboard/music/albums" className="cms-booking-tab">Album</Link>
+        </div>
         <nav className="cms-tab-row" aria-label="Lọc thư viện nhạc">
           {cmsMusicTabOptions.map((option) => <Link key={option.key} className={option.key === activeTab ? 'cms-tab-button cms-tab-button-active' : 'cms-tab-button'} href={getTabHref(option.key, query)}>{repairVietnameseText(option.label)}</Link>)}
         </nav>

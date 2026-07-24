@@ -4,6 +4,7 @@ import { Minus, Plus } from 'lucide-react'
 import { type ChangeEvent, useMemo, useState } from 'react'
 
 import { CmsMusicUploadForm } from '@/components/cms-music-upload-form'
+import { useCmsMusicCapability } from '@/components/cms-capability-provider'
 
 type ArtistOption = { id: string; name: string; slug: string }
 type UploadArtistOption = { slug: string; name: string }
@@ -45,13 +46,17 @@ export function CmsMusicAlbumForm({
   genres: GenreOption[]
   tracks: TrackOption[]
 }) {
+  const musicCapability = useCmsMusicCapability()
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([])
   const [trackQuery, setTrackQuery] = useState('')
   const [coverDataUrl, setCoverDataUrl] = useState('')
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
-  const [createdAlbum, setCreatedAlbum] = useState<CreatedAlbum | null>(null)
+  const [albumTitle, setAlbumTitle] = useState('')
+  const [artistId, setArtistId] = useState('')
+  const [trackUploaderKey, setTrackUploaderKey] = useState(0)
+  const [isTrackUploaderOpen, setIsTrackUploaderOpen] = useState(true)
   const [uploadedTracks, setUploadedTracks] = useState<Array<{ id: string; title: string; musicCode: string }>>([])
 
   const visibleTracks = useMemo(() => {
@@ -99,14 +104,13 @@ export function CmsMusicAlbumForm({
           musicCategory: String(formData.get('musicCategory') ?? ''),
           releaseDate: releaseDate ? new Date(releaseDate).toISOString() : undefined,
           isPublic: formData.get('isPublic') === 'on',
-          trackIds: selectedTrackIds,
+          trackIds: [...new Set([...selectedTrackIds, ...uploadedTracks.map((track) => track.id)])],
           coverDataUrl: coverDataUrl || undefined,
         }),
       })
       const result = await response.json() as { ok?: boolean; message?: string; album?: CreatedAlbum }
       if (!response.ok || !result.ok || !result.album) throw new Error(result.message || 'Không thể tạo Album / EP.')
 
-      setCreatedAlbum(result.album)
       setMessage(result.message || 'Đã tạo Album / EP.')
     } catch (error) {
       setIsError(true)
@@ -116,24 +120,12 @@ export function CmsMusicAlbumForm({
     }
   }
 
-  async function attachUploadedTrack(trackId: string) {
-    if (!createdAlbum) return
-    const response = await fetch(`/api/cms/music/albums/${encodeURIComponent(createdAlbum.id)}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trackId }),
-    })
-    const result = await response.json() as { ok?: boolean; message?: string }
-    if (!response.ok || !result.ok) throw new Error(result.message || 'Track đã upload nhưng chưa thể gắn vào Album.')
-  }
-
   return (
     <>
       <form className="form-shell cms-embedded-form" onSubmit={(event) => { event.preventDefault(); void createAlbum(event.currentTarget) }}>
         <div className="cms-form-two">
-          <div className="field"><label htmlFor="albumTitle">Tên Album / EP</label><input id="albumTitle" name="title" required maxLength={180} placeholder="Ví dụ: After Midnight EP" /></div>
-          <div className="field"><label htmlFor="albumArtist">Nghệ sĩ phát hành</label><select id="albumArtist" name="artistId" defaultValue=""><option value="">Chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.id} value={artist.id}>{artist.name}</option>)}</select></div>
+          <div className="field"><label htmlFor="albumTitle">Tên Album / EP</label><input id="albumTitle" name="title" required maxLength={180} value={albumTitle} onChange={(event) => setAlbumTitle(event.currentTarget.value)} placeholder="Ví dụ: After Midnight EP" /></div>
+          <div className="field"><label htmlFor="albumArtist">Nghệ sĩ phát hành</label><select id="albumArtist" name="artistId" value={artistId} onChange={(event) => setArtistId(event.currentTarget.value)}><option value="">Chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.id} value={artist.id}>{artist.name}</option>)}</select></div>
         </div>
         <div className="cms-form-two">
           <div className="field"><label htmlFor="albumCategory">Định dạng / thể loại</label><input id="albumCategory" name="musicCategory" maxLength={120} placeholder="Album, EP, Mixtape hoặc DJ set" /></div>
@@ -160,15 +152,16 @@ export function CmsMusicAlbumForm({
           </div>
         </div>
 
-        <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending || Boolean(createdAlbum)}>{isPending ? 'Đang tạo...' : createdAlbum ? 'Album đã được tạo' : 'Tạo Album / EP'}</button></div>
+        <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending || !albumTitle.trim() || !uploadedTracks.length}>{isPending ? 'Đang tạo...' : 'Tạo Album / EP'}</button></div>
+        {!uploadedTracks.length ? <p className="cms-muted">Upload ít nhất một track bên dưới trước khi tạo Album / EP.</p> : null}
         {message ? <p className={isError ? 'cms-form-message cms-form-message-error' : 'cms-form-message'} role="status">{message}</p> : null}
       </form>
 
-      {createdAlbum ? <article className="cms-album-upload-panel">
-        <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Album upload</p><h2>Upload file nhạc vào {createdAlbum.title}</h2><p className="cms-muted">Mỗi file upload xong sẽ tự được gắn vào Album này. MP3 lớn dùng upload trực tiếp R2; WAV, FLAC, M4A và AAC đi qua pipeline xử lý hiện có.</p></div></div>
-        {uploadedTracks.length ? <p className="cms-muted">Đã thêm {uploadedTracks.length} track mới trong lượt này. Đặt tên và chọn file tiếp theo để thêm track kế tiếp.</p> : null}
-        <CmsMusicUploadForm artists={uploadArtists} genres={genres} albums={[{ id: createdAlbum.id, title: createdAlbum.title, artist: 'Album mới tạo' }]} defaultAlbumLabel={createdAlbum.title} defaultArtistSlug={createdAlbum.artistSlug} defaultVisibility={createdAlbum.isPublic ? 'public' : 'draft'} forceTrackType onUploaded={async (result) => { await attachUploadedTrack(result.trackId); setUploadedTracks((current) => [...current, { id: result.trackId, title: result.slug || result.musicCode, musicCode: result.musicCode }]) }} />
-      </article> : null}
+      <article className="cms-album-upload-panel">
+        <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Album tracks</p><h2>Track {uploadedTracks.length + 1}</h2><p className="cms-muted">Đặt tiêu đề, chọn file và upload từng track. Khi hoàn tất, bấm Tạo Album / EP để lưu tất cả vào cùng một album.</p></div></div>
+        {uploadedTracks.length ? <div className="artist-album-track-list">{uploadedTracks.map((track, index) => <article key={track.id}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>Track {index + 1}: {track.title}</strong><small>Mã nhạc: #{track.musicCode}</small></div></article>)}</div> : null}
+        {isTrackUploaderOpen ? <CmsMusicUploadForm key={trackUploaderKey} artists={uploadArtists} genres={genres} albums={[]} defaultAlbumLabel={albumTitle} defaultArtistSlug={artists.find((artist) => artist.id === artistId)?.slug ?? ''} forceTrackType onUploaded={(result) => { setUploadedTracks((current) => [...current, { id: result.trackId, title: result.slug || result.musicCode, musicCode: result.musicCode }]); setIsTrackUploaderOpen(false) }} /> : <div className="cms-inline-actions"><button type="button" className="button-secondary" onClick={() => { setTrackUploaderKey((current) => current + 1); setIsTrackUploaderOpen(true) }}>Thêm track</button></div>}
+      </article>
     </>
   )
 }

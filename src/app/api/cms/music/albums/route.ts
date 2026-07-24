@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 const createAlbumSchema = z.object({
@@ -36,7 +37,12 @@ function toSlug(value: string) {
 }
 
 export async function POST(request: Request) {
-  const access = await requireCmsApiAccess('music')
+  const authorization = request.headers.get('authorization')
+  const capability = verifyCmsCapabilityToken(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+    'music',
+  )
+  const access = capability ? { ok: true as const, session: capability } : await requireCmsApiAccess('music')
   if (!access.ok) return access.response
   if (access.session.role !== 'super_admin') {
     return NextResponse.json({ ok: false, message: 'Chỉ Super Admin được tạo Album / EP từ kho track.' }, { status: 403 })
