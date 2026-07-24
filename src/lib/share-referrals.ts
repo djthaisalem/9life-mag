@@ -151,6 +151,19 @@ export async function getReferralSummary(ownerId: string) {
   }
 }
 
+export async function deleteCmsReferral(referralId: string) {
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    const payload = await loadPayloadClient()
+    await payload.delete({ collection: 'share-referrals', id: referralId })
+    return
+  }
+
+  const rows = await readFileStore()
+  const nextRows = rows.filter((row) => row.id !== referralId)
+  if (nextRows.length === rows.length) throw new Error('referral-not-found')
+  await writeFileStore(nextRows)
+}
+
 export async function getCmsReferralSnapshot(page = 1, limit = 20, filters: { query?: string; range?: CmsReferralRange; from?: string; to?: string } = {}): Promise<CmsReferralSnapshot> {
   const safeLimit = Math.min(Math.max(limit, 1), 50)
   const safePage = Math.max(page, 1)

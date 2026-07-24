@@ -63,6 +63,14 @@ type BookingStoreShape = {
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const STORE_PATH = path.join(DATA_DIR, 'cms-booking-requests.json')
+const DEMO_BOOKING_IDS = new Set([
+  'bk-art-001',
+  'bk-art-002',
+  'bk-art-003',
+  'bk-out-001',
+  'bk-out-002',
+  'bk-out-003',
+])
 
 function getDefaultArtistChannel(slug: string) {
   return `@artist_${slug.replaceAll('-', '_')}_ops`
@@ -171,10 +179,17 @@ function createDefaultStore(): BookingStoreShape {
 async function ensureStore(): Promise<BookingStoreShape> {
   try {
     const content = await fs.readFile(STORE_PATH, 'utf8')
-    return JSON.parse(content) as BookingStoreShape
+    const store = JSON.parse(content) as BookingStoreShape
+    const requests = store.requests.filter((request) => !DEMO_BOOKING_IDS.has(request.id))
+    if (requests.length !== store.requests.length) {
+      const sanitized = { requests }
+      await saveStore(sanitized)
+      return sanitized
+    }
+    return store
   } catch {
     await fs.mkdir(DATA_DIR, { recursive: true })
-    const initial = createDefaultStore()
+    const initial: BookingStoreShape = { requests: [] }
     await fs.writeFile(STORE_PATH, JSON.stringify(initial, null, 2), 'utf8')
     return initial
   }

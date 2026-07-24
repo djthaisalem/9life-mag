@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsListTable } from '@/components/cms-list-table'
+import { CmsReferralActions } from '@/components/cms-referral-actions'
 import { getCmsReferralSnapshot, type CmsReferralRange } from '@/lib/share-referrals'
 
 const statusLabels = {
@@ -41,10 +42,10 @@ export default async function CmsReferralsPage({ searchParams }: { searchParams:
           <div className="cms-inline-actions"><button type="submit" className="button-secondary">Lọc danh sách</button></div>
         </form>
         <CmsListTable
-          headers={['Người tạo', 'Nội dung chia sẻ', 'Trạng thái', 'Tạo lúc', 'Xác thực / thưởng']}
+          headers={['Người tạo', 'Nội dung chia sẻ', 'Trạng thái', 'Tạo lúc', 'Xác thực / thưởng', 'Thao tác']}
           rows={snapshot.rows.map((row) => ({
             key: row.id,
-            cells: [row.ownerId, row.path, statusLabels[row.status], new Date(row.createdAt).toLocaleString('vi-VN'), row.rewardedAt ? `Thưởng ${new Date(row.rewardedAt).toLocaleString('vi-VN')}` : row.visitedAt ? `Truy cập ${new Date(row.visitedAt).toLocaleString('vi-VN')}` : 'Chưa có lượt hợp lệ'],
+            cells: [row.ownerId, row.path, statusLabels[row.status], new Date(row.createdAt).toLocaleString('vi-VN'), row.rewardedAt ? `Thưởng ${new Date(row.rewardedAt).toLocaleString('vi-VN')}` : row.visitedAt ? `Truy cập ${new Date(row.visitedAt).toLocaleString('vi-VN')}` : 'Chưa có lượt hợp lệ', <CmsReferralActions key="actions" referralId={row.id} />],
           }))}
           emptyLabel="Chưa có link referral nào được tạo."
         />

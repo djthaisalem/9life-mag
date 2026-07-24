@@ -3166,6 +3166,37 @@ button.artist-dashboard-module-card {
   white-space: nowrap;
 }
 
+.cms-news-signal-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cms-news-signal-grid .cms-link-card {
+  min-width: 0;
+  padding: 14px;
+}
+
+.cms-news-signal-grid .cms-link-card strong {
+  font-size: 0.92rem;
+}
+
+.cms-news-signal-grid .cms-link-card span {
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 980px) {
+  .cms-news-signal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cms-news-signal-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .artist-directory-vote-button {
   border-color: rgba(255, 214, 102, 0.32);
   background: rgba(255, 214, 102, 0.1);

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsPortalRoleMapping } from '@/components/cms-portal-role-mapping'
+import { CmsUserEditor } from '@/components/cms-user-editor'
 import { getSiteAccountForCms } from '@/lib/site-user-session'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,7 @@ export default async function CmsUserDetailPage({
     <CmsDashboardShell
       activeKey="users"
       title={`User: ${user.name}`}
-      description="Thông tin tài khoản được đọc trực tiếp từ database vận hành."
+      description="Xem và cập nhật thông tin tài khoản trực tiếp trong database vận hành."
     >
       <div className="cms-split-grid">
         <article className="panel">
@@ -32,7 +33,7 @@ export default async function CmsUserDetailPage({
             </div>
             <div className="cms-inline-actions">
               <Link href="/cms/dashboard/users" className="button-secondary">
-                Quay lại user
+                Quay lại danh sách
               </Link>
               <Link href="/cms/dashboard/admin-access" className="button-secondary">
                 Phân quyền admin
@@ -40,44 +41,8 @@ export default async function CmsUserDetailPage({
             </div>
           </div>
 
-          <div className="form-shell cms-embedded-form">
-            <div className="field">
-              <label>Tên hiển thị</label>
-              <input value={user.name} readOnly />
-            </div>
-            <div className="cms-form-two">
-              <div className="field">
-                <label>Email</label>
-                <input value={user.email || 'Chưa cập nhật'} readOnly />
-              </div>
-              <div className="field">
-                <label>Số điện thoại</label>
-                <input value={user.phone || 'Chưa cập nhật'} readOnly />
-              </div>
-            </div>
-            <div className="cms-form-two">
-              <div className="field">
-                <label>Loại tài khoản</label>
-                <input value={user.accountType === 'artist' ? 'Artist portal' : 'User'} readOnly />
-              </div>
-              <div className="field">
-                <label>Trạng thái</label>
-                <input value={user.isActive ? 'Đang hoạt động' : 'Tạm khóa'} readOnly />
-              </div>
-            </div>
-            <div className="cms-form-two">
-              <div className="field">
-                <label>Số sao</label>
-                <input value={`${user.stars} sao`} readOnly />
-              </div>
-              <div className="field">
-                <label>Gói</label>
-                <input value={user.isPremium ? 'Premium' : 'Free'} readOnly />
-              </div>
-            </div>
-
-            {user.accountType === 'artist' ? <CmsPortalRoleMapping accountId={id} /> : null}
-          </div>
+          <CmsUserEditor initialUser={user} />
+          {user.accountType === 'artist' ? <CmsPortalRoleMapping accountId={id} /> : null}
         </article>
 
         <article className="panel">

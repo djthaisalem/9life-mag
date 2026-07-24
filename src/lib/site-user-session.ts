@@ -912,6 +912,42 @@ export async function getSiteAccountForCms(accountId: string) {
   return account ? toCmsSiteAccount(account) : null
 }
 
+export async function updateSiteAccountForCms(input: {
+  accountId: string
+  fullName: string
+  email?: string
+  phone?: string
+  stars: number
+  isPremium: boolean
+  isActive: boolean
+}) {
+  const fullName = input.fullName.trim()
+  const email = input.email?.trim().toLowerCase() || undefined
+  const phone = normalizePhone(input.phone ?? '') || undefined
+  const stars = Math.max(0, Math.floor(input.stars))
+
+  if (getStorageDriver() === 'payload') {
+    const account = await updatePayloadAccount(input.accountId, {
+      fullName,
+      email,
+      phone,
+      stars,
+      isPremium: input.isPremium,
+      isActive: input.isActive,
+    })
+    return account ? getSiteAccountForCms(input.accountId) : null
+  }
+
+  const account = await updateFileAccount(input.accountId, (current) => {
+    current.fullName = fullName
+    current.email = email
+    current.phone = phone
+    current.stars = stars
+    current.isActive = input.isActive
+  })
+  return account ? getSiteAccountForCms(input.accountId) : null
+}
+
 export async function registerSiteAccount(input: RegisterSiteAccountInput) {
   const email = input.email?.trim() ?? ''
   const phone = normalizePhone(input.phone ?? '')

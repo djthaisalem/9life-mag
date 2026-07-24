@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { CmsListTable } from '@/components/cms-list-table'
-import { cmsUserRows } from '@/lib/cms-dashboard-data'
+import type { CmsSiteAccount } from '@/lib/site-user-session'
 import {
   paymentProviders,
   starPackages,
@@ -39,6 +39,7 @@ type CmsStarsPaymentPanelProps = {
     hasTelegramToken: boolean
     telegramChannel: string
   }
+  initialUsers?: CmsSiteAccount[]
 }
 
 type PaymentConfigForm = CmsStarsPaymentPanelProps['paymentConfig'] & {
@@ -94,6 +95,7 @@ const emptyEditorState: PackageEditorState = {
 export function CmsStarsPaymentPanel({
   initialSnapshot,
   paymentConfig,
+  initialUsers = [],
 }: CmsStarsPaymentPanelProps) {
   const [snapshot, setSnapshot] = useState(initialSnapshot)
   const [packageRows, setPackageRows] = useState<StarPackageRow[]>(
@@ -121,14 +123,13 @@ export function CmsStarsPaymentPanel({
   const [isPending, startTransition] = useTransition()
 
   const topUsers = useMemo(() => {
-    return cmsUserRows
+    return initialUsers
       .map((user) => ({
         ...user,
-        liveStars: snapshot.balances[user.id] ?? 0,
+        liveStars: snapshot.balances[user.id] ?? user.stars,
       }))
-      .sort((a, b) => b.liveStars - a.liveStars)
       .slice(0, 20)
-  }, [snapshot.balances])
+  }, [initialUsers, snapshot.balances])
 
   const pendingRequests = useMemo(
     () => snapshot.requests.filter((request) => request.status === 'pending').slice(0, 20),
@@ -603,20 +604,20 @@ export function CmsStarsPaymentPanel({
         {activeReviewTab === 'members' ? (
           <CmsListTable
             className="cms-table-stars-members"
-            headers={['STT', 'User', 'Email', 'Loại tài khoản', 'Vote', 'Sao', 'Thao tác']}
+            headers={['STT', 'User', 'Liên hệ', 'Loại tài khoản', 'Ngày tạo', 'Sao', 'Thao tác']}
             rows={topUsers.map((user, index) => ({
               key: user.id,
               cells: [
                 String(index + 1).padStart(2, '0'),
-                <div key="user"><strong>{user.name}</strong><span>{user.activity}</span></div>,
-                user.email,
-                user.type,
-                user.votes,
+                <div key="user"><strong>{user.name}</strong><span>{user.isActive ? 'Đang hoạt động' : 'Tạm khóa'}</span></div>,
+                user.email || user.phone || 'Chưa cập nhật',
+                user.accountType === 'artist' ? 'Artist portal' : 'User',
+                new Date(user.createdAt).toLocaleDateString('vi-VN'),
                 user.liveStars,
-                <div key="actions" className="cms-table-actions"><Link className="cms-table-link" href={`/cms/dashboard/users/${user.id}`}>Mở user</Link></div>,
+                <div key="actions" className="cms-table-actions"><Link className="cms-table-link" href={`/cms/dashboard/users/${user.id}`}>Chỉnh sửa</Link></div>,
               ],
             }))}
-            emptyLabel="Chưa có member trong ví sao."
+            emptyLabel="Chưa có thành viên trong database."
           />
         ) : null}
 

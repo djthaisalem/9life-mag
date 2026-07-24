@@ -2,13 +2,12 @@ import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsStarAnalyticsPanel } from '@/components/cms-star-analytics-panel'
 import {
-  cmsAdminApprovalRows,
-  cmsArtistBookingRows,
   cmsArtistRows,
   cmsMusicRows,
-  cmsOutletBookingRows,
   cmsOutletRows,
 } from '@/lib/cms-dashboard-data'
+import { getBookingRequestsSnapshot } from '@/lib/booking-requests'
+import { getCmsAccessRequests } from '@/lib/cms-access-requests'
 import { getSiteStarBalanceSummary, listSiteAccountsForCms } from '@/lib/site-user-session'
 import { getWalletLedgerSnapshot } from '@/lib/wallet-ledger'
 
@@ -31,14 +30,18 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CmsDashboardOverviewPage() {
-  const [walletEntries, starBalanceSummary, recentUsers] = await Promise.all([
+  const [walletEntries, starBalanceSummary, recentUsers, bookingRows, accessRequests] = await Promise.all([
     getWalletLedgerSnapshot(),
     getSiteStarBalanceSummary(),
     listSiteAccountsForCms({ page: 1, limit: 5 }),
+    getBookingRequestsSnapshot(),
+    getCmsAccessRequests(),
   ])
-  const bookingTotal = cmsArtistBookingRows.length + cmsOutletBookingRows.length
-  const pendingAccess = cmsAdminApprovalRows.filter((item) => item.id !== 'minh-anh' && item.id !== 'hai-nam').length
+  const bookingTotal = bookingRows.length
+  const pendingAccess = accessRequests.length
   const pendingArtistProfiles = cmsArtistRows.slice(10).length
+  const latestArtistBooking = bookingRows.find((item) => item.type === 'artist')
+  const latestOutletBooking = bookingRows.find((item) => item.type === 'outlet')
   const recentActivity = [
     ...(recentUsers.users[0]
       ? [{
@@ -48,8 +51,12 @@ export default async function CmsDashboardOverviewPage() {
           status: 'Mới',
         }]
       : []),
-    { title: 'Booking nghệ sĩ mới', detail: `${cmsArtistBookingRows[0]?.artistName ?? 'Nghệ sĩ'} · ${cmsArtistBookingRows[0]?.showDate ?? 'Chưa có lịch'}`, href: '/cms/dashboard/booking/artists', status: 'Cần tiếp nhận' },
-    { title: 'Đặt bàn mới', detail: `${cmsOutletBookingRows[0]?.outletName ?? 'Outlet'} · ${cmsOutletBookingRows[0]?.bookingDate ?? 'Chưa có lịch'}`, href: '/cms/dashboard/booking/outlets', status: 'Cần xác nhận' },
+    ...(latestArtistBooking
+      ? [{ title: 'Booking nghệ sĩ mới', detail: `${latestArtistBooking.title} · ${latestArtistBooking.schedule}`, href: '/cms/dashboard/booking/artists', status: 'Cần tiếp nhận' }]
+      : []),
+    ...(latestOutletBooking
+      ? [{ title: 'Đặt bàn mới', detail: `${latestOutletBooking.title} · ${latestOutletBooking.schedule}`, href: '/cms/dashboard/booking/outlets', status: 'Cần xác nhận' }]
+      : []),
     { title: 'Duyệt hồ sơ nghệ sĩ', detail: `${pendingArtistProfiles} hồ sơ nháp đã tạo profile, cần admin duyệt trước khi hiển thị trên site`, href: '/cms/dashboard/artists', status: 'Chờ duyệt' },
     { title: 'Yêu cầu phân quyền', detail: `${pendingAccess} tài khoản đang chờ kiểm tra quyền truy cập CMS`, href: '/cms/dashboard/admin-access', status: 'Chờ duyệt' },
   ]

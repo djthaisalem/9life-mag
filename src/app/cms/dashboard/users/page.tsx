@@ -90,7 +90,7 @@ export default async function CmsUsersPage({
                   <td>
                     <div className="cms-table-actions">
                       <Link href={`/cms/dashboard/users/${user.id}`} className="cms-table-link">
-                        Xem chi tiết
+                        Xem / chỉnh sửa
                       </Link>
                       <Link href="/cms/dashboard/admin-access" className="cms-table-link">
                         Quyền
