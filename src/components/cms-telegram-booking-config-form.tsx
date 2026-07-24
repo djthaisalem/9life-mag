@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 
 export function CmsTelegramBookingConfigForm({ channel, tokenConfigured }: { channel: string; tokenConfigured: boolean }) {
+  const capability = useCmsCapability('booking')
   const [value, setValue] = useState(channel)
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -14,7 +16,7 @@ export function CmsTelegramBookingConfigForm({ channel, tokenConfigured }: { cha
       const response = await fetch('/api/cms/telegram-config', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({ channel: value }),
       })
       const result = await response.json() as { ok?: boolean; message?: string }

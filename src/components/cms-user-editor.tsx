@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 import type { CmsSiteAccount } from '@/lib/site-user-session'
 
 export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) {
+  const capability = useCmsCapability('api_security')
   const [user, setUser] = useState(initialUser)
   const [message, setMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(true)
@@ -14,7 +16,8 @@ export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) 
     startTransition(async () => {
       const response = await fetch(`/api/cms/users/${user.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({
           fullName: user.name,
           email: user.email,

@@ -230,8 +230,10 @@ export function CmsStarsPaymentPanel({
     startTransition(async () => {
       const response = await fetch('/api/cms/star-topups', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(starsCapability ? { Authorization: `Bearer ${starsCapability}` } : {}),
         },
         body: JSON.stringify({
           action: 'review',

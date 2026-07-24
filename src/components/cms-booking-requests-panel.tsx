@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { CmsListTable } from '@/components/cms-list-table'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 import type {
   BookingReminderConfig,
   BookingRequestRecord,
@@ -49,6 +50,7 @@ export function CmsBookingRequestsPanel({
   description,
   showTypeColumn = true,
 }: CmsBookingRequestsPanelProps) {
+  const capability = useCmsCapability('booking')
   const [activeStatusTab, setActiveStatusTab] = useState<BookingStatusTab>('receiving')
   const [visibleCount, setVisibleCount] = useState(20)
   const [requestRows, setRequestRows] = useState(rows)
@@ -84,7 +86,8 @@ export function CmsBookingRequestsPanel({
     startTransition(async () => {
       const response = await fetch('/api/cms/booking-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({
           action: 'update-status',
           requestId,
@@ -119,7 +122,8 @@ export function CmsBookingRequestsPanel({
     startTransition(async () => {
       const response = await fetch('/api/cms/booking-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({
           action: 'update-reminder-config',
           requestId,

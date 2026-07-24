@@ -3,6 +3,7 @@ import 'server-only'
 import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken, type CmsSession } from '@/lib/cms-session'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { hasCmsScope, type CmsScope } from '@/lib/cms-role-policy'
 
 export type { CmsScope } from '@/lib/cms-role-policy'
@@ -53,6 +54,25 @@ export async function requireCmsApiAccess(scope: CmsScope): Promise<
   const cookieStore = await cookies()
   const token = cookieStore.get(CMS_SESSION_COOKIE)?.value
   const session = await verifyCmsSessionToken(token)
+
+  const headerStore = await headers()
+  const authorization = headerStore.get('authorization')
+  const capability = verifyCmsCapabilityToken(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+    scope,
+  )
+
+  if (capability) {
+    return {
+      ok: true,
+      session: {
+        email: capability.email,
+        role: capability.role,
+        issuedAt: 0,
+        expiresAt: capability.expiresAt,
+      },
+    }
+  }
 
   if (!session) {
     console.warn('CMS API session rejected', {

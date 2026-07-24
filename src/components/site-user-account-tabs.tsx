@@ -24,6 +24,12 @@ export function SiteUserAccountTabs() {
       .finally(() => setIsChecking(false))
   }, [])
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'register') {
+      setActiveTab('register')
+    }
+  }, [])
+
   if (isChecking) {
     return <div className="account-auth-panel"><p className="muted">Đang kiểm tra phiên đăng nhập...</p></div>
   }

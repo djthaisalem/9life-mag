@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CmsArticleLexicalEditor } from '@/components/cms-article-lexical-editor'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { cmsNewsPlacementOptions, newsSignalCards } from '@/lib/news-taxonomy'
 import { featuredArticles } from '@/lib/site-data'
@@ -21,6 +22,7 @@ const articleCategories = ['Tin nightlife', 'Phỏng vấn nghệ sĩ', 'Music r
 const initialArticleHtml = '<h2>Tiêu đề mở bài</h2><p>Soạn bài viết tại đây, bôi chọn đoạn văn rồi dùng thanh công cụ để định dạng, chèn hình ảnh, video hoặc CTA.</p><p>Chuyển sang chế độ HTML khi cần chỉnh trực tiếp mã nội dung.</p>'
 
 export default function CmsArticlesPage() {
+  const capability = useCmsCapability('content')
   const articleCatalog = useMemo(
     () => repairVietnameseValue([...featuredArticles, ...newsCatalogSupplement]),
     [],
@@ -70,7 +72,7 @@ export default function CmsArticlesPage() {
       const response = await fetch('/api/cms/articles', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({ title: postTitle, slug: postSlug, excerpt: postExcerpt, html: articleHtml }),
       })
       const result = await response.json() as { message?: string }

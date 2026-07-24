@@ -1050,6 +1050,12 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       {showLoginModal ? (
         <div className="login-gate-overlay" role="dialog" aria-modal="true">
           <div className="login-gate-card">
+            <div className="account-auth-tabs" role="tablist" aria-label="Truy cập tài khoản">
+              <span className="account-auth-tab account-auth-tab-active" role="tab" aria-selected="true">Đăng nhập</span>
+              <Link href="/tai-khoan?tab=register" className="account-auth-tab" role="tab" aria-selected="false" onClick={closeLoginModal}>
+                Tạo tài khoản
+              </Link>
+            </div>
             <div className="player-kicker">{pendingPlaybackAction ? 'Đăng nhập để phát nhạc' : 'Đăng nhập để tải'}</div>
             <h3>
               {pendingPlaybackAction

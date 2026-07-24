@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 
 type Agency = { slug: string; name: string; label: string; location: string; coverage: string; image: string; description: string; specialties: string[]; services: string[] }
 
@@ -9,12 +10,13 @@ function splitItems(value: string) {
 }
 
 export function ArtistAgencyProfileEditor({ endpoint, eyebrow = 'Agent Profile' }: { endpoint: string; eyebrow?: string }) {
+  const capability = useCmsCapability('artists')
   const [agency, setAgency] = useState<Agency | null>(null)
   const [message, setMessage] = useState('Đang tải profile Agent...')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    void fetch(endpoint, { cache: 'no-store' })
+    void fetch(endpoint, { cache: 'no-store', credentials: 'include', headers: capability ? { Authorization: `Bearer ${capability}` } : undefined })
       .then(async (response) => ({ response, body: await response.json() as { ok: boolean; message?: string; agency?: Agency } }))
       .then(({ response, body }) => {
         if (!response.ok || !body.ok || !body.agency) { setMessage(body.message ?? 'Không thể tải profile Agent.'); return }
@@ -22,13 +24,13 @@ export function ArtistAgencyProfileEditor({ endpoint, eyebrow = 'Agent Profile' 
         setMessage('')
       })
       .catch(() => setMessage('Không thể tải profile Agent.'))
-  }, [endpoint])
+  }, [endpoint, capability])
 
   async function save() {
     if (!agency) return
     setSaving(true)
     try {
-      const response = await fetch(endpoint, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(agency) })
+      const response = await fetch(endpoint, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify(agency) })
       const body = await response.json() as { ok: boolean; message?: string; agency?: Agency }
       if (body.ok && body.agency) setAgency(body.agency)
       setMessage(body.message ?? (body.ok ? 'Đã lưu profile Agent.' : 'Chưa thể lưu profile Agent.'))

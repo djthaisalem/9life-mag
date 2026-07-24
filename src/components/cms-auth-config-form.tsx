@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 
 type CmsAuthConfigFormProps = {
   initialValues: {
@@ -20,6 +21,7 @@ type CmsAuthConfigFormProps = {
 }
 
 export function CmsAuthConfigForm({ initialValues }: CmsAuthConfigFormProps) {
+  const capability = useCmsCapability('api_security')
   const [googleClientId, setGoogleClientId] = useState(initialValues.googleClientId)
   const [googleClientSecret, setGoogleClientSecret] = useState('')
   const [facebookAppId, setFacebookAppId] = useState(initialValues.facebookAppId)
@@ -37,8 +39,10 @@ export function CmsAuthConfigForm({ initialValues }: CmsAuthConfigFormProps) {
     startTransition(async () => {
       const response = await fetch('/api/cms/auth-config', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(capability ? { Authorization: `Bearer ${capability}` } : {}),
         },
         body: JSON.stringify({
           googleClientId,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 
 type PortalRole = 'manager' | 'booking'
 type MappingData = {
@@ -9,11 +10,12 @@ type MappingData = {
 }
 
 export function CmsPortalRoleMapping({ accountId }: { accountId: string }) {
+  const capability = useCmsCapability('api_security')
   const [data, setData] = useState<MappingData | null>(null)
   const [message, setMessage] = useState('Đang tải cấu hình portal...')
 
   useEffect(() => {
-    void fetch(`/api/cms/portal-access/${accountId}`, { cache: 'no-store' })
+    void fetch(`/api/cms/portal-access/${accountId}`, { cache: 'no-store', credentials: 'include', headers: capability ? { Authorization: `Bearer ${capability}` } : undefined })
       .then(async (response) => ({ response, body: await response.json() as { ok: boolean; message?: string } & MappingData }))
       .then(({ response, body }) => {
         if (!response.ok || !body.ok) { setMessage(body.message ?? 'Tài khoản này chưa phải portal role.'); return }
@@ -21,11 +23,11 @@ export function CmsPortalRoleMapping({ accountId }: { accountId: string }) {
         setMessage('')
       })
       .catch(() => setMessage('Không thể tải cấu hình portal.'))
-  }, [accountId])
+  }, [accountId, capability])
 
   async function save() {
     if (!data || data.account.portalRole === 'artist') return
-    const response = await fetch(`/api/cms/portal-access/${accountId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data.account) })
+    const response = await fetch(`/api/cms/portal-access/${accountId}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify(data.account) })
     const body = await response.json() as { ok: boolean; message?: string }
     setMessage(body.message ?? (body.ok ? 'Đã lưu mapping.' : 'Chưa thể lưu mapping.'))
   }

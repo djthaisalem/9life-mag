@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useCmsCapability } from '@/components/cms-capability-provider'
 
 type CmsR2ConfigFormProps = {
   initialValues: {
@@ -15,6 +16,7 @@ type CmsR2ConfigFormProps = {
 }
 
 export function CmsR2ConfigForm({ initialValues }: CmsR2ConfigFormProps) {
+  const capability = useCmsCapability('api_security')
   const [accountId, setAccountId] = useState(initialValues.accountId)
   const [accessKeyId, setAccessKeyId] = useState('')
   const [secretAccessKey, setSecretAccessKey] = useState('')
@@ -31,8 +33,10 @@ export function CmsR2ConfigForm({ initialValues }: CmsR2ConfigFormProps) {
     startTransition(async () => {
       const response = await fetch('/api/cms/r2-config', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(capability ? { Authorization: `Bearer ${capability}` } : {}),
         },
         body: JSON.stringify({
           accountId,

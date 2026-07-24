@@ -23,19 +23,13 @@ export default async function CmsDashboardLayout({ children }: Readonly<{ childr
     redirect('/cms/forbidden')
   }
 
-  const musicCapability = createCmsCapabilityToken({
-    email: session.email,
-    role: session.role,
-    scope: 'music',
-  })
-  const starsCapability = createCmsCapabilityToken({
-    email: session.email,
-    role: session.role,
-    scope: 'stars',
-  })
+  const scopes = ['api_security', 'booking', 'stars', 'content', 'music', 'artists', 'overview', 'private_contacts'] as const
+  const capabilities = Object.fromEntries(
+    scopes.map((scope) => [scope, createCmsCapabilityToken({ email: session.email, role: session.role, scope })]),
+  ) as Record<(typeof scopes)[number], string>
 
   return (
-    <CmsCapabilityProvider musicCapability={musicCapability} starsCapability={starsCapability}>
+    <CmsCapabilityProvider capabilities={capabilities}>
       <CmsSessionKeeper />
       {children}
     </CmsCapabilityProvider>
