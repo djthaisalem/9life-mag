@@ -11,6 +11,7 @@ type PublicTrackDocument = {
   genreLabel?: string
   durationLabel?: string
   displayMap?: string
+  albumLabel?: string
   coverImage?: { url?: string | null } | string | null
 }
 
@@ -54,6 +55,7 @@ export async function GET() {
         displayMap: (track.displayMap || '').split('/').map((item) => item.trim()).filter(Boolean),
         musicCode: track.musicCode,
         cover,
+        albumLabel: track.albumLabel || undefined,
       }
     })
 

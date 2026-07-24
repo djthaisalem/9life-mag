@@ -51,6 +51,14 @@ type CommunityMix = {
   collection: PlayCollectionConfig
 }
 
+type PublishedAlbum = {
+  id: string
+  title: string
+  artist: string
+  cover: string
+  collection: PlayCollectionConfig
+}
+
 type GenreTab = 'all' | 'nonstop' | 'remix' | 'afterhours'
 
 const featuredArtistRotationKey = 'nine-life-music-artist-rotation-v1'
@@ -106,6 +114,20 @@ export default function MusicPage() {
   )
   const liveNonstopTracks = useMemo(() => [...publishedNonstopTracks, ...tidalNonstopTracks], [publishedNonstopTracks])
   const liveRemixTracks = useMemo(() => [...publishedRemixTracks, ...tidalRemixTracks], [publishedRemixTracks])
+  const publishedAlbums = useMemo<PublishedAlbum[]>(() => {
+    const groups = new Map<string, PublicMusicCatalogItem[]>()
+    publishedCatalog.forEach((track) => {
+      if (!track.albumLabel) return
+      groups.set(track.albumLabel, [...(groups.get(track.albumLabel) ?? []), track])
+    })
+    return [...groups.entries()].map(([title, tracks]) => ({
+      id: `album:${title}`,
+      title,
+      artist: tracks[0]?.artist || '9LIFE Artist',
+      cover: tracks[0]?.cover || '/images/default-music-cover.png',
+      collection: { tracks: tracks.map(catalogItemToAudioTrack), sourceType: 'track' },
+    }))
+  }, [publishedCatalog])
   const sidebarLinks = [
     { label: 'Trang chủ music', href: '#music-home' },
     { label: 'Dành cho bạn', href: '#for-you' },
@@ -488,9 +510,16 @@ export default function MusicPage() {
             </div>
 
             <div className="tidal-album-grid">
-              {albumOrder.map((index) => {
+              {(publishedAlbums.length ? publishedAlbums : albumOrder.map((index) => {
                 const item = tidalAlbums[index]
-                if (!item) return null
+                return item ? {
+                  id: item.title,
+                  title: item.title,
+                  artist: item.artist,
+                  cover: item.cover,
+                  collection: albumCollections[index] ?? albumCollections[0],
+                } : null
+              }).filter((item): item is PublishedAlbum => Boolean(item))).map((item) => {
                 return (
                 <article key={item.title} className="tidal-album-card">
                   <img src={item.cover} alt={item.title} />
@@ -499,7 +528,7 @@ export default function MusicPage() {
                   <button
                     type="button"
                     className="tidal-play-chip tidal-play-chip-card"
-                    onClick={() => playSet(albumCollections[index] ?? albumCollections[0])}
+                    onClick={() => playSet(item.collection)}
                   >
                     <Play size={14} />
                     Play

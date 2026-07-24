@@ -11,6 +11,7 @@ export type PublicMusicCatalogItem = {
   displayMap: string[]
   musicCode?: string
   cover?: string
+  albumLabel?: string
 }
 
 export async function fetchPublicMusicCatalog() {
