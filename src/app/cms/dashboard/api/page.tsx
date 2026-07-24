@@ -4,6 +4,7 @@ import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { getAuthConfigSnapshot } from '@/lib/auth-config'
 import { cmsApiGroups, cmsCollections } from '@/lib/cms-data'
 import { getR2ConfigSnapshot } from '@/lib/r2-config'
+import { env } from '@/lib/env'
 
 export default async function CmsApiPage() {
   const r2Config = await getR2ConfigSnapshot()
@@ -52,6 +53,23 @@ export default async function CmsApiPage() {
               isConfigured: r2Config.isConfigured,
             }}
           />
+        </article>
+
+        <article className="panel">
+          <div className="cms-panel-head-inline">
+            <div>
+              <p className="section-eyebrow">Telegram Recovery</p>
+              <h2>Khôi phục mật khẩu qua Telegram</h2>
+              <p className="muted">Token bot và webhook secret chỉ được đặt trên VPS, không hiển thị trong CMS.</p>
+            </div>
+          </div>
+          <div className="cms-overview-stats cms-overview-stats-2">
+            <article className="metric"><strong>{env.TELEGRAM_BOT_TOKEN ? 'Ready' : 'Missing'}</strong><span>TELEGRAM_BOT_TOKEN</span></article>
+            <article className="metric"><strong>{env.TELEGRAM_BOT_USERNAME ? 'Ready' : 'Missing'}</strong><span>TELEGRAM_BOT_USERNAME</span></article>
+            <article className="metric"><strong>{env.TELEGRAM_WEBHOOK_SECRET ? 'Ready' : 'Missing'}</strong><span>TELEGRAM_WEBHOOK_SECRET</span></article>
+            <article className="metric"><strong>{env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_USERNAME && env.TELEGRAM_WEBHOOK_SECRET ? 'Ready' : 'Pending'}</strong><span>Trạng thái reset Telegram</span></article>
+          </div>
+          <div className="field-note">Webhook cần khai báo tại BotFather hoặc Telegram API: <code>{env.NEXT_PUBLIC_SITE_URL}/api/telegram/password-reset</code></div>
         </article>
 
         <article className="panel">

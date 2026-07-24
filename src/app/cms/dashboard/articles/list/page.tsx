@@ -2,17 +2,35 @@ import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CMS_LIST_PAGE_SIZE, CmsListPagination } from '@/components/cms-list-pagination'
 import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
+import { loadPayloadClient } from '@/lib/payload-runtime'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { featuredArticles } from '@/lib/site-data'
 
 export default async function CmsArticleListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; q?: string }>
 }) {
   const params = await searchParams
-  const catalog = repairVietnameseValue([...featuredArticles, ...newsCatalogSupplement])
+  const query = (params.q ?? '').trim().toLowerCase()
+  const payload = await loadPayloadClient()
+  const persisted = await payload.find({
+    collection: 'posts',
+    depth: 0,
+    limit: 500,
+    sort: '-updatedAt',
+    overrideAccess: true,
+  })
+  const persistedCatalog = persisted.docs.map((article) => ({
+    title: article.title,
+    slug: article.slug,
+    summary: article.excerpt ?? '',
+    category: 'Bài viết CMS',
+    date: article.updatedAt.slice(0, 10),
+  }))
+  const catalog = repairVietnameseValue([...persistedCatalog, ...featuredArticles, ...newsCatalogSupplement])
     .filter((article, index, rows) => rows.findIndex((item) => item.slug === article.slug) === index)
+    .filter((article) => !query || [article.title, article.summary, article.category, article.slug].some((value) => value.toLowerCase().includes(query)))
   const totalPages = Math.max(1, Math.ceil(catalog.length / CMS_LIST_PAGE_SIZE))
   const page = Math.min(
     totalPages,
@@ -45,6 +63,11 @@ export default async function CmsArticleListPage({
           </div>
           <Link href="/cms/dashboard/articles" className="button">Tạo bài viết</Link>
         </div>
+
+        <form className="cms-list-filter" action="/cms/dashboard/articles/list">
+          <input name="q" type="search" defaultValue={params.q ?? ''} placeholder="Tìm theo tiêu đề, mô tả, chuyên mục hoặc slug" />
+          <button type="submit" className="button-secondary">Tìm kiếm</button>
+        </form>
 
         <div className="cms-table-wrap">
           <table className="cms-table cms-table-articles">

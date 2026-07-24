@@ -36,6 +36,8 @@ export default function CmsArticlesPage() {
   const [postSlug, setPostSlug] = useState('')
   const [postExcerpt, setPostExcerpt] = useState('')
   const [postCategory, setPostCategory] = useState(articleCategories[0])
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
   const htmlRef = useRef<HTMLTextAreaElement | null>(null)
   const activeSignal = newsSignalCards.find((signal) => signal.key === selectedSignal) ?? newsSignalCards[0]
 
@@ -59,6 +61,25 @@ export default function CmsArticlesPage() {
   const applySignal = (signal: (typeof newsSignalCards)[number]) => {
     setSelectedSignal(signal.key)
     setPostPlacement(signal.placement)
+  }
+
+  const saveArticle = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    try {
+      const response = await fetch('/api/cms/articles', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: postTitle, slug: postSlug, excerpt: postExcerpt, html: articleHtml }),
+      })
+      const result = await response.json() as { message?: string }
+      setSaveMessage(result.message ?? 'Không thể lưu bài viết.')
+    } catch {
+      setSaveMessage('Không thể kết nối tới tiến trình lưu bài viết.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const submitSeries = () => {
@@ -85,13 +106,19 @@ export default function CmsArticlesPage() {
 
     <article className="panel cms-article-editor-panel">
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Editorial Desk</p><h2>Editor bài đăng</h2></div><div className="cms-inline-actions"><button type="button" className={editorMode === 'rich' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('rich')}>Soạn bài</button><button type="button" className={editorMode === 'html' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('html')}>Edit HTML</button><button type="button" className="button">Xem preview</button></div></div>
-      <form className="form-shell cms-embedded-form">
+      <form
+        className="form-shell cms-embedded-form"
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest('button.button')) void saveArticle()
+        }}
+      >
         <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries">{seriesList.map((series) => <option key={series.title}>{series.title}</option>)}<option>Không gắn chuyên đề</option></select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus"><option>Nháp</option><option>Chờ media</option><option>Chờ duyệt</option><option>Xuất bản</option><option>Lên lịch</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} onHtmlChange={setArticleHtml} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
         <div className="cms-editor-body cms-editor-body-wide"><div className="cms-article-meta-grid"><div className="field"><label htmlFor="coverImage">Ảnh cover</label><input id="coverImage" placeholder="Upload hoặc dán URL ảnh cover" /></div><div className="field"><label htmlFor="galleryImages">Gallery ảnh</label><input id="galleryImages" placeholder="Danh sách ảnh cho recap hoặc phỏng vấn" /></div><div className="field"><label htmlFor="youtubeEmbed">Embed YouTube</label><input id="youtubeEmbed" placeholder="https://youtube.com/watch?v=..." /></div><div className="field"><label htmlFor="facebookEmbed">Embed Facebook video</label><input id="facebookEmbed" placeholder="https://facebook.com/.../videos/..." /></div></div></div>
         <div className="cms-inline-actions"><button type="button" className="button">Lưu bài</button><button type="button" className="button-secondary">Gửi duyệt</button><button type="button" className="button-secondary">Lưu bản HTML</button></div>
+        {saveMessage ? <p className="cms-field-hint" role="status">{saveMessage}</p> : null}
       </form>
     </article>
 

@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { saveTelegramBookingChannel } from '@/lib/payment-config'
 
 const schema = z.object({ channel: z.string().trim().min(1).max(180) })
 
 export async function POST(request: Request) {
-  const access = await requireCmsApiAccess('booking')
+  const authorization = request.headers.get('authorization')
+  const capability = verifyCmsCapabilityToken(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+    'stars',
+  )
+  const access = capability ? { ok: true as const } : await requireCmsApiAccess('booking')
   if (!access.ok) return access.response
 
   try {

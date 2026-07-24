@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { savePaymentConfig } from '@/lib/payment-config'
 
 const paymentConfigSchema = z.object({
@@ -28,10 +29,13 @@ const paymentConfigSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const access = await requireCmsApiAccess('api_security')
-    if (!access.ok) {
-      return access.response
-    }
+    const authorization = request.headers.get('authorization')
+    const capability = verifyCmsCapabilityToken(
+      authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+      'stars',
+    )
+    const access = capability ? { ok: true as const } : await requireCmsApiAccess('stars')
+    if (!access.ok) return access.response
 
     const body = await request.json()
     const payload = paymentConfigSchema.parse(body)

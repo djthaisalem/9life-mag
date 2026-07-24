@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { CmsListTable } from '@/components/cms-list-table'
+import { useCmsStarsCapability } from '@/components/cms-capability-provider'
 import type { CmsSiteAccount } from '@/lib/site-user-session'
 import {
   paymentProviders,
@@ -97,6 +98,7 @@ export function CmsStarsPaymentPanel({
   paymentConfig,
   initialUsers = [],
 }: CmsStarsPaymentPanelProps) {
+  const starsCapability = useCmsStarsCapability()
   const [snapshot, setSnapshot] = useState(initialSnapshot)
   const [packageRows, setPackageRows] = useState<StarPackageRow[]>(
     starPackages.map((plan) => ({
@@ -268,8 +270,10 @@ export function CmsStarsPaymentPanel({
     startTransition(async () => {
       const response = await fetch('/api/cms/payment-config', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(starsCapability ? { Authorization: `Bearer ${starsCapability}` } : {}),
         },
         body: JSON.stringify({
           bankCode: configState.bankCode,
@@ -301,6 +305,25 @@ export function CmsStarsPaymentPanel({
 
       setIsSuccess(Boolean(result.ok))
       setMessage(result.message ?? 'Đã cập nhật cấu hình thanh toán.')
+    })
+  }
+
+  const handleSaveTelegramChannel = () => {
+    setMessage('')
+
+    startTransition(async () => {
+      const response = await fetch('/api/cms/telegram-config', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(starsCapability ? { Authorization: `Bearer ${starsCapability}` } : {}),
+        },
+        body: JSON.stringify({ channel: configState.telegramChannel }),
+      })
+      const result = await response.json() as { ok?: boolean; message?: string }
+      setIsSuccess(Boolean(result.ok))
+      setMessage(result.message ?? 'Không thể lưu nhóm Telegram.')
     })
   }
 
@@ -535,6 +558,9 @@ export function CmsStarsPaymentPanel({
           </div>
 
           <div className="cms-inline-actions">
+            <button type="button" className="button" onClick={handleSaveTelegramChannel} disabled={isPending}>
+              Lưu Telegram
+            </button>
             <button type="button" className="button-secondary" onClick={handleSaveConfig} disabled={isPending}>
               Lưu cấu hình cổng
             </button>
