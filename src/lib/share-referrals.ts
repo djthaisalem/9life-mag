@@ -114,9 +114,12 @@ async function saveReferral(row: Referral) {
 
 export async function registerReferralVisit(token: string, visitorKey: string, visitorAccountId?: string) {
   const row = await getReferral(token)
-  if (!row || row.status !== 'pending' || row.ownerId === visitorAccountId) return { ok: false as const }
+  if (!row || row.ownerId === visitorAccountId) return { ok: false as const }
   const visitorFingerprint = fingerprint(visitorKey)
   if (row.visitorFingerprint && row.visitorFingerprint !== visitorFingerprint) return { ok: false as const }
+  if (row.status === 'rewarded') return { ok: true as const }
+  if (row.status === 'visited') return { ok: true as const }
+  if (row.status !== 'pending') return { ok: false as const }
   row.status = 'visited'
   row.visitorFingerprint = visitorFingerprint
   row.visitedAt ??= new Date().toISOString()
