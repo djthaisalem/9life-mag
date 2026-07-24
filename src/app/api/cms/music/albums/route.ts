@@ -15,6 +15,7 @@ const createAlbumSchema = z.object({
   releaseDate: z.string().datetime().optional(),
   isPublic: z.boolean().default(false),
   trackIds: z.array(z.string().trim().min(1)).max(100).default([]),
+  uploadedTrackIds: z.array(z.string().trim().min(1)).max(100).default([]),
   coverDataUrl: z.string().max(4_500_000).optional(),
 })
 
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
       ? await payload.findByID({ collection: 'artists', id: input.artistId, depth: 0, overrideAccess: true })
       : null
 
+    const uploadedTrackIds = new Set(input.uploadedTrackIds)
     await Promise.all(input.trackIds.map((trackId) => payload.update({
       collection: 'tracks',
       id: trackId,
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
       data: {
         albumLabel: input.title,
         trackType: 'single',
-        coverImage: albumCoverId,
+        ...(uploadedTrackIds.has(trackId) ? { coverImage: albumCoverId } : {}),
         visibility: input.isPublic ? 'public' : 'draft',
         isPublic: input.isPublic,
         status: input.isPublic ? 'published' : 'draft',
