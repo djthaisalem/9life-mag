@@ -1,18 +1,63 @@
 'use client'
 
 import { Minus, Plus } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { type ChangeEvent, useMemo, useState } from 'react'
+
+import { CmsMusicUploadForm } from '@/components/cms-music-upload-form'
 
 type ArtistOption = { id: string; name: string }
-type TrackOption = { id: string; title: string; artist: string; type: string; duration: string }
+type UploadArtistOption = { slug: string; name: string }
+type GenreOption = { id: string; slug: string; name: string }
+type TrackOption = { id: string; title: string; artist: string; type: string; duration: string; musicCode?: string }
+type CreatedAlbum = { id: string; title: string }
 
-export function CmsMusicAlbumForm({ artists, tracks }: { artists: ArtistOption[]; tracks: TrackOption[] }) {
-  const router = useRouter()
+async function cropCover(file: File) {
+  if (file.size > 10 * 1024 * 1024) throw new Error('Ảnh bìa tối đa 10MB.')
+  const sourceUrl = URL.createObjectURL(file)
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image()
+      element.onload = () => resolve(element)
+      element.onerror = () => reject(new Error('Không thể đọc ảnh bìa này.'))
+      element.src = sourceUrl
+    })
+    const cropSize = Math.min(image.width, image.height)
+    const canvas = document.createElement('canvas')
+    canvas.width = 720
+    canvas.height = 720
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Không thể xử lý ảnh bìa.')
+    context.drawImage(image, (image.width - cropSize) / 2, (image.height - cropSize) / 2, cropSize, cropSize, 0, 0, 720, 720)
+    return canvas.toDataURL('image/jpeg', 0.88)
+  } finally {
+    URL.revokeObjectURL(sourceUrl)
+  }
+}
+
+export function CmsMusicAlbumForm({
+  artists,
+  uploadArtists,
+  genres,
+  tracks,
+}: {
+  artists: ArtistOption[]
+  uploadArtists: UploadArtistOption[]
+  genres: GenreOption[]
+  tracks: TrackOption[]
+}) {
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([])
+  const [trackQuery, setTrackQuery] = useState('')
+  const [coverDataUrl, setCoverDataUrl] = useState('')
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
+  const [createdAlbum, setCreatedAlbum] = useState<CreatedAlbum | null>(null)
+
+  const visibleTracks = useMemo(() => {
+    const query = trackQuery.trim().toLowerCase()
+    if (!query) return tracks
+    return tracks.filter((track) => [track.title, track.artist, track.musicCode, track.type].some((value) => value?.toLowerCase().includes(query)))
+  }, [trackQuery, tracks])
 
   function toggleTrack(trackId: string) {
     setSelectedTrackIds((current) => current.includes(trackId)
@@ -20,17 +65,30 @@ export function CmsMusicAlbumForm({ artists, tracks }: { artists: ArtistOption[]
       : [...current, trackId])
   }
 
+  async function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    try {
+      setCoverDataUrl(await cropCover(file))
+      setIsError(false)
+      setMessage('Ảnh bìa đã được crop vuông và sẵn sàng lưu cùng Album.')
+    } catch (error) {
+      setIsError(true)
+      setMessage(error instanceof Error ? error.message : 'Không thể xử lý ảnh bìa.')
+    }
+  }
+
   async function createAlbum(form: HTMLFormElement) {
     if (!selectedTrackIds.length) {
       setIsError(true)
-      setMessage('Select at least one track for this Album / EP.')
+      setMessage('Chọn ít nhất một track để tạo Album / EP.')
       return
     }
 
     const formData = new FormData(form)
     setIsPending(true)
     setIsError(false)
-    setMessage('Creating Album / EP...')
+    setMessage('Đang tạo Album / EP...')
 
     try {
       const releaseDate = String(formData.get('releaseDate') ?? '')
@@ -47,52 +105,74 @@ export function CmsMusicAlbumForm({ artists, tracks }: { artists: ArtistOption[]
           releaseDate: releaseDate ? new Date(releaseDate).toISOString() : undefined,
           isPublic: formData.get('isPublic') === 'on',
           trackIds: selectedTrackIds,
+          coverDataUrl: coverDataUrl || undefined,
         }),
       })
-      const result = await response.json() as { ok?: boolean; message?: string }
-      if (!response.ok || !result.ok) throw new Error(result.message || 'Unable to create Album / EP.')
+      const result = await response.json() as { ok?: boolean; message?: string; album?: CreatedAlbum }
+      if (!response.ok || !result.ok || !result.album) throw new Error(result.message || 'Không thể tạo Album / EP.')
 
-      setMessage(result.message || 'Album / EP created.')
-      window.setTimeout(() => router.push('/cms/dashboard/music?tab=album'), 600)
+      setCreatedAlbum(result.album)
+      setMessage(result.message || 'Đã tạo Album / EP.')
     } catch (error) {
       setIsError(true)
-      setMessage(error instanceof Error ? error.message : 'Unable to reach the Album / EP service.')
+      setMessage(error instanceof Error ? error.message : 'Không thể kết nối đến tiến trình tạo Album / EP.')
     } finally {
       setIsPending(false)
     }
   }
 
+  async function attachUploadedTrack(trackId: string) {
+    if (!createdAlbum) return
+    const response = await fetch(`/api/cms/music/albums/${encodeURIComponent(createdAlbum.id)}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackId }),
+    })
+    const result = await response.json() as { ok?: boolean; message?: string }
+    if (!response.ok || !result.ok) throw new Error(result.message || 'Track đã upload nhưng chưa thể gắn vào Album.')
+  }
+
   return (
-    <form className="form-shell cms-embedded-form" onSubmit={(event) => { event.preventDefault(); void createAlbum(event.currentTarget) }}>
-      <div className="cms-form-two">
-        <div className="field"><label htmlFor="albumTitle">Album / EP title</label><input id="albumTitle" name="title" required maxLength={180} placeholder="Example: After Midnight EP" /></div>
-        <div className="field"><label htmlFor="albumArtist">Release artist</label><select id="albumArtist" name="artistId" defaultValue=""><option value="">No artist selected</option>{artists.map((artist) => <option key={artist.id} value={artist.id}>{artist.name}</option>)}</select></div>
-      </div>
-      <div className="cms-form-two">
-        <div className="field"><label htmlFor="albumCategory">Format / category</label><input id="albumCategory" name="musicCategory" maxLength={120} placeholder="Album, EP, Mixtape or DJ set" /></div>
-        <div className="field"><label htmlFor="albumReleaseDate">Release date</label><input id="albumReleaseDate" name="releaseDate" type="date" /></div>
-      </div>
-      <div className="field"><label htmlFor="albumMusician">Display credit</label><input id="albumMusician" name="musician" maxLength={160} placeholder="Optional when an artist is selected above" /></div>
-      <div className="field"><label htmlFor="albumDescription">Album / EP description</label><textarea id="albumDescription" name="description" maxLength={1200} placeholder="A concise summary of the release, concept, and sound." /></div>
-      <label className="cms-checkbox-row"><input name="isPublic" type="checkbox" />Publish immediately after creation</label>
-
-      <div className="artist-album-track-picker">
-        <div className="artist-album-track-picker-head"><span>Uploaded track library</span><strong>{selectedTrackIds.length} selected</strong></div>
-        <div className="artist-album-track-list">
-          {tracks.map((track, index) => {
-            const isSelected = selectedTrackIds.includes(track.id)
-            return <article key={track.id} className={isSelected ? 'is-selected' : ''}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <div><strong>{track.title}</strong><small>{track.artist} · {track.type} · {track.duration}</small></div>
-              <button type="button" onClick={() => toggleTrack(track.id)} aria-label={`${isSelected ? 'Remove' : 'Add'} ${track.title}`}>{isSelected ? <Minus size={16} /> : <Plus size={16} />}</button>
-            </article>
-          })}
-          {!tracks.length ? <p className="cms-muted">No uploaded tracks are available yet. Upload a track before creating an Album / EP.</p> : null}
+    <>
+      <form className="form-shell cms-embedded-form" onSubmit={(event) => { event.preventDefault(); void createAlbum(event.currentTarget) }}>
+        <div className="cms-form-two">
+          <div className="field"><label htmlFor="albumTitle">Tên Album / EP</label><input id="albumTitle" name="title" required maxLength={180} placeholder="Ví dụ: After Midnight EP" /></div>
+          <div className="field"><label htmlFor="albumArtist">Nghệ sĩ phát hành</label><select id="albumArtist" name="artistId" defaultValue=""><option value="">Chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.id} value={artist.id}>{artist.name}</option>)}</select></div>
         </div>
-      </div>
+        <div className="cms-form-two">
+          <div className="field"><label htmlFor="albumCategory">Định dạng / thể loại</label><input id="albumCategory" name="musicCategory" maxLength={120} placeholder="Album, EP, Mixtape hoặc DJ set" /></div>
+          <div className="field"><label htmlFor="albumReleaseDate">Ngày phát hành</label><input id="albumReleaseDate" name="releaseDate" type="date" /></div>
+        </div>
+        <div className="field"><label htmlFor="albumMusician">Credit hiển thị</label><input id="albumMusician" name="musician" maxLength={160} placeholder="Để trống nếu dùng nghệ sĩ đã chọn" /></div>
+        <div className="field"><label htmlFor="albumDescription">Mô tả Album / EP</label><textarea id="albumDescription" name="description" maxLength={1200} placeholder="Giới thiệu ngắn về concept, âm nhạc và bối cảnh phát hành." /></div>
+        <div className="field"><label htmlFor="albumCover">Ảnh bìa Album</label><input id="albumCover" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleCoverChange(event)} /><span className="cms-muted">Ảnh được crop vuông 1:1 trước khi lưu vào Media/R2.</span>{coverDataUrl ? <img className="cms-album-cover-preview" src={coverDataUrl} alt="Xem trước ảnh bìa Album" /> : null}</div>
+        <label className="cms-checkbox-row"><input name="isPublic" type="checkbox" />Public ngay sau khi tạo</label>
 
-      <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending || !tracks.length}>{isPending ? 'Creating...' : 'Create Album / EP'}</button></div>
-      {message ? <p className={isError ? 'cms-form-message cms-form-message-error' : 'cms-form-message'} role="status">{message}</p> : null}
-    </form>
+        <div className="artist-album-track-picker">
+          <div className="artist-album-track-picker-head"><span>Kho nhạc đã upload</span><strong>{selectedTrackIds.length} track đã chọn</strong></div>
+          <div className="cms-album-track-search"><input type="search" value={trackQuery} onChange={(event) => setTrackQuery(event.target.value)} placeholder="Tìm tên bài, mã nhạc, nghệ sĩ hoặc loại nội dung" aria-label="Tìm trong kho nhạc" /><span>{visibleTracks.length}/{tracks.length}</span></div>
+          <div className="artist-album-track-list">
+            {visibleTracks.map((track, index) => {
+              const isSelected = selectedTrackIds.includes(track.id)
+              return <article key={track.id} className={isSelected ? 'is-selected' : ''}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div><strong>{track.title}</strong><small>{track.artist} · {track.type} · {track.duration}{track.musicCode ? ` · #${track.musicCode}` : ''}</small></div>
+                <button type="button" onClick={() => toggleTrack(track.id)} aria-label={`${isSelected ? 'Gỡ' : 'Thêm'} ${track.title}`}>{isSelected ? <Minus size={16} /> : <Plus size={16} />}</button>
+              </article>
+            })}
+            {!visibleTracks.length ? <p className="cms-muted">Không tìm thấy track phù hợp.</p> : null}
+          </div>
+        </div>
+
+        <div className="cms-inline-actions"><button type="submit" className="button" disabled={isPending || !tracks.length || Boolean(createdAlbum)}>{isPending ? 'Đang tạo...' : createdAlbum ? 'Album đã được tạo' : 'Tạo Album / EP'}</button></div>
+        {message ? <p className={isError ? 'cms-form-message cms-form-message-error' : 'cms-form-message'} role="status">{message}</p> : null}
+      </form>
+
+      {createdAlbum ? <article className="cms-album-upload-panel">
+        <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Album upload</p><h2>Upload file nhạc vào {createdAlbum.title}</h2><p className="cms-muted">Mỗi file upload xong sẽ tự được gắn vào Album này. MP3 lớn dùng upload trực tiếp R2; WAV, FLAC, M4A và AAC đi qua pipeline xử lý hiện có.</p></div></div>
+        <CmsMusicUploadForm artists={uploadArtists} genres={genres} albums={[{ id: createdAlbum.id, title: createdAlbum.title, artist: 'Album mới tạo' }]} defaultAlbumLabel={createdAlbum.title} onUploaded={(result) => attachUploadedTrack(result.trackId)} />
+      </article> : null}
+    </>
   )
 }

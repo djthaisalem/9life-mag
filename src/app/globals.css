@@ -8495,6 +8495,43 @@ button.artist-dashboard-module-card {
   box-shadow: 0 12px 28px rgba(245, 169, 0, 0.32);
 }
 
+.cms-album-cover-preview {
+  display: block;
+  width: min(180px, 100%);
+  aspect-ratio: 1;
+  margin-top: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 209, 91, 0.38);
+  border-radius: 14px;
+}
+
+.cms-album-track-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cms-album-track-search input {
+  flex: 1;
+  min-width: 0;
+}
+
+.cms-album-track-search span {
+  color: #9fa6b8;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.cms-album-upload-panel {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid rgba(255, 209, 91, 0.24);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(255, 205, 67, 0.08), rgba(11, 14, 24, 0.88));
+}
+
 .cms-artist-catalog-action {
   display: inline-flex;
   align-items: center;

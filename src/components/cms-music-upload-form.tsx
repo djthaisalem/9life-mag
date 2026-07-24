@@ -7,12 +7,12 @@ type ArtistOption = { slug: string; name: string }
 type GenreOption = { id: string; slug: string; name: string }
 type AlbumOption = { id: string; title: string; artist: string }
 
-type UploadResult = { durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string; visibility: 'draft' | 'pending' | 'public' | 'hidden' }
+type UploadResult = { trackId: string; durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string; visibility: 'draft' | 'pending' | 'public' | 'hidden' }
 type DirectUploadPreparation = { uploadUrl: string; ticket: string; musicCode: string }
 
 const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
 
-export function CmsMusicUploadForm({ artists, genres, albums }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[] }) {
+export function CmsMusicUploadForm({ artists, genres, albums, defaultAlbumLabel = '', onUploaded }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[]; defaultAlbumLabel?: string; onUploaded?: (result: UploadResult) => Promise<void> | void }) {
   const uploadCapability = useCmsMusicCapability()
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -112,6 +112,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
       const selectedAudio = new FormData(form).get('audio')
       if (selectedAudio instanceof File && selectedAudio.name.toLowerCase().endsWith('.mp3')) {
         const directResult = await uploadMp3Directly(form, selectedAudio)
+        await onUploaded?.(directResult)
         setResult(directResult)
         setMessage(`Đã xử lý xong. Mã nhạc: ${directResult.musicCode}. Thời lượng: ${directResult.durationLabel}.`)
         form.reset()
@@ -137,6 +138,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
         return
       }
       setResult(payload.result)
+      await onUploaded?.(payload.result)
       setMessage(`Đã xử lý xong. Mã nhạc: ${payload.result.musicCode}. Thời lượng: ${payload.result.durationLabel}.`)
       form.reset()
     } catch (error) {
@@ -162,7 +164,7 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
       </div>
       <div className="cms-form-two">
         <div className="field"><label htmlFor="musicVisibility">Hiển thị</label><select id="musicVisibility" name="visibility" defaultValue="draft"><option value="draft">Nháp nội bộ</option><option value="pending">Chờ admin duyệt</option><option value="public">Đang public</option><option value="hidden">Tạm ẩn</option></select><span className="cms-muted">Map vị trí không tự public. Track chỉ xuất hiện ngoài site khi chọn “Đang public”.</span></div>
-        <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue=""><option value="">Không thuộc album</option>{albums.map((album) => <option key={album.id} value={album.title}>{album.title} · {album.artist}</option>)}</select></div>
+        <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue={defaultAlbumLabel}><option value="">Không thuộc album</option>{defaultAlbumLabel && !albums.some((album) => album.title === defaultAlbumLabel) ? <option value={defaultAlbumLabel}>{defaultAlbumLabel} · Album mới tạo</option> : null}{albums.map((album) => <option key={album.id} value={album.title}>{album.title} · {album.artist}</option>)}</select></div>
       </div>
       <div className="field"><label htmlFor="musicAudio">File nhạc gốc</label><input id="musicAudio" name="audio" type="file" required accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac" /><span className="cms-muted">Hỗ trợ MP3, WAV, FLAC, M4A, AAC. MP3 dùng trực tiếp master để phát; các định dạng còn lại sẽ tạo thêm preview MP3 256 kbps. Master gốc vẫn được giữ cho download.</span></div>
       <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Chọn các khu vực được phép hiển thị nội dung này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" name="displayMap" value={option} />{option}</label>)}</div></fieldset>

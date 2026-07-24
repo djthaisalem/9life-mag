@@ -13,7 +13,17 @@ const createAlbumSchema = z.object({
   releaseDate: z.string().datetime().optional(),
   isPublic: z.boolean().default(false),
   trackIds: z.array(z.string().trim().min(1)).min(1).max(100),
+  coverDataUrl: z.string().max(4_500_000).optional(),
 })
+
+function parseCoverDataUrl(value?: string) {
+  if (!value) return null
+  const match = value.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/)
+  if (!match) throw new Error('invalid_cover_image')
+  const data = Buffer.from(match[2], 'base64')
+  if (!data.length || data.length > 3 * 1024 * 1024) throw new Error('invalid_cover_image')
+  return { data, mimeType: match[1] }
+}
 
 function toSlug(value: string) {
   return value
@@ -32,6 +42,7 @@ export async function POST(request: Request) {
   try {
     const input = createAlbumSchema.parse(await request.json())
     const payload = await loadPayloadClient()
+    const cover = parseCoverDataUrl(input.coverDataUrl)
     const tracks = await payload.find({
       collection: 'tracks',
       where: { id: { in: input.trackIds } },
@@ -65,6 +76,23 @@ export async function POST(request: Request) {
         seoDescription: input.description || undefined,
       },
     })
+
+    if (cover) {
+      const extension = cover.mimeType === 'image/png' ? 'png' : cover.mimeType === 'image/webp' ? 'webp' : 'jpg'
+      const media = await payload.create({
+        collection: 'media',
+        depth: 0,
+        overrideAccess: true,
+        data: { alt: `${input.title} cover`, kind: 'image' },
+        file: {
+          data: cover.data,
+          mimetype: cover.mimeType,
+          name: `${toSlug(input.title)}-cover.${extension}`,
+          size: cover.data.length,
+        },
+      })
+      await payload.update({ collection: 'albums', id: album.id, depth: 0, overrideAccess: true, data: { coverImage: media.id } })
+    }
 
     await Promise.all(input.trackIds.map((trackId) => payload.update({
       collection: 'tracks',
