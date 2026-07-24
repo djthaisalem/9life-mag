@@ -7,6 +7,7 @@ import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
 import { regionalOutlets } from '@/lib/club-booking-data'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
+import { StarAmount } from '@/components/star-amount'
 
 const DEFAULT_VISIBLE = 6
 
@@ -281,7 +282,7 @@ function TableBookingContent() {
             <h3>Vote outlet sẽ trừ 1 sao từ ví user</h3>
             <p className="muted">
               {isAuthenticated
-                ? `Bạn hiện còn ${starBalance} sao để dùng cho vote artist, outlet và mở kho nhạc premium.`
+                ? <>Bạn hiện còn <StarAmount amount={starBalance} /> để dùng cho vote artist, outlet và mở kho nhạc premium.</>
                 : 'Hãy đăng nhập trước để hệ thống trừ sao hợp lý khi bạn vote cho outlet yêu thích.'}
             </p>
 

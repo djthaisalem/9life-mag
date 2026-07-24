@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CMS_LIST_PAGE_SIZE, CmsListPagination } from '@/components/cms-list-pagination'
 import { listSiteAccountsForCms } from '@/lib/site-user-session'
+import { StarAmount } from '@/components/star-amount'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -82,7 +83,7 @@ export default async function CmsUsersPage({
                     <span>{user.email || user.phone || user.id}</span>
                   </td>
                   <td>{accountTypeLabel(user.accountType, user.portalRole)}</td>
-                  <td>{user.stars} sao</td>
+                  <td><StarAmount amount={user.stars} /></td>
                   <td>{user.isPremium ? 'Premium' : 'Free'}</td>
                   <td>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
                   <td>

@@ -31,6 +31,7 @@ import {
 } from '@/lib/user-playlists'
 import { recordDownload, recordListening } from '@/lib/music-history'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
+import { StarAmount } from '@/components/star-amount'
 
 const FAVORITE_TRACKS_STORAGE_KEY = 'nine-life-favorite-tracks'
 const PLAYER_RESUME_STORAGE_KEY = 'nine-life-media-player-resume'
@@ -848,11 +849,11 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 <strong>{activeTrack.title}</strong>
                 <span>{activeTrack.artist}</span>
                 <small>
-                  {isAuthenticated ? `Còn ${starBalance} sao trong ví` : 'Track miễn phí phát ngay; nội dung tính sao sẽ yêu cầu đăng nhập.'}
+                  {isAuthenticated ? <>Còn <StarAmount amount={starBalance} /> trong ví</> : 'Track miễn phí phát ngay; nội dung tính sao sẽ yêu cầu đăng nhập.'}
                 </small>
               </div>
               <button type="button" className="global-media-player-wallet global-media-player-wallet-button" aria-live="polite" onClick={() => { if (!isAuthenticated) setShowLoginModal(true) }}>
-                {isAuthenticated ? `${starBalance} sao` : 'Đăng nhập'}
+                {isAuthenticated ? <StarAmount amount={starBalance} /> : 'Đăng nhập'}
               </button>
             </div>
 

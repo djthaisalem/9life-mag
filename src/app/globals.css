@@ -2354,6 +2354,8 @@ button.artist-dashboard-module-card {
 .user-dashboard-star-source-blue strong { color: #77e5ff; }
 .user-dashboard-star-source-pink strong { color: #ff9fda; }
 .user-dashboard-star-source-green strong { color: #87f0ad; }
+.star-amount { display: inline-flex; align-items: center; gap: 0.32em; white-space: nowrap; }
+.star-amount svg { flex: 0 0 auto; color: #ffd34d; filter: drop-shadow(0 0 5px rgba(255, 195, 54, 0.42)); }
 .user-dashboard-playlist-earned { margin: 0 0 14px; color: #c5cad7; }
 .user-dashboard-playlist-earned strong { color: #87f0ad; }
 

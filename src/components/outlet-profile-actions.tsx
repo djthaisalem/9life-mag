@@ -8,6 +8,7 @@ import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
+import { StarAmount } from '@/components/star-amount'
 
 const outletVoteSeed: Record<string, number> = {
   'luxe-district': 4231,
@@ -159,7 +160,7 @@ export function OutletProfileActions({
         </button>
         <div className="outlet-profile-action-meta">
           <strong>{voteCount.toLocaleString('en-US')}</strong>
-          <span>{isAuthenticated ? `Còn ${starBalance} sao` : `Vote cho ${outletName} tốn 1 sao`}</span>
+          <span>{isAuthenticated ? <>Còn <StarAmount amount={starBalance} /></> : <>Vote cho {outletName} tốn <StarAmount amount={1} /></>}</span>
         </div>
       </div>
 

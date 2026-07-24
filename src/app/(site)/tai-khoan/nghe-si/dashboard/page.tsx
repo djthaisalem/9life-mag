@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArtistAgentPanel } from '@/components/artist-agent-panel'
 import { PortalNotificationCenter } from '@/components/portal-notification-center'
 import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
+import { StarAmount } from '@/components/star-amount'
 import { requireArtistPortalAccess } from '@/lib/artist-portal-access'
 
 const onboardingSteps = [
@@ -59,7 +60,7 @@ export default async function ArtistDashboardPage() {
       <section className="section artist-dashboard-analytics-section">
         {!hasPublishedProfile ? <div className="container"><article className="artist-dashboard-panel artist-profile-rewards"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Đăng ký thành công</p><h2>Hồ sơ của bạn đang chờ cập nhật</h2><p className="artist-editor-panel-note">Bạn chưa có profile công khai. Bắt đầu bằng tên nghệ sĩ, headline, bio ngắn và vai trò chính. Sau lần lưu hoàn chỉnh đầu tiên, hệ thống cộng +300 sao vào ví.</p></div><Link href="/tai-khoan/nghe-si/dashboard/profile" className="button">Cập nhật hồ sơ</Link></div></article></div> : null}
         <div className="container artist-dashboard-stats artist-dashboard-stats-4">
-          <article className="artist-dashboard-stat"><strong>{account.stars}</strong><span>Sao hiện có</span></article>
+          <article className="artist-dashboard-stat"><strong><StarAmount amount={account.stars} /></strong><span>Sao hiện có</span></article>
           <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt vote nhận được</span></article>
           <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt nghe nội dung</span></article>
           <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt tải xuống</span></article>
@@ -69,7 +70,7 @@ export default async function ArtistDashboardPage() {
         </div>
         <div className="container">
           <article className="artist-dashboard-panel artist-profile-rewards">
-            <div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Profile rewards</p><h2>Thưởng sao khi hoàn thiện hồ sơ</h2><p className="artist-editor-panel-note">Lần lưu hoàn chỉnh đầu tiên của hồ sơ cơ bản nhận 300 sao. Các phần mở rộng sẽ được áp dụng theo chính sách vận hành sau.</p></div><strong className="artist-profile-reward-total">{profileRewardClaimed ? 'Đã nhận' : '300 sao'}</strong></div>
+            <div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Profile rewards</p><h2>Thưởng sao khi hoàn thiện hồ sơ</h2><p className="artist-editor-panel-note">Lần lưu hoàn chỉnh đầu tiên của hồ sơ cơ bản nhận 300 sao. Các phần mở rộng sẽ được áp dụng theo chính sách vận hành sau.</p></div><strong className="artist-profile-reward-total">{profileRewardClaimed ? 'Đã nhận' : <StarAmount amount={300} />}</strong></div>
             <div className="artist-dashboard-update-list">
               <div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>{profileRewardClaimed ? 'Đã cộng thưởng hồ sơ' : 'Hoàn thiện hồ sơ cơ bản'}</strong> · {profileRewardClaimed ? 'Phần thưởng +300 sao đã được ghi nhận trong ví.' : 'Điền tên nghệ sĩ, headline, bio ngắn và vai trò chính rồi bấm lưu để nhận +300 sao.'}</p></div>
               <div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p>Ảnh portrait, cover, giới thiệu, kinh nghiệm làm việc, gallery từ 4 ảnh, media và booking contact: mỗi mục hoàn thiện nhận +10 sao.</p></div>
@@ -92,7 +93,7 @@ export default async function ArtistDashboardPage() {
               </div>
               {performance.map((item) => (
                 <div key={item.title} className="artist-dashboard-performance-row" role="row">
-                  <strong data-label="Nội dung"><small>{item.type}</small>{item.title}</strong><span data-label="Lượt nghe">{item.plays}</span><span data-label="Tải xuống">{item.downloads}</span><span data-label="Vote">{item.votes}</span><b data-label="Sao sử dụng">{item.stars}</b>
+                  <strong data-label="Nội dung"><small>{item.type}</small>{item.title}</strong><span data-label="Lượt nghe">{item.plays}</span><span data-label="Tải xuống">{item.downloads}</span><span data-label="Vote">{item.votes}</span><b data-label="Sao sử dụng"><StarAmount amount={item.stars} /></b>
                 </div>
               ))}
               {!performance.length ? <div className="artist-dashboard-performance-row" role="row"><strong>Chưa có nội dung phát hành</strong><span>0</span><span>0</span><span>0</span><b>0</b></div> : null}

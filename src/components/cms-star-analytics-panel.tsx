@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { WalletEventType, WalletLedgerEntry } from '@/lib/wallet-ledger'
+import { StarAmount } from '@/components/star-amount'
 
 type CmsStarAnalyticsPanelProps = {
   entries: WalletLedgerEntry[]
@@ -35,7 +36,7 @@ function getIsoDate(date: Date) {
 }
 
 function formatStars(value: number) {
-  return Math.abs(value).toLocaleString('vi-VN')
+  return <StarAmount amount={Math.abs(value)} />
 }
 
 export function CmsStarAnalyticsPanel({ entries, totalBalance, userCount, signupIssued }: CmsStarAnalyticsPanelProps) {
@@ -130,7 +131,7 @@ export function CmsStarAnalyticsPanel({ entries, totalBalance, userCount, signup
         <article><span>Sao Download</span><strong>{formatStars(metrics.download)}</strong><small>{metrics.download} lượt tải đã ghi nhận</small></article>
       </div>
 
-      <div className="cms-star-analytics-summary"><span>{metrics.transactions.toLocaleString('vi-VN')} giao dịch trong kỳ</span><span>Chi tiêu chưa phân loại cũ: {formatStars(metrics.other)} sao</span></div>
+      <div className="cms-star-analytics-summary"><span>{metrics.transactions.toLocaleString('vi-VN')} giao dịch trong kỳ</span><span>Chi tiêu chưa phân loại cũ: {formatStars(metrics.other)}</span></div>
 
       <div className="cms-star-ledger-table" role="table" aria-label="Phân rã giao dịch Sao">
         <div className="cms-star-ledger-row cms-star-ledger-head" role="row"><span>Loại giao dịch</span><span>Số lượt</span><span>Biến động sao</span></div>

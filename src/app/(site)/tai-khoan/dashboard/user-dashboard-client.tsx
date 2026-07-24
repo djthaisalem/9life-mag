@@ -29,6 +29,7 @@ import { copyText } from '@/lib/client-share'
 import { createReferralShareUrl, getReferralSummary, type ReferralSummary } from '@/lib/client-referrals'
 import { paymentProviders, starPackages, type PaymentProviderId, type StarTopupRequest } from '@/lib/star-payment-shared'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
+import { StarAmount } from '@/components/star-amount'
 
 const topUpPlans = starPackages.map((plan) => ({
   ...plan,
@@ -384,7 +385,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
         <div className="container user-dashboard-stats">
           {userStats.map((item) => (
             <article key={item.label} className="user-dashboard-stat">
-              <strong>{item.value}</strong>
+              <strong>{item.label === 'Sao hiện có' ? <StarAmount amount={item.value} /> : item.value}</strong>
               <span>{item.label}</span>
               <p>{item.detail}</p>
             </article>
@@ -403,7 +404,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <p>Dùng 10 sao để mở các track, nonstop, album và playlist được gắn Premium Drop. Thành viên VIP Community được truy cập trọn tháng.</p>
             </div>
             <div className="user-dashboard-premium-drop-actions">
-              <strong>{premiumAccessUntil ? `Đã mở đến ${new Date(premiumAccessUntil).toLocaleString('vi-VN')}` : '10 sao / 24 giờ'}</strong>
+              <strong>{premiumAccessUntil ? `Đã mở đến ${new Date(premiumAccessUntil).toLocaleString('vi-VN')}` : <><StarAmount amount={10} /> / 24 giờ</>}</strong>
               <button type="button" className="button" disabled={isActivatingPremium} onClick={() => void handleActivatePremium()}>
                 {isActivatingPremium ? 'Đang kích hoạt...' : premiumAccessUntil ? 'Kiểm tra quyền Premium' : 'Kích hoạt Premium 24h'}
               </button>
@@ -434,7 +435,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <div className="account-benefit-item"><span className="account-benefit-dot" /><span>Link playlist cá nhân không thuộc chương trình thưởng chia sẻ.</span></div>
               <div className="account-benefit-item"><span className="account-benefit-dot" /><span>Không tính lượt mở của chính chủ link; mỗi link chỉ nhận tối đa +10 sao từ một lượt truy cập độc lập hợp lệ.</span></div>
             </div>
-            {referralSummary.recent.length ? <div className="user-dashboard-referral-list">{referralSummary.recent.map((item) => <div key={item.id}><span>{item.path}</span><strong>{item.status === 'rewarded' ? '+10 sao' : item.status === 'visited' ? 'Đang xác thực' : 'Chờ truy cập'}</strong></div>)}</div> : null}
+            {referralSummary.recent.length ? <div className="user-dashboard-referral-list">{referralSummary.recent.map((item) => <div key={item.id}><span>{item.path}</span><strong>{item.status === 'rewarded' ? <StarAmount amount={10} prefix="+" /> : item.status === 'visited' ? 'Đang xác thực' : 'Chờ truy cập'}</strong></div>)}</div> : null}
           </article>
         </div>
       </section>
@@ -453,7 +454,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <div className="user-dashboard-wallet-grid">
                 <div className="user-dashboard-wallet-card">
                   <span className="user-dashboard-wallet-kicker">Đăng ký thành công</span>
-                  <strong>100 sao khởi tạo</strong>
+                  <strong><StarAmount amount={100} /> khởi tạo</strong>
                   <p>Tài khoản user mới được cấp 100 sao để bắt đầu vote, mở nhạc và tham gia economy của nền tảng.</p>
                 </div>
                 <div className="user-dashboard-wallet-card">
@@ -466,7 +467,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <div className="user-dashboard-star-source-grid" aria-label="Nguồn sao đã kiếm được">
                 {starSources.map((source) => (
                   <div key={source.label} className={`user-dashboard-star-source user-dashboard-star-source-${source.tone}`}>
-                    <strong>+{source.value}</strong>
+                    <strong><StarAmount amount={source.value} prefix="+" /></strong>
                     <span>{source.label}</span>
                   </div>
                 ))}
@@ -483,7 +484,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
 
               <div className="user-dashboard-reward-panel">
                 <div className="user-dashboard-reward-summary">
-                  <strong>{accessState.stars} sao khả dụng</strong>
+                  <strong><StarAmount amount={accessState.stars} /> khả dụng</strong>
                   <p>{bonusAnnouncement}</p>
                 </div>
 
@@ -532,7 +533,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
                     aria-selected={selectedTopupPackageId === plan.id}
                     onClick={() => setSelectedTopupPackageId(plan.id)}
                   >
-                    {plan.stars} sao
+                    <StarAmount amount={plan.stars} />
                   </button>
                 ))}
               </div>
@@ -629,7 +630,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               <Link href="/music/library#playlist-manager" className="button-secondary user-dashboard-library-link">
                 Quản lý trong Thư viện Music
               </Link>
-              <p className="user-dashboard-playlist-earned">Đã cộng vào ví: <strong>+{accessState.starSources.playlist} sao từ playlist</strong></p>
+              <p className="user-dashboard-playlist-earned">Đã cộng vào ví: <strong><StarAmount amount={accessState.starSources.playlist} prefix="+" /> từ playlist</strong></p>
 
               <div className="user-dashboard-playlist-tools">
                 <div className="user-dashboard-playlist-create">
@@ -675,7 +676,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
                       <div className="user-dashboard-playlist-head">
                         <div>
                           <strong>{playlist.name}</strong>
-                          <span>{playlist.listens.toLocaleString('en-US')} lượt nghe • +{playlist.rewardStars} sao</span>
+                          <span>{playlist.listens.toLocaleString('en-US')} lượt nghe • <StarAmount amount={playlist.rewardStars} prefix="+" /></span>
                         </div>
                         <button type="button" className="mini-button" onClick={() => setSelectedPlaylistId(playlist.id)}>
                           Chọn
@@ -683,7 +684,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
                       </div>
 
                       <p>{playlist.note}</p>
-                      <p className="user-dashboard-playlist-stats">Tạo ngày {new Intl.DateTimeFormat('vi-VN').format(new Date(playlist.createdAt))} · {playlist.favorites ?? 0} yêu thích · +{playlist.rewardStars} sao</p>
+                      <p className="user-dashboard-playlist-stats">Tạo ngày {new Intl.DateTimeFormat('vi-VN').format(new Date(playlist.createdAt))} · {playlist.favorites ?? 0} yêu thích · <StarAmount amount={playlist.rewardStars} prefix="+" /></p>
 
                       <div className="user-dashboard-playlist-share">
                         <input value={sharePath} readOnly />

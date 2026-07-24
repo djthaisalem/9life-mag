@@ -8,6 +8,7 @@ import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
+import { StarAmount } from '@/components/star-amount'
 
 const artistVoteSeed: Record<string, number> = {
   'neon-viper': 12847,
@@ -147,7 +148,7 @@ export function ArtistProfileActions({
         </button>
         <div className="artist-profile-action-meta">
           <strong>{voteCount.toLocaleString('en-US')}</strong>
-          <span>{isAuthenticated ? `Còn ${starBalance} sao` : `Vote cho ${artistName} tốn 1 sao`}</span>
+          <span>{isAuthenticated ? <>Còn <StarAmount amount={starBalance} /></> : <>Vote cho {artistName} tốn <StarAmount amount={1} /></>}</span>
         </div>
       </div>
 
