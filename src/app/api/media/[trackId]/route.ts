@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { loadPayloadClient } from '@/lib/payload-runtime'
-import { getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
+import { assertPrivateObjectReadable, getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
 import { getRecentPremiumAccess } from '@/lib/wallet-ledger'
 
@@ -50,6 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
         }
       }
       if (!isExpectedR2Key(track.previewR2Key, ['music/preview/', 'music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file phát.' }, { status: 404 })
+      await assertPrivateObjectReadable(track.previewR2Key)
       const playbackUrl = await getPreviewPlaybackUrl(track.previewR2Key)
       const playbackCost = getStarCost(track.playbackStarCost)
       if (playbackCost > 0) {
@@ -65,6 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
     if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để tải file.' }, { status: 401 })
     if (!isExpectedR2Key(track.masterR2Key, ['music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file master để tải.' }, { status: 404 })
+    await assertPrivateObjectReadable(track.masterR2Key)
 
     if (track.isDownloadDisabled) {
       return NextResponse.json({ ok: false, message: 'Nội dung này không cho phép tải xuống.' }, { status: 403 })
@@ -87,7 +89,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: 'Yêu cầu media không hợp lệ.' }, { status: 400 })
     }
-    return NextResponse.json({ ok: false, message: 'Không thể cấp quyền media lúc này.' }, { status: 500 })
+    console.error('Media access failed', error)
+    return NextResponse.json({ ok: false, message: 'Tệp nhạc này đang gặp sự cố trên kho lưu trữ. Vui lòng thử lại hoặc báo cáo để đội vận hành kiểm tra.' }, { status: 502 })
   }
 }
 
