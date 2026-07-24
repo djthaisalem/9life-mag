@@ -4,7 +4,10 @@ import { createHmac, randomUUID, timingSafeEqual } from 'crypto'
 import { getRuntimeSecret } from '@/lib/runtime-security'
 import { hasCmsScope, type CmsScope } from '@/lib/cms-role-policy'
 
-const CAPABILITY_TTL_MS = 10 * 60 * 1000
+// The dashboard receives signed, scope-bound capabilities at render time. Keep
+// them valid for the same lifetime as the CMS session so long editing sessions
+// do not lose write access while the HttpOnly session remains valid.
+const CAPABILITY_TTL_MS = 8 * 60 * 60 * 1000
 
 type CmsCapability = {
   email: string
