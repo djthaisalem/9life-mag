@@ -340,6 +340,110 @@ export async function completeDirectMp3Upload(ticketToken: string, uploadedBy: s
   }
 }
 
+type StoredTrackForReplacement = {
+  id: string | number
+  title?: string
+  musicCode?: string
+  previewR2Key?: string
+  masterR2Key?: string
+}
+
+function canDeleteMusicObject(key: string | undefined) {
+  return Boolean(key && (key.startsWith('music/preview/') || key.startsWith('music/master/')))
+}
+
+export async function replaceMusicTrackAudio(input: { trackId: string | number; audio: File }) {
+  const extension = validateUploadFile(input.audio.name, input.audio.size, input.audio.type)
+  const payload = await loadPayloadClient()
+  const existing = await payload.findByID({ collection: 'tracks', id: input.trackId, depth: 0, overrideAccess: true }) as StoredTrackForReplacement
+  const title = existing.title?.trim() || '9LIFE Music'
+  const musicCode = existing.musicCode?.replace(/\D/g, '').slice(0, 6) || await createUniqueMusicCode()
+  const shouldCreatePreview = extension !== '.mp3'
+  const tempBase = process.env.MUSIC_TEMP_DIR?.trim() || os.tmpdir()
+  await fs.mkdir(tempBase, { recursive: true })
+  const tempDir = await fs.mkdtemp(path.join(tempBase, '9life-music-replace-'))
+  const uploadId = randomUUID()
+  const namedFile = fileStem(title, musicCode)
+  const keyBase = `${new Date().getUTCFullYear()}/${namedFile}-${uploadId}`
+  const sourcePath = path.join(tempDir, `source${extension}`)
+  const masterPath = path.join(tempDir, `${namedFile}${extension}`)
+  const previewPath = path.join(tempDir, 'preview.mp3')
+  const previewKey = `music/preview/${keyBase}.mp3`
+  const masterKey = `music/master/${keyBase}${extension}`
+  let uploadedPreview = false
+  let uploadedMaster = false
+
+  try {
+    await pipeline(Readable.fromWeb(input.audio.stream() as never), createWriteStream(sourcePath, { flags: 'wx' }))
+    const durationSeconds = await readDurationSeconds(sourcePath)
+    if (shouldCreatePreview) await createPreview(sourcePath, previewPath, title, musicCode)
+    await createDownloadMaster(sourcePath, masterPath, title, musicCode)
+
+    const { client, bucket } = getR2Client()
+    if (shouldCreatePreview) {
+      await uploadR2Object(client, bucket, previewKey, previewPath, 'audio/mpeg')
+      uploadedPreview = true
+    }
+    await uploadR2Object(client, bucket, masterKey, masterPath, input.audio.type || 'application/octet-stream')
+    uploadedMaster = true
+    const playbackKey = shouldCreatePreview ? previewKey : masterKey
+
+    await payload.update({
+      collection: 'tracks',
+      id: input.trackId,
+      depth: 0,
+      overrideAccess: true,
+      data: {
+        ...(existing.musicCode ? {} : { musicCode }),
+        durationSeconds: Math.round(durationSeconds),
+        durationLabel: formatDuration(durationSeconds),
+        previewR2Key: playbackKey,
+        masterR2Key: masterKey,
+        sourceFormat: extension.slice(1).toUpperCase(),
+      },
+    })
+
+    await Promise.all([
+      canDeleteMusicObject(existing.previewR2Key) ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: existing.previewR2Key! })) : Promise.resolve(),
+      canDeleteMusicObject(existing.masterR2Key) && existing.masterR2Key !== existing.previewR2Key
+        ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: existing.masterR2Key! }))
+        : Promise.resolve(),
+    ])
+
+    return {
+      durationSeconds: Math.round(durationSeconds),
+      durationLabel: formatDuration(durationSeconds),
+      previewKey: playbackKey,
+      masterKey,
+    }
+  } catch (error) {
+    if (uploadedPreview || uploadedMaster) {
+      const { client, bucket } = getR2Client()
+      await Promise.all([
+        uploadedPreview ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: previewKey })) : Promise.resolve(),
+        uploadedMaster ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: masterKey })) : Promise.resolve(),
+      ]).catch(() => undefined)
+    }
+    throw error
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true })
+  }
+}
+
+export async function deleteMusicTrack(input: { trackId: string | number }) {
+  const payload = await loadPayloadClient()
+  const existing = await payload.findByID({ collection: 'tracks', id: input.trackId, depth: 0, overrideAccess: true }) as StoredTrackForReplacement
+  await payload.delete({ collection: 'tracks', id: input.trackId, overrideAccess: true })
+
+  const { client, bucket } = getR2Client()
+  await Promise.all([
+    canDeleteMusicObject(existing.previewR2Key) ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: existing.previewR2Key! })) : Promise.resolve(),
+    canDeleteMusicObject(existing.masterR2Key) && existing.masterR2Key !== existing.previewR2Key
+      ? client.send(new DeleteObjectCommand({ Bucket: bucket, Key: existing.masterR2Key! }))
+      : Promise.resolve(),
+  ])
+}
+
 export async function processMusicUpload(input: MusicUploadInput) {
   const extension = validateUploadFile(input.audio.name, input.audio.size, input.audio.type)
   const shouldCreatePreview = extension !== '.mp3'

@@ -4,6 +4,10 @@ import { hasTrustedCmsRequestOrigin, requireCmsApiAccess } from '@/lib/cms-acces
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { CMS_SESSION_COOKIE, createCmsSessionToken, getCmsSessionCookieOptions } from '@/lib/cms-session'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { deleteMusicTrack, replaceMusicTrackAudio } from '@/lib/music-upload-pipeline'
+
+export const runtime = 'nodejs'
+export const maxDuration = 300
 
 const updateMusicSchema = z.object({
   title: z.string().trim().min(1).max(180),
@@ -105,5 +109,73 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
     }
     console.error('CMS music update failed', error)
     return NextResponse.json({ ok: false, message: 'Server chưa thể lưu thay đổi track lúc này.' }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request, context: { params: Promise<{ slug: string }> }) {
+  const access = await requireMusicAccess(request)
+  if (!access.ok) return access.response
+
+  try {
+    const { slug } = await context.params
+    const formData = await request.formData()
+    const audio = formData.get('audio')
+    if (!(audio instanceof File)) {
+      return NextResponse.json({ ok: false, message: 'Vui lòng chọn file nhạc thay thế.' }, { status: 400 })
+    }
+
+    const payload = await loadPayloadClient()
+    const existing = await payload.find({
+      collection: 'tracks',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const track = existing.docs[0]
+    if (!track) return NextResponse.json({ ok: false, message: 'Không tìm thấy track trong database.' }, { status: 404 })
+
+    const result = await replaceMusicTrackAudio({ trackId: track.id, audio })
+    const response = NextResponse.json({ ok: true, message: 'Đã thay file nhạc và cập nhật R2 key mới.', result })
+    response.cookies.set(
+      CMS_SESSION_COOKIE,
+      await createCmsSessionToken({ email: access.principal.email, role: access.principal.role }),
+      getCmsSessionCookieOptions(),
+    )
+    return response
+  } catch (error) {
+    console.error('CMS music replacement failed', error)
+    return NextResponse.json({ ok: false, message: 'Không thể thay file nhạc lúc này. Hãy kiểm tra định dạng audio, R2 và FFmpeg.' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ slug: string }> }) {
+  const access = await requireMusicAccess(request)
+  if (!access.ok) return access.response
+
+  try {
+    const { slug } = await context.params
+    const payload = await loadPayloadClient()
+    const existing = await payload.find({
+      collection: 'tracks',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const track = existing.docs[0]
+    if (!track) return NextResponse.json({ ok: false, message: 'Không tìm thấy track trong database.' }, { status: 404 })
+
+    await deleteMusicTrack({ trackId: track.id })
+    const response = NextResponse.json({ ok: true, message: 'Đã xoá track và các file audio liên quan.' })
+    response.cookies.set(
+      CMS_SESSION_COOKIE,
+      await createCmsSessionToken({ email: access.principal.email, role: access.principal.role }),
+      getCmsSessionCookieOptions(),
+    )
+    return response
+  } catch (error) {
+    console.error('CMS music deletion failed', error)
+    return NextResponse.json({ ok: false, message: 'Không thể xoá track lúc này.' }, { status: 500 })
   }
 }

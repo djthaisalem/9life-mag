@@ -58,6 +58,26 @@ export function CmsMusicEditForm({
     setMessage(forceDraft ? 'Đang lưu bản nháp...' : 'Đang lưu thay đổi...')
 
     try {
+      const replacementAudio = formData.get('replacementAudio')
+      if (replacementAudio instanceof File && replacementAudio.size > 0) {
+        setMessage('Đang thay file nhạc và cập nhật R2 key...')
+        const replacementData = new FormData()
+        replacementData.set('audio', replacementAudio)
+        const replacementResponse = await fetch(`/cms/api/music/${encodeURIComponent(music.slug)}`, {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: musicCapability ? { Authorization: `Bearer ${musicCapability}` } : undefined,
+          body: replacementData,
+        })
+        const replacementResult = await replacementResponse.json() as { ok?: boolean; message?: string; result?: { masterKey?: string } }
+        if (!replacementResponse.ok || !replacementResult.ok) {
+          setIsError(true)
+          setMessage(replacementResult.message ?? 'Không thể thay file nhạc.')
+          return
+        }
+      }
+
       const response = await fetch(`/cms/api/music/${encodeURIComponent(music.slug)}`, {
         method: 'PATCH',
         credentials: 'include',
@@ -97,6 +117,34 @@ export function CmsMusicEditForm({
     }
   }
 
+  async function deleteTrack() {
+    if (!music.isDatabaseRecord || !window.confirm(`Xoá track “${music.title}”? File audio trên R2 cũng sẽ được xoá.`)) return
+
+    setIsPending(true)
+    setIsError(false)
+    setMessage('Đang xoá track...')
+    try {
+      const response = await fetch(`/cms/api/music/${encodeURIComponent(music.slug)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: musicCapability ? { Authorization: `Bearer ${musicCapability}` } : undefined,
+      })
+      const result = await response.json() as { ok?: boolean; message?: string }
+      if (!response.ok || !result.ok) {
+        setIsError(true)
+        setMessage(result.message ?? 'Không thể xoá track.')
+        return
+      }
+      window.location.assign('/cms/dashboard/music')
+    } catch {
+      setIsError(true)
+      setMessage('Không kết nối được đến tiến trình xoá track.')
+    } finally {
+      setIsPending(false)
+    }
+  }
+
   return (
     <form className="form-shell cms-embedded-form" onSubmit={(event) => { event.preventDefault(); void save(event.currentTarget) }}>
       <div className="field"><label htmlFor="musicTitle">Tên nội dung</label><input id="musicTitle" name="title" defaultValue={music.title} required maxLength={180} /></div>
@@ -119,7 +167,9 @@ export function CmsMusicEditForm({
       <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue={music.albumLabel}><option value="">Không thuộc album</option>{albums.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
       <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Chọn các khu vực được phép hiển thị nội dung này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" name="displayMap" value={option} defaultChecked={music.selectedMaps.includes(option)} />{option}</label>)}</div></fieldset>
       <div className="field"><label htmlFor="musicSource">Nguồn file / R2 key</label><input id="musicSource" value={music.masterR2Key} readOnly /></div>
+      <div className="field"><label htmlFor="replacementAudio">Thay file nhạc</label><input id="replacementAudio" name="replacementAudio" type="file" accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac,.mp3,.wav,.flac,.m4a,.aac" /><span className="cms-muted">Chọn file mới nếu bản hiện tại bị hư. Khi bấm Lưu thay đổi, hệ thống sẽ cập nhật link phát và tải mới; chỉ sau đó file cũ mới bị xoá.</span></div>
       <div className="cms-inline-actions">
+        <button type="button" className="button-secondary" disabled={isPending} onClick={() => { void deleteTrack() }}>Xoá track</button>
         <button type="submit" className="button" disabled={isPending}>{isPending ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
         <button type="button" className="button-secondary" disabled={isPending} onClick={(event) => { if (event.currentTarget.form) void save(event.currentTarget.form, true) }}>Lưu nháp</button>
       </div>
