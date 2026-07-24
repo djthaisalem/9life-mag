@@ -13,6 +13,15 @@ function accountTypeLabel(accountType: 'user' | 'artist', portalRole?: string) {
   return 'Nghệ sĩ'
 }
 
+function portalAccessLabel(accountType: 'user' | 'artist', portalRole?: string, status?: string) {
+  if (accountType !== 'artist') return 'User dashboard'
+  if (status === 'approved') return 'Đã duyệt portal'
+  if (status === 'suspended') return 'Tạm khóa portal'
+  if (portalRole === 'manager') return 'Chờ map Agent và duyệt'
+  if (portalRole === 'booking') return 'Chờ map Outlet và duyệt'
+  return 'Chờ duyệt portal'
+}
+
 export default async function CmsUsersPage({
   searchParams,
 }: {
@@ -81,11 +90,7 @@ export default async function CmsUsersPage({
                   </td>
                   <td>{user.role === 'customer' ? 'Không có' : user.role}</td>
                   <td>
-                    {user.accountType === 'artist'
-                      ? user.portalAccessStatus === 'approved'
-                        ? 'Đã duyệt portal'
-                        : 'Chờ duyệt portal'
-                      : 'User dashboard'}
+                    {portalAccessLabel(user.accountType, user.portalRole, user.portalAccessStatus)}
                   </td>
                   <td>
                     <div className="cms-table-actions">

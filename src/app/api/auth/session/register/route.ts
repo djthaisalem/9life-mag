@@ -73,11 +73,19 @@ export async function POST(request: Request) {
     }
 
     try {
+      const isPendingPortalRequest = result.account.accountType === 'artist' && result.account.portalAccessStatus === 'pending'
+      const portalRoleLabel = result.account.portalRole === 'manager'
+        ? 'Manager'
+        : result.account.portalRole === 'booking'
+          ? 'Booking Coordinator'
+          : 'Nghệ sĩ'
       await createPortalNotifications([
         {
           recipientKey: 'admin',
-          title: 'Tài khoản mới đăng ký',
-          body: `${result.account.fullName} vừa tạo tài khoản ${result.account.accountType === 'artist' ? 'nghệ sĩ' : 'user'}${result.account.email ? ` bằng ${result.account.email}` : ''}.`,
+          title: isPendingPortalRequest ? `Yêu cầu duyệt ${portalRoleLabel} mới` : 'Tài khoản mới đăng ký',
+          body: isPendingPortalRequest
+            ? `${result.account.fullName}${result.account.email ? ` (${result.account.email})` : ''} đang chờ map ${result.account.portalRole === 'manager' ? 'Agent quản lý' : 'Outlet phụ trách'} và duyệt quyền dashboard.`
+            : `${result.account.fullName} vừa tạo tài khoản ${result.account.accountType === 'artist' ? 'nghệ sĩ' : 'user'}${result.account.email ? ` bằng ${result.account.email}` : ''}.`,
           href: `/cms/dashboard/users/${result.account.id}`,
         },
       ])

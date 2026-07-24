@@ -30,16 +30,22 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CmsDashboardOverviewPage() {
-  const [walletEntries, starBalanceSummary, recentUsers, bookingRows, accessRequests] = await Promise.all([
+  const [walletEntries, starBalanceSummary, recentUsers, portalAccounts, bookingRows, accessRequests] = await Promise.all([
     getWalletLedgerSnapshot(),
     getSiteStarBalanceSummary(),
     listSiteAccountsForCms({ page: 1, limit: 5 }),
+    listSiteAccountsForCms({ page: 1, limit: 1000 }),
     getBookingRequestsSnapshot(),
     getCmsAccessRequests(),
   ])
   const bookingTotal = bookingRows.length
   const pendingAccess = accessRequests.length
   const pendingArtistProfiles = cmsArtistRows.slice(10).length
+  const pendingPortalAccounts = portalAccounts.users.filter((account) =>
+    account.accountType === 'artist'
+    && (account.portalRole === 'manager' || account.portalRole === 'booking')
+    && account.portalAccessStatus === 'pending'
+  )
   const latestArtistBooking = bookingRows.find((item) => item.type === 'artist')
   const latestOutletBooking = bookingRows.find((item) => item.type === 'outlet')
   const recentActivity = [
@@ -57,6 +63,12 @@ export default async function CmsDashboardOverviewPage() {
     ...(latestOutletBooking
       ? [{ title: 'Đặt bàn mới', detail: `${latestOutletBooking.title} · ${latestOutletBooking.schedule}`, href: '/cms/dashboard/booking/outlets', status: 'Cần xác nhận' }]
       : []),
+    ...pendingPortalAccounts.slice(0, 3).map((account) => ({
+      title: `Duyệt ${account.portalRole === 'manager' ? 'Manager' : 'Booking Coordinator'}`,
+      detail: `${account.name} · ${account.email || account.phone || 'Chưa có thông tin liên hệ'} · cần ${account.portalRole === 'manager' ? 'map Agent' : 'map Outlet'}`,
+      href: `/cms/dashboard/users/${account.id}`,
+      status: 'Chờ duyệt',
+    })),
     { title: 'Duyệt hồ sơ nghệ sĩ', detail: `${pendingArtistProfiles} hồ sơ nháp đã tạo profile, cần admin duyệt trước khi hiển thị trên site`, href: '/cms/dashboard/artists', status: 'Chờ duyệt' },
     { title: 'Yêu cầu phân quyền', detail: `${pendingAccess} tài khoản đang chờ kiểm tra quyền truy cập CMS`, href: '/cms/dashboard/admin-access', status: 'Chờ duyệt' },
   ]
@@ -120,6 +132,7 @@ export default async function CmsDashboardOverviewPage() {
             <div><span>Hồ sơ outlet</span><strong>{cmsOutletRows.length}</strong><small>venue trong danh sách quản lý</small></div>
             <div><span>Thành viên</span><strong>{recentUsers.totalDocs}</strong><small>tài khoản thật trong database</small></div>
             <div><span>Phân quyền chờ duyệt</span><strong>{pendingAccess}</strong><small>cần rà soát phạm vi truy cập</small></div>
+            <div><span>Portal chờ duyệt</span><strong>{pendingPortalAccounts.length}</strong><small>Manager và Booking cần map vận hành</small></div>
           </div>
           <Link href="/cms/dashboard/api" className="cms-overview-security-link">Kiểm tra API và bảo mật <span>→</span></Link>
         </article>
