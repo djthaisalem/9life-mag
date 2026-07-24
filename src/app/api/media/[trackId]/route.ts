@@ -6,7 +6,7 @@ import { getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-acces
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
 import { getRecentPremiumAccess } from '@/lib/wallet-ledger'
 
-type TrackDocument = { id: string | number; title?: string; musicCode?: string; sourceFormat?: string; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number }
+type TrackDocument = { id: string | number; title?: string; musicCode?: string; sourceFormat?: string; previewR2Key?: string; masterR2Key?: string; visibility?: string; isPublic?: boolean; accessLevel?: string; requiresLoginToDownload?: boolean; playbackStarCost?: number; downloadStarCost?: number; isDownloadDisabled?: boolean }
 const mediaRequestSchema = z.object({ kind: z.enum(['preview', 'download']) })
 
 function isExpectedR2Key(key: string | undefined, prefixes: readonly string[]): key is string {
@@ -65,6 +65,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
     if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để tải file.' }, { status: 401 })
     if (!isExpectedR2Key(track.masterR2Key, ['music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file master để tải.' }, { status: 404 })
+
+    if (track.isDownloadDisabled) {
+      return NextResponse.json({ ok: false, message: 'Nội dung này không cho phép tải xuống.' }, { status: 403 })
+    }
 
     // Generate the short-lived URL first so a storage failure never charges the user.
     const downloadUrl = await getPrivateObjectUrl(

@@ -16,6 +16,7 @@ type MusicEditValue = {
   durationLabel: string
   playbackStarCost: number
   downloadStarCost: number
+  isDownloadDisabled: boolean
   albumLabel: string
   selectedMaps: string[]
   masterR2Key: string
@@ -75,6 +76,7 @@ export function CmsMusicEditForm({
           durationLabel: String(formData.get('durationLabel') ?? ''),
           playbackStarCost: Number(formData.get('playbackStarCost') ?? 0),
           downloadStarCost: Number(formData.get('downloadStarCost') ?? 0),
+          isDownloadDisabled: formData.get('isDownloadDisabled') === 'on',
           albumLabel: String(formData.get('albumLabel') ?? ''),
           displayMap: formData.getAll('displayMap').map(String),
         }),
@@ -112,7 +114,7 @@ export function CmsMusicEditForm({
       </div>
       <div className="cms-form-two">
         <div className="field"><label htmlFor="playbackStarCost">Sao để nghe</label><input id="playbackStarCost" name="playbackStarCost" type="number" min="0" step="1" defaultValue={music.playbackStarCost} /><span className="cms-muted">Để 0 nếu nghe miễn phí.</span></div>
-        <div className="field"><label htmlFor="downloadStarCost">Sao để tải</label><input id="downloadStarCost" name="downloadStarCost" type="number" min="0" step="1" defaultValue={music.downloadStarCost} /><span className="cms-muted">Để 0 nếu tải miễn phí.</span></div>
+        <div className="field"><label htmlFor="downloadStarCost">Sao để tải</label><input id="downloadStarCost" name="downloadStarCost" type="number" min="0" step="1" defaultValue={music.downloadStarCost} /><label className="cms-checkbox-row"><input name="isDownloadDisabled" type="checkbox" defaultChecked={music.isDownloadDisabled} />Không cho tải xuống</label><span className="cms-muted">Bật tuỳ chọn này để chặn tải file, kể cả khi giảm chi phí về 0.</span></div>
       </div>
       <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue={music.albumLabel}><option value="">Không thuộc album</option>{albums.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
       <fieldset className="cms-map-fieldset"><legend>Map hiển thị trên site</legend><p>Chọn các khu vực được phép hiển thị nội dung này.</p><div className="cms-map-option-grid">{displayMapOptions.map((option) => <label key={option}><input type="checkbox" name="displayMap" value={option} defaultChecked={music.selectedMaps.includes(option)} />{option}</label>)}</div></fieldset>

@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsBookingRequestsPanel } from '@/components/cms-booking-requests-panel'
-import { cmsTelegramBookingConfig } from '@/lib/cms-dashboard-data'
+import { CmsTelegramBookingConfigForm } from '@/components/cms-telegram-booking-config-form'
 import { getBookingRequestsSnapshot } from '@/lib/booking-requests'
+import { getTelegramPaymentConfig } from '@/lib/payment-config'
 
 export default async function CmsBookingPage() {
   const allBookingRows = await getBookingRequestsSnapshot()
+  const telegram = await getTelegramPaymentConfig()
 
   return (
     <CmsDashboardShell
@@ -36,22 +38,7 @@ export default async function CmsBookingPage() {
           </div>
         </div>
 
-        <form className="form-shell cms-embedded-form">
-          <div className="cms-form-two">
-            <div className="field">
-              <label htmlFor="telegramBotTokenAll">Telegram bot token mặc định</label>
-              <input id="telegramBotTokenAll" type="password" defaultValue={cmsTelegramBookingConfig.tokenDefault} />
-            </div>
-            <div className="field">
-              <label htmlFor="telegramGlobalChannelAll">Channel tổng booking</label>
-              <input
-                id="telegramGlobalChannelAll"
-                defaultValue={cmsTelegramBookingConfig.globalChannel}
-                placeholder="@9lifemag_booking_ops"
-              />
-            </div>
-          </div>
-        </form>
+        <CmsTelegramBookingConfigForm channel={telegram.channel} tokenConfigured={Boolean(telegram.token)} />
       </article>
 
       <CmsBookingRequestsPanel

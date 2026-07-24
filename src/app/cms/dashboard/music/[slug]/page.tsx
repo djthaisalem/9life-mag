@@ -59,6 +59,7 @@ export default async function CmsMusicDetailPage({ params }: { params: Promise<{
             durationLabel: music.duration,
             playbackStarCost: music.playbackStarCost ?? 0,
             downloadStarCost: music.downloadStarCost ?? 0,
+            isDownloadDisabled: music.isDownloadDisabled,
             albumLabel: music.albumLabel ?? '',
             selectedMaps,
             masterR2Key: music.masterR2Key || `r2://music/${music.updatedAt.slice(0, 10)}/${music.slug}.mp3`,

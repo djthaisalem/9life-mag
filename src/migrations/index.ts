@@ -1,6 +1,7 @@
 import * as migration_20260722_072701_initial_9life_schema from './20260722_072701_initial_9life_schema';
 import * as migration_20260723_000001_user_playlist_sharing from './20260723_000001_user_playlist_sharing';
 import * as migration_20260724_000001_referral_visit_counts from './20260724_000001_referral_visit_counts';
+import * as migration_20260724_000002_track_download_control from './20260724_000002_track_download_control';
 
 export const migrations = [
   {
@@ -17,5 +18,10 @@ export const migrations = [
     up: migration_20260724_000001_referral_visit_counts.up,
     down: migration_20260724_000001_referral_visit_counts.down,
     name: '20260724_000001_referral_visit_counts'
+  },
+  {
+    up: migration_20260724_000002_track_download_control.up,
+    down: migration_20260724_000002_track_download_control.down,
+    name: '20260724_000002_track_download_control'
   },
 ];

@@ -338,3 +338,34 @@ export async function getTelegramPaymentConfig() {
     channel: snapshot.telegramChannel || cmsTelegramBookingConfig.globalChannel,
   }
 }
+
+export async function saveTelegramBookingChannel(channel: string) {
+  assertSafeConfigurationValues({ telegramChannel: channel })
+  const nextChannel = channel.trim()
+  if (!nextChannel) throw new Error('telegram_channel_required')
+
+  process.env.TELEGRAM_PAYMENT_CHANNEL = nextChannel
+
+  let content = ''
+  try {
+    content = await fs.readFile(ENV_FILE_PATH, 'utf8')
+  } catch {
+    // The JSON store below remains the source of truth when the env file is unavailable.
+  }
+
+  const lines = content ? content.split(/\r?\n/) : []
+  let updated = false
+  const nextLines = lines.map((line) => {
+    if (!line.match(/^TELEGRAM_PAYMENT_CHANNEL=/)) return line
+    updated = true
+    return `TELEGRAM_PAYMENT_CHANNEL=${nextChannel}`
+  })
+  if (!updated) nextLines.push(`TELEGRAM_PAYMENT_CHANNEL=${nextChannel}`)
+
+  await fs.mkdir(path.dirname(CONFIG_STORE_PATH), { recursive: true })
+  const current = await readConfigStoreMap()
+  await fs.writeFile(CONFIG_STORE_PATH, JSON.stringify({ ...current, TELEGRAM_PAYMENT_CHANNEL: nextChannel }, null, 2), 'utf8')
+  await fs.writeFile(ENV_FILE_PATH, `${nextLines.filter(Boolean).join('\n')}\n`, 'utf8').catch(() => undefined)
+
+  return { channel: nextChannel }
+}

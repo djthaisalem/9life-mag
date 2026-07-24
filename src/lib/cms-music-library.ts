@@ -19,6 +19,7 @@ type TrackDocument = {
   durationLabel?: string
   playbackStarCost?: number
   downloadStarCost?: number
+  isDownloadDisabled?: boolean
   masterR2Key?: string
   updatedAt?: string
 }
@@ -31,6 +32,7 @@ export type CmsMusicLibraryRow = CmsMusicRow & {
   accessLevelValue: 'public' | 'stars' | 'premium' | 'internal'
   visibilityValue: 'draft' | 'pending' | 'public' | 'hidden'
   albumLabel?: string
+  isDownloadDisabled: boolean
 }
 
 type EditableTrackType = CmsMusicLibraryRow['trackTypeValue']
@@ -78,6 +80,7 @@ function normalizeDatabaseTrack(doc: TrackDocument): CmsMusicLibraryRow {
     duration: doc.durationLabel || '00:00',
     playbackStarCost: doc.playbackStarCost || 0,
     downloadStarCost: doc.downloadStarCost || 0,
+    isDownloadDisabled: doc.isDownloadDisabled === true,
     source: 'database',
     musicCode: doc.musicCode,
     masterR2Key: doc.masterR2Key,

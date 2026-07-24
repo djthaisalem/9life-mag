@@ -15,6 +15,7 @@ const updateMusicSchema = z.object({
   durationLabel: z.string().trim().max(20),
   playbackStarCost: z.number().int().min(0).max(1_000_000),
   downloadStarCost: z.number().int().min(0).max(1_000_000),
+  isDownloadDisabled: z.boolean(),
   albumLabel: z.string().trim().max(180),
   displayMap: z.array(z.string().trim().min(1).max(120)).max(12),
 })
@@ -81,6 +82,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
         durationLabel: input.durationLabel,
         playbackStarCost: input.playbackStarCost,
         downloadStarCost: input.downloadStarCost,
+        isDownloadDisabled: input.isDownloadDisabled,
         albumLabel: input.albumLabel,
         displayMap: input.displayMap.join(' / '),
       },

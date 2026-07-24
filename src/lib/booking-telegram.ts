@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { cmsTelegramBookingConfig } from '@/lib/cms-dashboard-data'
+import { getTelegramPaymentConfig } from '@/lib/payment-config'
 import {
   getBookingRequestsSnapshot,
   markBookingReminderSent,
@@ -36,8 +37,9 @@ async function sendTelegramMessage(input: { token: string; channel: string; mess
 }
 
 export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
-  const token = process.env.TELEGRAM_BOT_TOKEN || ''
-  const channel = request.reminderConfig.telegramChannel || cmsTelegramBookingConfig.globalChannel
+  const telegram = await getTelegramPaymentConfig()
+  const token = telegram.token
+  const channel = request.reminderConfig.telegramChannel || telegram.channel || cmsTelegramBookingConfig.globalChannel
   const message = [
     '9LIFE MAG - YÊU CẦU MỚI',
     `Loại: ${request.typeLabel}`,
@@ -71,7 +73,8 @@ function isDue(value: string, now: Date) {
 }
 
 export async function dispatchDueBookingReminders(now = new Date()) {
-  const token = process.env.TELEGRAM_BOT_TOKEN || ''
+  const telegram = await getTelegramPaymentConfig()
+  const token = telegram.token
   const requests = await getBookingRequestsSnapshot()
   const sent: Array<{ requestId: string; kind: string; channels: string[] }> = []
 
@@ -81,7 +84,7 @@ export async function dispatchDueBookingReminders(now = new Date()) {
     }
 
     const channels = uniqueChannels([
-      request.reminderConfig.telegramChannel,
+      request.reminderConfig.telegramChannel || telegram.channel || cmsTelegramBookingConfig.globalChannel,
       request.reminderConfig.profileChannel,
     ])
 

@@ -184,6 +184,14 @@ export const Tracks: CollectionConfig = {
       },
     },
     {
+      name: 'isDownloadDisabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Bật khi nội dung chỉ được nghe, không được tải xuống.',
+      },
+    },
+    {
       name: 'displayMap',
       type: 'textarea',
     },

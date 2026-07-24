@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsBookingRequestsPanel } from '@/components/cms-booking-requests-panel'
-import { cmsTelegramBookingConfig } from '@/lib/cms-dashboard-data'
+import { CmsTelegramBookingConfigForm } from '@/components/cms-telegram-booking-config-form'
 import { getBookingRequestsSnapshot } from '@/lib/booking-requests'
+import { getTelegramPaymentConfig } from '@/lib/payment-config'
 
 export default async function CmsArtistBookingPage() {
   const artistBookingRows = (await getBookingRequestsSnapshot()).filter((item) => item.type === 'artist')
+  const telegram = await getTelegramPaymentConfig()
 
   return (
     <CmsDashboardShell
@@ -36,22 +38,7 @@ export default async function CmsArtistBookingPage() {
           </div>
         </div>
 
-        <form className="form-shell cms-embedded-form">
-          <div className="cms-form-two">
-            <div className="field">
-              <label htmlFor="telegramBotTokenArtist">Telegram bot token mặc định</label>
-              <input id="telegramBotTokenArtist" type="password" defaultValue={cmsTelegramBookingConfig.tokenDefault} />
-            </div>
-            <div className="field">
-              <label htmlFor="telegramArtistGlobalChannel">Channel tổng booking nghệ sĩ</label>
-              <input
-                id="telegramArtistGlobalChannel"
-                defaultValue={cmsTelegramBookingConfig.globalChannel}
-                placeholder="@9lifemag_booking_ops"
-              />
-            </div>
-          </div>
-        </form>
+        <CmsTelegramBookingConfigForm channel={telegram.channel} tokenConfigured={Boolean(telegram.token)} />
       </article>
 
       <CmsBookingRequestsPanel
