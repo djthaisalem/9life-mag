@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { cmsTelegramBookingConfig } from '@/lib/cms-dashboard-data'
+import { getVietnamRegionLabel, vietnamLocationNames } from '@/lib/vietnam-locations'
 
 type OutletDraftState = Record<string, string>
 
@@ -104,7 +105,18 @@ export function CmsOutletProfileBuilder() {
             </div>
             <div className="field">
               <label htmlFor="outletCity">Địa phương</label>
-              <input id="outletCity" value={draft.city ?? ''} placeholder="TP.HCM" onChange={(event) => updateField('city', event.target.value)} />
+              <select
+                id="outletCity"
+                value={draft.city ?? ''}
+                onChange={(event) => {
+                  const city = event.target.value
+                  updateField('city', city)
+                  updateField('region', getVietnamRegionLabel(city))
+                }}
+              >
+                <option value="">Chọn tỉnh / thành phố</option>
+                {vietnamLocationNames.map((city) => <option key={city}>{city}</option>)}
+              </select>
             </div>
             <div className="field">
               <label htmlFor="outletHours">Giờ hoạt động</label>

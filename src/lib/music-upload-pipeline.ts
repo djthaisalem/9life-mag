@@ -17,6 +17,16 @@ const DEFAULT_MAX_UPLOAD_MB = 1024
 const MUSIC_METADATA_URL = 'https://9lifemag.com/music'
 const DEFAULT_COVER_KEY = 'music/covers/default-music-cover.png'
 
+function toSafeObjectMetadata(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7e]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 512)
+}
+
 type MusicUploadInput = {
   title: string
   type: 'track' | 'nonstop' | 'remix'
@@ -288,7 +298,8 @@ export async function completeDirectMp3Upload(ticketToken: string, uploadedBy: s
       ContentType: ticket.contentType || 'audio/mpeg',
       MetadataDirective: 'REPLACE',
       Metadata: {
-        title: ticket.title.trim(),
+        // S3 metadata becomes HTTP headers, which must stay ASCII-only.
+        title: toSafeObjectMetadata(ticket.title) || '9LIFE MAG',
         website: MUSIC_METADATA_URL,
         musiccode: ticket.musicCode,
       },

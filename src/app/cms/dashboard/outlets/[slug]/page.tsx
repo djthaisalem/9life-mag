@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { cmsTelegramBookingConfig, getCmsOutletBySlug } from '@/lib/cms-dashboard-data'
+import { getVietnamRegionLabel, vietnamLocationNames } from '@/lib/vietnam-locations'
 
 export default async function CmsOutletDetailPage({
   params,
@@ -44,11 +45,14 @@ export default async function CmsOutletDetailPage({
             <div className="cms-form-two">
               <div className="field">
                 <label htmlFor="outletRegion">Miền / khu vực</label>
-                <input id="outletRegion" defaultValue={outlet.region} />
+                <input id="outletRegion" defaultValue={getVietnamRegionLabel(outlet.city) || outlet.region} readOnly />
               </div>
               <div className="field">
                 <label htmlFor="outletCity">Địa phương</label>
-                <input id="outletCity" defaultValue={outlet.city} />
+                <select id="outletCity" defaultValue={outlet.city}>
+                  <option value="">Chọn tỉnh / thành phố</option>
+                  {vietnamLocationNames.map((city) => <option key={city}>{city}</option>)}
+                </select>
               </div>
             </div>
             <div className="cms-form-two">

@@ -6,6 +6,7 @@ import { cmsTelegramBookingConfig, getCmsArtistBySlug } from '@/lib/cms-dashboar
 import { getArtistPrivateContact } from '@/lib/artist-private-contact'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { hasCmsScope } from '@/lib/cms-role-policy'
+import { vietnamLocationNames } from '@/lib/vietnam-locations'
 
 export default async function CmsArtistDetailPage({
   params,
@@ -62,7 +63,10 @@ export default async function CmsArtistDetailPage({
             <div className="cms-form-two">
               <div className="field">
                 <label htmlFor="artistCity">Khu vực</label>
-                <input id="artistCity" defaultValue={artist.city} />
+                <select id="artistCity" defaultValue={artist.city}>
+                  <option value="">Chọn tỉnh / thành phố</option>
+                  {vietnamLocationNames.map((city) => <option key={city}>{city}</option>)}
+                </select>
               </div>
               <div className="field">
                 <label htmlFor="artistAgent">Agent quản lý</label>

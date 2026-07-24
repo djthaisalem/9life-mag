@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
-import { clubOutlets, regionalOutlets } from '@/lib/club-booking-data'
+import { regionalOutlets } from '@/lib/club-booking-data'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 
 const DEFAULT_VISIBLE = 6
@@ -47,7 +47,7 @@ function shuffleItems<T>(items: readonly T[]) {
 
 function TableBookingContent() {
   const searchParams = useSearchParams()
-  const activeLocation = searchParams.get('location')
+  const activeRegion = searchParams.get('region')
   const [expandedRegions, setExpandedRegions] = useState<string[]>([])
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(0)
@@ -71,26 +71,18 @@ function TableBookingContent() {
     })()
   }, [])
 
-  const locationOptions = useMemo(
-    () => [...new Set(clubOutlets.map((outlet) => outlet.city))].sort((left, right) => left.localeCompare(right, 'vi')),
-    []
-  )
-
   const randomizedRegions = useMemo(
     () =>
       regionalOutlets
+        .filter((region) => !activeRegion || region.id === activeRegion)
         .map((region) => {
-          const filteredOutlets = activeLocation
-            ? region.outlets.filter((outlet) => outlet.city === activeLocation)
-            : region.outlets
-
           return {
             ...region,
-            outlets: shuffleItems(filteredOutlets),
+            outlets: shuffleItems(region.outlets),
           }
         })
         .filter((region) => region.outlets.length > 0),
-    [activeLocation]
+    [activeRegion]
   )
 
   const handleOutletVote = async (slug: string) => {
@@ -143,11 +135,11 @@ function TableBookingContent() {
             <div>
               <p className="eyebrow">Table Booking</p>
               <h1 className="home-title">
-                Đặt bàn <span>night club</span> theo khu vực và location
+                Đặt bàn <span>night club</span> theo khu vực
               </h1>
               <p className="page-intro club-booking-intro">
                 Khu này dành cho người dùng muốn chọn venue nhanh: trên cùng là spotlight club nổi bật, bên dưới là outlet
-                chia theo miền và có thể lọc tiếp theo từng thành phố như Hà Nội, TP.HCM, Đà Nẵng... Mỗi lần vào trang,
+                chia theo ba miền để giữ bố cục gọn và dễ chọn. Mỗi lần vào trang,
                 danh sách club sẽ được xáo ngẫu nhiên để trải nghiệm khám phá luôn mới hơn.
               </p>
             </div>
@@ -160,9 +152,7 @@ function TableBookingContent() {
                 <div className="headline-slide-overlay" />
                 <div className="headline-slide-copy">
                   <div className="tag-row">
-                    <Link href={`/dat-ban?location=${encodeURIComponent(club.city)}`} className="pill">
-                      {club.city}
-                    </Link>
+                    <span className="pill">{club.city}</span>
                     <span className="pill">{club.vibe}</span>
                   </div>
                   <h3>{club.name}</h3>
@@ -175,21 +165,21 @@ function TableBookingContent() {
           </div>
 
           <div className="club-region-menu">
-            <Link href="/dat-ban" className={activeLocation ? 'artist-filter-chip' : 'artist-filter-chip artist-filter-chip-active'}>
-              Tất cả location
+            <Link href="/dat-ban" className={activeRegion ? 'artist-filter-chip' : 'artist-filter-chip artist-filter-chip-active'}>
+              Tất cả
             </Link>
-            {locationOptions.map((location) => (
+            {regionalOutlets.map((region) => (
               <Link
-                key={location}
-                href={`/dat-ban?location=${encodeURIComponent(location)}`}
-                className={activeLocation === location ? 'artist-filter-chip artist-filter-chip-active' : 'artist-filter-chip'}
+                key={region.id}
+                href={`/dat-ban?region=${encodeURIComponent(region.id)}`}
+                className={activeRegion === region.id ? 'artist-filter-chip artist-filter-chip-active' : 'artist-filter-chip'}
               >
-                {location}
+                {region.label}
               </Link>
             ))}
           </div>
 
-          {!activeLocation ? (
+          {!activeRegion ? (
             <div className="club-region-menu">
               {randomizedRegions.map((region) => (
                 <a key={region.id} href={`#${region.id}`} className="artist-filter-chip">
@@ -207,7 +197,7 @@ function TableBookingContent() {
             const isExpanded = expandedRegions.includes(region.id)
             const visibleOutlets = isExpanded ? region.outlets : region.outlets.slice(0, DEFAULT_VISIBLE)
             const hasMore = region.outlets.length > DEFAULT_VISIBLE
-            const sectionTitle = activeLocation ? `${activeLocation} â€¢ ${region.label}` : region.label
+            const sectionTitle = region.label
 
             return (
               <section key={region.id} id={region.id} className="club-region-section">
@@ -250,9 +240,9 @@ function TableBookingContent() {
                       </div>
 
                       <div className="club-outlet-meta">
-                        <Link href={`/dat-ban?location=${encodeURIComponent(outlet.city)}`} className="club-location-link">
+                        <span className="club-location-link">
                           <MapPin size={15} /> {outlet.city}
-                        </Link>
+                        </span>
                         <span><Clock3 size={15} /> {outlet.hours}</span>
                         <span><Users2 size={15} /> {outlet.crowd}</span>
                       </div>

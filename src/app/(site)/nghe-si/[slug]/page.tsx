@@ -66,7 +66,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
           <div className="artist-profile-hero-copy">
             <div className="tag-row">
               <span className="pill">{artist.role}</span>
-              <span className="pill">{artist.location}</span>
+              <Link className="pill" href={`/tim-kiem?q=${encodeURIComponent(artist.location)}`}>{artist.location}</Link>
               <span className="pill">{artist.followers}</span>
             </div>
             <h1>{artist.name}</h1>
@@ -97,7 +97,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
               <div className="artist-overview-grid">
                 <article>
                   <MapPin size={18} />
-                  <strong>{artist.location}</strong>
+                  <strong><Link href={`/tim-kiem?q=${encodeURIComponent(artist.location)}`}>{artist.location}</Link></strong>
                   <span>Khu vực hoạt động chính</span>
                 </article>
                 <article>

@@ -38,7 +38,7 @@ export default async function OutletProfilePage({
         <div className="container artist-profile-hero-inner">
           <div className="artist-profile-hero-copy">
             <div className="tag-row">
-              <span className="pill">{outlet.city}</span>
+              <Link className="pill" href={`/tim-kiem?q=${encodeURIComponent(outlet.city)}`}>{outlet.city}</Link>
               <span className="pill">{outlet.type}</span>
               <span className="pill">{outlet.vibe}</span>
             </div>
@@ -249,7 +249,7 @@ export default async function OutletProfilePage({
                   <div>
                     <strong>Khu vực</strong>
                     <span>
-                      {outlet.city} - {outlet.regionLabel}
+                      <Link href={`/tim-kiem?q=${encodeURIComponent(outlet.city)}`}>{outlet.city}</Link> - {outlet.regionLabel}
                     </span>
                   </div>
                 </div>

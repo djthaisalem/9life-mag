@@ -1,3 +1,5 @@
+import { vietnamLocationNames } from '@/lib/vietnam-locations'
+
 export type ArtistPortalSectionKey = 'profile' | 'music' | 'media' | 'content' | 'booking'
 
 export type ArtistPortalField = {
@@ -111,7 +113,7 @@ export const artistPortalSections: ArtistPortalSection[] = [
         fields: [
           { label: 'Giới tính', name: 'gender', type: 'select', options: ['Nữ', 'Nam', 'Khác'] },
           { label: 'Khu vực hoạt động', name: 'region', type: 'select', options: ['Miền Nam', 'Miền Trung', 'Miền Bắc'] },
-          { label: 'Thành phố chính', name: 'city', type: 'text', placeholder: 'TP.HCM, Hà Nội, Đà Nẵng...' },
+          { label: 'Tỉnh / thành phố chính', name: 'city', type: 'select', options: vietnamLocationNames },
           { label: 'Tag dòng nhạc', name: 'genres', type: 'text', placeholder: 'House, Open format, Vinahouse, Afro, Remix' },
           { label: 'Giới thiệu dài', name: 'longBio', type: 'textarea', placeholder: 'Viết câu chuyện nghệ sĩ, màu sắc biểu diễn, định hướng hình ảnh, kinh nghiệm sân khấu...' },
           { label: 'Kinh nghiệm làm việc', name: 'workExperience', type: 'textarea', placeholder: 'Mỗi dòng một kinh nghiệm: festival, venue, brand campaign, tour hoặc vai trò chuyên môn.' },
