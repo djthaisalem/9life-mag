@@ -33,12 +33,15 @@ export async function POST(request: Request) {
     if (body?.action === 'share') {
       const session = await getSession()
       if (!session) return NextResponse.json({ ok: false, message: 'Hãy đăng nhập trước khi tạo link chia sẻ nhận sao.' }, { status: 401 })
+      const visitor = await getVisitorKey(request)
       const ip = getTrustedClientIp(request.headers)
       const guard = await guardReferralAttempts(session.session.userId, ip, 'share')
       if (!guard.ok) return NextResponse.json({ ok: false, message: guard.message }, { status: 429 })
       const input = shareSchema.parse(body)
-      const result = await createShareReferral(session.session.userId, input.path)
-      return NextResponse.json(result, { status: result.ok ? 200 : 429 })
+      const result = await createShareReferral(session.session.userId, input.path, { visitorKey: visitor.value, ip })
+      const response = NextResponse.json(result, { status: result.ok ? 200 : 429 })
+      if (visitor.isNew) response.cookies.set('nine_life_share_visitor', visitor.visitorId, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 180, path: '/' })
+      return response
     }
 
     const input = visitSchema.parse(body)
@@ -48,8 +51,8 @@ export async function POST(request: Request) {
     if (!guard.ok) return NextResponse.json({ ok: false, message: guard.message }, { status: 429 })
     const session = await getSession()
     const result = input.action === 'visit'
-      ? await registerReferralVisit(input.token, visitor.value, session?.session.userId)
-      : await qualifyReferralVisit(input.token, visitor.value, session?.session.userId)
+      ? await registerReferralVisit(input.token, visitor.value, session?.session.userId, ip)
+      : await qualifyReferralVisit(input.token, visitor.value, session?.session.userId, ip)
     const response = NextResponse.json(result)
     if (visitor.isNew) response.cookies.set('nine_life_share_visitor', visitor.visitorId, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 180, path: '/' })
     return response

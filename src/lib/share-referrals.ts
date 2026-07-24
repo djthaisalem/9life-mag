@@ -1,18 +1,19 @@
 import 'server-only'
 
-import { createHash, randomUUID } from 'crypto'
+import { createHmac, randomUUID } from 'crypto'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { env } from '@/lib/env'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { awardShareStarsToUser } from '@/lib/site-user-session'
+import { getRuntimeSecret } from '@/lib/runtime-security'
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'share-referrals.json')
 const DAILY_LIMIT = 10
 const QUALIFY_AFTER_MS = 30_000
 
 type ReferralStatus = 'pending' | 'visited' | 'rewarded' | 'rejected'
-type Referral = { id: string; ownerId: string; token: string; path: string; status: ReferralStatus; visitorFingerprint?: string; visitorFingerprints: string[]; visitCount: number; visitedAt?: string; rewardedAt?: string; createdAt: string }
+type Referral = { id: string; ownerId: string; token: string; path: string; status: ReferralStatus; visitorFingerprint?: string; visitorFingerprints: string[]; ownerFingerprintMarkers: string[]; visitCount: number; visitedAt?: string; rewardedAt?: string; createdAt: string }
 
 export type CmsReferralSnapshot = {
   total: number
@@ -50,13 +51,42 @@ async function writeFileStore(rows: Referral[]) {
 }
 
 function getTodayKey(value = new Date()) { return value.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }) }
-function fingerprint(value: string) { return createHash('sha256').update(value).digest('hex') }
+const OWNER_DEVICE_PREFIX = 'owner-device:'
+const OWNER_IP_PREFIX = 'owner-ip:'
+
+function fingerprint(value: string) {
+  return createHmac('sha256', getRuntimeSecret('SITE_SESSION_SECRET', 'share-referral-fingerprint') as string)
+    .update(value)
+    .digest('hex')
+}
+
+function isOwnerMarker(value: string) {
+  return value.startsWith(OWNER_DEVICE_PREFIX) || value.startsWith(OWNER_IP_PREFIX)
+}
+
+function isUsableIp(ip?: string) {
+  return Boolean(ip && ip !== 'unknown' && ip !== 'untrusted-origin')
+}
+
+function getOwnerMarkers(input?: { visitorKey?: string; ip?: string }) {
+  const markers: string[] = []
+  if (input?.visitorKey) markers.push(`${OWNER_DEVICE_PREFIX}${fingerprint(input.visitorKey)}`)
+  if (isUsableIp(input?.ip)) markers.push(`${OWNER_IP_PREFIX}${fingerprint(input!.ip!)}`)
+  return [...new Set(markers)]
+}
+
+function isOwnerVisitor(row: Referral, visitorKey: string, visitorAccountId?: string, ip?: string) {
+  if (row.ownerId === visitorAccountId) return true
+  if (row.ownerFingerprintMarkers.includes(`${OWNER_DEVICE_PREFIX}${fingerprint(visitorKey)}`)) return true
+  return isUsableIp(ip) && row.ownerFingerprintMarkers.includes(`${OWNER_IP_PREFIX}${fingerprint(ip!)}`)
+}
 function normalize(doc: Record<string, unknown>): Referral {
   const visitorFingerprint = typeof doc.visitorFingerprint === 'string' ? doc.visitorFingerprint : undefined
   const storedFingerprints = Array.isArray(doc.visitorFingerprints)
     ? doc.visitorFingerprints.filter((value): value is string => typeof value === 'string')
     : []
-  const visitorFingerprints = [...new Set([visitorFingerprint, ...storedFingerprints].filter((value): value is string => Boolean(value)))]
+  const ownerFingerprintMarkers = [...new Set(storedFingerprints.filter(isOwnerMarker))]
+  const visitorFingerprints = [...new Set([visitorFingerprint, ...storedFingerprints.filter((value) => !isOwnerMarker(value))].filter((value): value is string => Boolean(value)))]
   const storedCount = typeof doc.visitCount === 'number' && Number.isFinite(doc.visitCount) ? Math.max(0, Math.floor(doc.visitCount)) : 0
 
   return {
@@ -67,6 +97,7 @@ function normalize(doc: Record<string, unknown>): Referral {
     status: doc.status === 'visited' || doc.status === 'rewarded' || doc.status === 'rejected' ? doc.status : 'pending',
     visitorFingerprint,
     visitorFingerprints,
+    ownerFingerprintMarkers,
     visitCount: Math.max(storedCount, visitorFingerprints.length),
     visitedAt: typeof doc.visitedAt === 'string' ? doc.visitedAt : undefined,
     rewardedAt: typeof doc.rewardedAt === 'string' ? doc.rewardedAt : undefined,
@@ -82,7 +113,7 @@ function getRestriction(pathname: string) {
   return null
 }
 
-export async function createShareReferral(ownerId: string, targetPath: string) {
+export async function createShareReferral(ownerId: string, targetPath: string, ownerIdentity?: { visitorKey?: string; ip?: string }) {
   if (!validPath(targetPath)) return { ok: false as const, message: 'Liên kết chia sẻ chưa hợp lệ.' }
   const restriction = getRestriction(targetPath)
   if (restriction) return { ok: false as const, message: restriction }
@@ -96,7 +127,7 @@ export async function createShareReferral(ownerId: string, targetPath: string) {
     if (todayRows.some((row) => row.path === targetPath)) return { ok: false as const, message: 'Bạn đã tạo link thưởng cho nội dung này hôm nay. Không thể chia sẻ lại cùng một link để nhận sao.' }
     if (issuedToday >= DAILY_LIMIT) return { ok: false as const, message: 'Bạn đã dùng hết 10 lượt chia sẻ hôm nay. Hạn mức sẽ làm mới vào 12AM.' }
     const token = randomUUID().replace(/-/g, '')
-    const doc = await payload.create({ collection: 'share-referrals', data: { ownerId, token, path: targetPath, status: 'pending' } })
+    const doc = await payload.create({ collection: 'share-referrals', data: { ownerId, token, path: targetPath, status: 'pending', visitorFingerprints: getOwnerMarkers(ownerIdentity) } })
     return { ok: true as const, referral: normalize(doc as Record<string, unknown>), remaining: DAILY_LIMIT - issuedToday - 1 }
   }
   const rows = await readFileStore()
@@ -104,7 +135,7 @@ export async function createShareReferral(ownerId: string, targetPath: string) {
   const issuedToday = todayRows.length
   if (todayRows.some((row) => row.path === targetPath)) return { ok: false as const, message: 'Bạn đã tạo link thưởng cho nội dung này hôm nay. Không thể chia sẻ lại cùng một link để nhận sao.' }
   if (issuedToday >= DAILY_LIMIT) return { ok: false as const, message: 'Bạn đã dùng hết 10 lượt chia sẻ hôm nay. Hạn mức sẽ làm mới vào 12AM.' }
-  const referral: Referral = { id: `share-${Date.now()}-${randomUUID().slice(0, 8)}`, ownerId, token: randomUUID().replace(/-/g, ''), path: targetPath, status: 'pending', visitorFingerprints: [], visitCount: 0, createdAt: now }
+  const referral: Referral = { id: `share-${Date.now()}-${randomUUID().slice(0, 8)}`, ownerId, token: randomUUID().replace(/-/g, ''), path: targetPath, status: 'pending', visitorFingerprints: [], ownerFingerprintMarkers: getOwnerMarkers(ownerIdentity), visitCount: 0, createdAt: now }
   await writeFileStore([referral, ...rows].slice(0, 5000))
   return { ok: true as const, referral, remaining: DAILY_LIMIT - issuedToday - 1 }
 }
@@ -122,7 +153,7 @@ async function getReferral(token: string) {
 async function saveReferral(row: Referral) {
   if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
     const payload = await loadPayloadClient()
-    await payload.update({ collection: 'share-referrals', id: row.id, data: { status: row.status, visitorFingerprint: row.visitorFingerprint, visitorFingerprints: row.visitorFingerprints, visitCount: row.visitCount, visitedAt: row.visitedAt, rewardedAt: row.rewardedAt } })
+    await payload.update({ collection: 'share-referrals', id: row.id, data: { status: row.status, visitorFingerprint: row.visitorFingerprint, visitorFingerprints: [...row.ownerFingerprintMarkers, ...row.visitorFingerprints], visitCount: row.visitCount, visitedAt: row.visitedAt, rewardedAt: row.rewardedAt } })
     return
   }
   const rows = await readFileStore()
@@ -131,9 +162,10 @@ async function saveReferral(row: Referral) {
   await writeFileStore(rows)
 }
 
-export async function registerReferralVisit(token: string, visitorKey: string, visitorAccountId?: string) {
+export async function registerReferralVisit(token: string, visitorKey: string, visitorAccountId?: string, ip?: string) {
   const row = await getReferral(token)
-  if (!row || row.ownerId === visitorAccountId) return { ok: false as const }
+  if (!visitorAccountId) return { ok: false as const, reason: 'visitor_login_required' as const }
+  if (!row || isOwnerVisitor(row, visitorKey, visitorAccountId, ip)) return { ok: false as const, reason: 'self_referral' as const }
   const visitorFingerprint = fingerprint(visitorKey)
   const isFirstVisitor = !row.visitorFingerprint
   const isKnownVisitor = row.visitorFingerprints.includes(visitorFingerprint)
@@ -167,9 +199,10 @@ export async function registerReferralVisit(token: string, visitorKey: string, v
   return { ok: true as const }
 }
 
-export async function qualifyReferralVisit(token: string, visitorKey: string, visitorAccountId?: string) {
+export async function qualifyReferralVisit(token: string, visitorKey: string, visitorAccountId?: string, ip?: string) {
   const row = await getReferral(token)
-  if (!row || row.status !== 'visited' || row.ownerId === visitorAccountId || !row.visitedAt || row.visitorFingerprint !== fingerprint(visitorKey)) return { ok: false as const }
+  if (!visitorAccountId) return { ok: false as const, reason: 'visitor_login_required' as const }
+  if (!row || row.status !== 'visited' || isOwnerVisitor(row, visitorKey, visitorAccountId, ip) || !row.visitedAt || row.visitorFingerprint !== fingerprint(visitorKey)) return { ok: false as const }
   if (Date.now() - new Date(row.visitedAt).getTime() < QUALIFY_AFTER_MS) return { ok: false as const }
   const account = await awardShareStarsToUser({ accountId: row.ownerId, reference: `share-${row.id}` })
   if (!account) return { ok: false as const }
