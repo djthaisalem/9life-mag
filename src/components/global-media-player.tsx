@@ -233,8 +233,8 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         return
       }
 
-      if (queue.length > 1) {
-        const nextIndex = (activeIndex + 1) % queue.length
+      if (activeIndex < queue.length - 1) {
+        const nextIndex = activeIndex + 1
         const nextTrack = queue[nextIndex]
         setIsPlaying(false)
         if (nextTrack) autoAdvanceRef.current(nextIndex, nextTrack)

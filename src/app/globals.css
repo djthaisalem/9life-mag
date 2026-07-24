@@ -7567,6 +7567,10 @@ button.artist-dashboard-module-card {
   color: var(--muted);
 }
 
+.music-album-discovery {
+  margin-top: 42px;
+}
+
 @media (max-width: 640px) {
   .music-album-detail-head { grid-template-columns: 1fr; gap: 18px; }
   .music-album-detail-head img { max-width: 280px; }

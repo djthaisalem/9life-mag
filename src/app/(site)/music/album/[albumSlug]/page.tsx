@@ -13,6 +13,7 @@ type TrackDocument = {
   title?: string
   submittedArtistSlug?: string
   durationLabel?: string
+  genreLabel?: string
   coverImage?: MediaValue
   visibility?: string
   isPublic?: boolean
@@ -21,6 +22,18 @@ type TrackDocument = {
 function coverUrl(value: MediaValue) {
   const id = typeof value === 'object' && value ? value.id : value
   return id ? `/api/public/media/${encodeURIComponent(String(id))}` : '/images/default-music-cover.png'
+}
+
+function toAudioTrack(track: TrackDocument, fallbackArtist: string): AudioTrack {
+  return {
+    id: String(track.id),
+    title: track.title || 'Track chưa đặt tên',
+    artist: track.submittedArtistSlug || fallbackArtist,
+    duration: track.durationLabel || '00:00',
+    cover: coverUrl(track.coverImage),
+    audioUrl: '',
+    protectedMedia: true,
+  }
 }
 
 async function getAlbum(albumSlug: string) {
@@ -47,15 +60,17 @@ export default async function AlbumPage({ params }: { params: Promise<{ albumSlu
   const tracks = relationTracks
     .filter((track): track is TrackDocument => typeof track === 'object' && track !== null)
     .filter((track) => track.isPublic === true && track.visibility === 'public')
-    .map<AudioTrack>((track) => ({
-      id: String(track.id),
-      title: track.title || 'Track chưa đặt tên',
-      artist: track.submittedArtistSlug || album.musician || '9LIFE Artist',
-      duration: track.durationLabel || '00:00',
-      cover: coverUrl(track.coverImage),
-      audioUrl: '',
-      protectedMedia: true,
-    }))
+    .map((track) => toAudioTrack(track, album.musician || '9LIFE Artist'))
+  const payload = await loadPayloadClient()
+  const [albumSuggestions, trackSuggestions] = await Promise.all([
+    payload.find({ collection: 'albums', where: { and: [{ isPublic: { equals: true } }, { title: { not_equals: album.title } }] }, limit: 3, depth: 1, pagination: false, overrideAccess: true }),
+    payload.find({ collection: 'tracks', where: { and: [{ isPublic: { equals: true } }, { visibility: { equals: 'public' } }] }, sort: '-updatedAt', limit: 24, depth: 1, pagination: false, overrideAccess: true }),
+  ])
+  const albumTrackIds = new Set(tracks.map((track) => track.id))
+  const suggestedTracks = trackSuggestions.docs
+    .filter((track) => !albumTrackIds.has(String(track.id)))
+    .slice(0, 6)
+    .map((track) => toAudioTrack(track as TrackDocument, '9LIFE Artist'))
 
   return <main className="music-page"><section className="tidal-section music-album-detail">
     <Link href="/music#albums" className="more-link-unified">Quay lại Music</Link>
@@ -64,5 +79,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ albumSlu
       <div><p className="section-eyebrow">Album / EP</p><h1>{album.title}</h1><p>{album.musician || '9LIFE Artist'}</p>{album.description ? <p className="cms-muted">{album.description}</p> : null}<span>{tracks.length} track</span></div>
     </div>
     {tracks.length ? <AudioShowcasePlayer title="Tracklist" subtitle="Nghe trọn Album" tracks={tracks} variant="track" /> : <p className="cms-muted">Album này chưa có track công khai.</p>}
+    {albumSuggestions.docs.length ? <section className="music-album-discovery"><div className="tidal-section-head"><div><p className="section-eyebrow">Khám phá thêm</p><h2>Album khác có thể bạn sẽ thích</h2></div></div><div className="tidal-album-grid">{albumSuggestions.docs.map((suggestion) => <article key={suggestion.id} className="tidal-album-card"><Link href={`/music/album/${encodeURIComponent(suggestion.slug || suggestion.title)}`} className="tidal-album-cover-link"><img src={coverUrl(suggestion.coverImage as MediaValue)} alt={suggestion.title} /></Link><strong>{suggestion.title}</strong><span>{suggestion.musician || '9LIFE Artist'}</span></article>)}</div></section> : null}
+    {suggestedTracks.length ? <section className="music-album-discovery"><AudioShowcasePlayer title="Khám phá thêm" subtitle="Track mới từ catalog 9LIFE Music" tracks={suggestedTracks} variant="track" /></section> : null}
   </section></main>
 }
