@@ -432,6 +432,10 @@ export function getArtistBySlug(slug: string) {
   return repairVietnameseValue(artistProfiles).find((artist) => artist.slug === slug)
 }
 
+export function getPublicArtistProfiles() {
+  return repairVietnameseValue(artistProfiles)
+}
+
 const artistRichOverrides: Partial<Record<string, Partial<ArtistRichContent>>> = {
   'neon-viper': {
     introduction: [

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { MapPin } from 'lucide-react'
-import { artistProfiles } from '@/lib/artist-directory-data'
+import { getPublicArtistProfiles } from '@/lib/artist-directory-data'
 import { clubOutlets } from '@/lib/club-booking-data'
 import { matchesVietnamLocation } from '@/lib/vietnam-locations'
 
@@ -11,6 +11,7 @@ export default async function LocationPage({
 }) {
   const { location = '' } = await searchParams
   const selectedLocation = location.trim()
+  const artistProfiles = getPublicArtistProfiles()
   const artists = selectedLocation
     ? artistProfiles.filter((artist) =>
         matchesVietnamLocation(artist.location, selectedLocation) ||

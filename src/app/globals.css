@@ -6159,6 +6159,12 @@ button.artist-dashboard-module-card {
   line-height: 1.6;
 }
 
+@media (max-width: 720px) {
+  .club-booking-slider {
+    display: none;
+  }
+}
+
 .club-featured-location {
   margin: -4px 0 10px;
   color: #ffcf73;
