@@ -169,10 +169,10 @@ export const artistPortalSections: ArtistPortalSection[] = [
       },
       {
         title: 'Mẫu playlist / nonstop',
-        description: 'Dùng để khởi tạo playlist nghe thử hoặc nonstop mix đầu tiên.',
+        description: 'Dùng để khởi tạo nonstop hoặc mixset đầu tiên.',
         fields: [
-          { label: 'Tên playlist', name: 'playlistName', type: 'text', placeholder: 'Nonstop Peak Hour 01' },
-          { label: 'Loại nội dung', name: 'playlistType', type: 'select', options: ['Nonstop', 'Playlist', 'Top Remix', 'Premium Drop'] },
+          { label: 'Tên nonstop / mixset', name: 'playlistName', type: 'text', placeholder: 'Nonstop Peak Hour 01' },
+          { label: 'Loại nội dung', name: 'playlistType', type: 'select', options: ['Nonstop', 'Mixset', 'Top Remix', 'Premium Drop'] },
           { label: 'Mood / vibe', name: 'playlistMood', type: 'text', placeholder: 'Peak-time, sexy house, after-hours' },
           { label: 'File nonstop / mix', name: 'nonstopAudioUpload', type: 'file', accept: 'audio/mpeg,audio/wav,audio/mp4,.mp3,.wav,.m4a', helper: 'Dùng khi nội dung là Nonstop hoặc DJ mix. File sẽ được xử lý trước khi phát hành.' },
           {

@@ -171,7 +171,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
   const getMusicTemplateLabel = (template: ArtistPortalTemplate) => {
     if (template.title === 'Mẫu track đầu tiên') return 'Track'
-    if (template.title === 'Mẫu playlist / nonstop') return 'Nonstop / Playlist'
+    if (template.title === 'Mẫu playlist / nonstop') return 'Nonstop / Mixset'
     return 'Album / EP'
   }
 

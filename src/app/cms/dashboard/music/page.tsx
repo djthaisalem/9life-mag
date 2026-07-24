@@ -37,6 +37,7 @@ export default async function CmsMusicPage({ searchParams }: { searchParams: Pro
           <div><p className="section-eyebrow">Music Control</p><h2>Upload và phân loại nội dung nhạc</h2></div>
           <div className="cms-inline-actions">
             <Link className="button-secondary" href="/cms/dashboard/music/categories">Tạo thể loại nhạc</Link>
+            <Link className="button-secondary" href="/cms/dashboard/music/albums/new">Tạo Album / EP</Link>
             <Link className="cms-music-upload-action" href="/cms/dashboard/music/upload"><span aria-hidden="true">↑</span><span><strong>Upload nhạc</strong><small>Thêm track, nonstop hoặc remix</small></span></Link>
           </div>
         </div>
