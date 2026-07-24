@@ -118,9 +118,35 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     }
   }
 
-  const save = (id: string) => {
+  const save = async (id: string) => {
     window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(forms))
-    setFeedback((current) => ({ ...current, [id]: 'Đã lưu bản nháp trên thiết bị này.' }))
+    const profileBasicsId = templateId('profile', 'Mẫu bio cơ bản')
+    const profileValues = forms[profileBasicsId]?.values ?? {}
+    const hasCompletedProfileBasics = ['artistName', 'headline', 'shortBio', 'primaryRole'].every((field) => profileValues[field]?.trim())
+
+    if (section.key !== 'profile' || id !== profileBasicsId || !hasCompletedProfileBasics) {
+      setFeedback((current) => ({
+        ...current,
+        [id]: section.key === 'profile' && id === profileBasicsId
+          ? 'Đã lưu. Hoàn thiện tên nghệ sĩ, headline, bio ngắn và vai trò chính để nhận thưởng +300 sao.'
+          : 'Đã lưu bản nháp trên thiết bị này.',
+      }))
+      return
+    }
+
+    try {
+      const response = await fetch('/api/portal/artist/onboarding', { method: 'POST', credentials: 'same-origin' })
+      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; message?: string }
+      if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
+      setFeedback((current) => ({
+        ...current,
+        [id]: result.awarded
+          ? `Đã hoàn tất hồ sơ lần đầu và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
+          : 'Hồ sơ đã được xác nhận trước đó. Phần thưởng +300 sao chỉ áp dụng một lần.',
+      }))
+    } catch (error) {
+      setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Đã lưu bản nháp nhưng chưa thể xác nhận phần thưởng.' }))
+    }
   }
 
   const toggleAlbumTrack = (id: string, fieldName: string, track: string) => {
@@ -143,8 +169,8 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const files = forms[id]?.files ?? {}
 
     return <article key={template.title} className="artist-editor-template-card">
-      <div className="artist-editor-template-head"><div><strong>{text(template.title)}</strong><p>{text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => save(id)}>Lưu bản nháp</button></div>
-      <form className="artist-editor-form-grid" onSubmit={(event) => { event.preventDefault(); save(id) }}>
+      <div className="artist-editor-template-head"><div><strong>{text(template.title)}</strong><p>{text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => void save(id)}>Lưu bản nháp</button></div>
+      <form className="artist-editor-form-grid" onSubmit={(event) => { event.preventDefault(); void save(id) }}>
         {template.fields.map((field) => <div key={field.name} className={`field${field.type === 'textarea' || field.type === 'trackpicker' || field.type === 'file' ? ' artist-editor-field-wide' : ''}`}>
           <label htmlFor={`${id}-${field.name}`}>{text(field.label)}{field.optional ? <span className="artist-editor-optional-tag">Tùy chọn</span> : null}</label>
           {field.type === 'textarea' ? <textarea id={`${id}-${field.name}`} name={field.name} placeholder={text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}

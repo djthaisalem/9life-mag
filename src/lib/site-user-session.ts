@@ -14,6 +14,7 @@ const SITE_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 const SIGNUP_STARS = 100
 const DAILY_STARS = 10
 const BONUS_STARS = 5
+const ARTIST_PROFILE_ONBOARDING_STARS = 300
 const STORE_PATH = path.join(process.cwd(), 'data', 'site-accounts.json')
 const walletLocks = new Map<string, Promise<void>>()
 
@@ -1469,6 +1470,51 @@ export async function claimBonusStarsForUser(accountId: string) {
   }
 
   return buildAccessResult(account)
+}
+
+export async function completeArtistProfileOnboarding(accountId: string) {
+  const previous = walletLocks.get(accountId) ?? Promise.resolve()
+  let release!: () => void
+  const currentLock = new Promise<void>((resolve) => { release = resolve })
+  const queuedLock = previous.then(() => currentLock)
+  walletLocks.set(accountId, queuedLock)
+
+  await previous
+  try {
+    const current = await getSiteAccountById(accountId)
+    if (!current || current.accountType !== 'artist' || current.portalRole !== 'artist') {
+      return { ok: false, awarded: false, state: buildUserAccessStateFromAccount(current) }
+    }
+    if ((current.signupStarsEarned ?? 0) >= ARTIST_PROFILE_ONBOARDING_STARS) {
+      return { ok: true, awarded: false, state: buildUserAccessStateFromAccount(current) }
+    }
+
+    const account = getStorageDriver() === 'payload'
+      ? await updatePayloadAccount(accountId, {
+          stars: current.stars + ARTIST_PROFILE_ONBOARDING_STARS,
+          signupStarsEarned: ARTIST_PROFILE_ONBOARDING_STARS,
+        })
+      : await updateFileAccount(accountId, (record) => {
+          record.stars += ARTIST_PROFILE_ONBOARDING_STARS
+          record.signupStarsEarned = ARTIST_PROFILE_ONBOARDING_STARS
+        })
+
+    if (!account) return { ok: false, awarded: false, state: buildUserAccessStateFromAccount(null) }
+
+    await recordWalletLedgerEntry({
+      userId: accountId,
+      amount: ARTIST_PROFILE_ONBOARDING_STARS,
+      balanceAfter: account.stars,
+      eventType: 'signup_bonus',
+      reference: `artist-profile-onboarding-${accountId}`,
+      note: 'First completed artist profile reward',
+    })
+
+    return { ok: true, awarded: true, state: buildUserAccessStateFromAccount(account) }
+  } finally {
+    release()
+    if (walletLocks.get(accountId) === queuedLock) walletLocks.delete(accountId)
+  }
 }
 
 export async function addStarsToSiteUser(accountId: string, stars: number) {

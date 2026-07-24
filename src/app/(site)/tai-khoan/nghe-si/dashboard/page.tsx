@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArtistAgentPanel } from '@/components/artist-agent-panel'
 import { PortalNotificationCenter } from '@/components/portal-notification-center'
+import { requireArtistPortalAccess } from '@/lib/artist-portal-access'
 
 const onboardingSteps = [
   { number: '01', title: 'Hoàn thiện hồ sơ', description: 'Thêm tên nghệ sĩ, vai trò, ảnh đại diện, ảnh cover và phần giới thiệu ngắn để tạo trang profile chỉn chu.', href: '/tai-khoan/nghe-si/dashboard/profile', action: 'Thiết lập hồ sơ' },
@@ -29,15 +30,21 @@ const artistPerformance = [
   { title: 'Electric Bloom', type: 'Album', plays: '7.5K', downloads: '1,086', votes: '86', stars: '2,452' },
 ]
 
-export default function ArtistDashboardPage() {
+export default async function ArtistDashboardPage() {
+  const account = await requireArtistPortalAccess('artist')
+  const identity = account.email || account.phone || 'tài khoản nghệ sĩ'
+  const hasPublishedProfile = Boolean(account.artistProfileSlug)
+  const profileRewardClaimed = (account.signupStarsEarned ?? 0) >= 300
+  const performance = hasPublishedProfile ? artistPerformance : []
+
   return (
     <main className="artist-dashboard-page">
       <section className="artist-dashboard-hero">
         <div className="container artist-dashboard-hero-row">
           <div>
             <p className="section-eyebrow">Artist Workspace</p>
-            <h1>Bắt đầu xây dựng hồ sơ nghệ sĩ</h1>
-            <p className="section-intro">Hoàn thiện từng bước để profile sẵn sàng nhận booking, giới thiệu với đối tác và gửi duyệt hiển thị trên 9life Mag.</p>
+            <h1>Chào {account.fullName}</h1>
+            <p className="section-intro">Đăng ký thành công với {identity}. Hãy hoàn thiện hồ sơ đầu tiên để sẵn sàng nhận booking và gửi duyệt hiển thị trên 9LIFE MAG.</p>
           </div>
           <div className="artist-dashboard-hero-actions">
             <PortalNotificationCenter />
@@ -48,20 +55,21 @@ export default function ArtistDashboardPage() {
       </section>
 
       <section className="section artist-dashboard-analytics-section">
+        {!hasPublishedProfile ? <div className="container"><article className="artist-dashboard-panel artist-profile-rewards"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Đăng ký thành công</p><h2>Hồ sơ của bạn đang chờ cập nhật</h2><p className="artist-editor-panel-note">Bạn chưa có profile công khai. Bắt đầu bằng tên nghệ sĩ, headline, bio ngắn và vai trò chính. Sau lần lưu hoàn chỉnh đầu tiên, hệ thống cộng +300 sao vào ví.</p></div><Link href="/tai-khoan/nghe-si/dashboard/profile" className="button">Cập nhật hồ sơ</Link></div></article></div> : null}
         <div className="container artist-dashboard-stats artist-dashboard-stats-4">
-          <article className="artist-dashboard-stat"><strong>286</strong><span>Lượt vote nhận được</span></article>
-          <article className="artist-dashboard-stat"><strong>24.8K</strong><span>Lượt nghe nội dung</span></article>
-          <article className="artist-dashboard-stat"><strong>5,304</strong><span>Lượt tải xuống</span></article>
-          <article className="artist-dashboard-stat"><strong>8,894</strong><span>Sao đã sử dụng</span></article>
+          <article className="artist-dashboard-stat"><strong>{account.stars}</strong><span>Sao hiện có</span></article>
+          <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt vote nhận được</span></article>
+          <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt nghe nội dung</span></article>
+          <article className="artist-dashboard-stat"><strong>{hasPublishedProfile ? '—' : '0'}</strong><span>Lượt tải xuống</span></article>
         </div>
         <div className="container artist-dashboard-star-disclaimer">
           <em>Sao là đơn vị điểm nội bộ được phát hành để thử nghiệm và vận hành các tính năng cộng đồng của 9life Mag. Sao không phải tiền tệ, không có giá trị quy đổi thành tiền mặt, không được mua bán hoặc chuyển nhượng ngoài phạm vi hệ thống và có thể được điều chỉnh theo chính sách vận hành.</em>
         </div>
         <div className="container">
           <article className="artist-dashboard-panel artist-profile-rewards">
-            <div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Profile rewards</p><h2>Thưởng sao khi hoàn thiện hồ sơ</h2><p className="artist-editor-panel-note">Hồ sơ được admin duyệt lần đầu nhận 300 sao. Mỗi mục hoàn thiện lần đầu nhận thêm 10 sao.</p></div><strong className="artist-profile-reward-total">300 sao</strong></div>
+            <div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Profile rewards</p><h2>Thưởng sao khi hoàn thiện hồ sơ</h2><p className="artist-editor-panel-note">Lần lưu hoàn chỉnh đầu tiên của hồ sơ cơ bản nhận 300 sao. Các phần mở rộng sẽ được áp dụng theo chính sách vận hành sau.</p></div><strong className="artist-profile-reward-total">{profileRewardClaimed ? 'Đã nhận' : '300 sao'}</strong></div>
             <div className="artist-dashboard-update-list">
-              <div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Chờ admin duyệt hồ sơ</strong> · Phần thưởng 300 sao sẽ được cộng một lần sau khi profile public.</p></div>
+              <div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>{profileRewardClaimed ? 'Đã cộng thưởng hồ sơ' : 'Hoàn thiện hồ sơ cơ bản'}</strong> · {profileRewardClaimed ? 'Phần thưởng +300 sao đã được ghi nhận trong ví.' : 'Điền tên nghệ sĩ, headline, bio ngắn và vai trò chính rồi bấm lưu để nhận +300 sao.'}</p></div>
               <div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p>Ảnh portrait, cover, giới thiệu, kinh nghiệm làm việc, gallery từ 4 ảnh, media và booking contact: mỗi mục hoàn thiện nhận +10 sao.</p></div>
             </div>
           </article>
@@ -80,11 +88,12 @@ export default function ArtistDashboardPage() {
               <div className="artist-dashboard-performance-row artist-dashboard-performance-head" role="row">
                 <span>Nội dung</span><span>Lượt nghe</span><span>Tải xuống</span><span>Vote</span><span>Sao sử dụng</span>
               </div>
-              {artistPerformance.map((item) => (
+              {performance.map((item) => (
                 <div key={item.title} className="artist-dashboard-performance-row" role="row">
                   <strong data-label="Nội dung"><small>{item.type}</small>{item.title}</strong><span data-label="Lượt nghe">{item.plays}</span><span data-label="Tải xuống">{item.downloads}</span><span data-label="Vote">{item.votes}</span><b data-label="Sao sử dụng">{item.stars}</b>
                 </div>
               ))}
+              {!performance.length ? <div className="artist-dashboard-performance-row" role="row"><strong>Chưa có nội dung phát hành</strong><span>0</span><span>0</span><span>0</span><b>0</b></div> : null}
             </div>
           </article>
         </div>
