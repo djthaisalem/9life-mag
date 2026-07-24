@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Download, Heart, ListPlus, Play, Plus, Share2 } from 'lucide-react'
+import { AlertTriangle, Crown, Download, Heart, ListPlus, Play, Plus, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useMediaPlayer } from '@/components/global-media-player'
@@ -122,7 +122,10 @@ export function AudioShowcasePlayer({
                     </span>
                   </div>
                   <div className={density === 'compact' ? 'playlist-meta playlist-meta-compact' : 'playlist-meta'}>
-                    <strong>{track.title}</strong>
+                    <strong className={track.isPremiumDrop ? 'premium-track-title' : undefined}>
+                      {track.title}
+                      {track.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}
+                    </strong>
                     {track.isPremiumDrop ? <small className="premium-drop-badge">Premium Drop</small> : null}
                     <span className="muted">{track.artist}</span>
                   </div>

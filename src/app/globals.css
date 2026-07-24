@@ -577,6 +577,36 @@ img {
   text-transform: uppercase;
 }
 
+.premium-track-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: #ff4d67;
+  text-shadow: 0 0 7px rgba(255, 42, 77, 0.8), 0 0 17px rgba(255, 22, 60, 0.42);
+  animation: premium-track-neon 1.85s ease-in-out infinite alternate;
+}
+
+.premium-track-vip-icon {
+  flex: 0 0 auto;
+  color: #ffd45a;
+  filter: drop-shadow(0 0 5px rgba(255, 198, 43, 0.82));
+}
+
+@keyframes premium-track-neon {
+  from {
+    text-shadow: 0 0 4px rgba(255, 42, 77, 0.54), 0 0 11px rgba(255, 22, 60, 0.24);
+  }
+
+  to {
+    text-shadow: 0 0 8px rgba(255, 92, 112, 1), 0 0 19px rgba(255, 22, 60, 0.72), 0 0 29px rgba(255, 22, 60, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-track-title { animation: none; }
+}
+
 .premium-drop-modal {
   position: fixed;
   inset: 0;
