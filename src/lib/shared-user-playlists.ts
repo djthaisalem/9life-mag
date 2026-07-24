@@ -80,6 +80,34 @@ export async function getSharedUserPlaylist(shareCode: string) {
   }
 }
 
+export async function getPublishedUserPlaylists(limit = 20) {
+  try {
+    const payload = await loadPayloadClient()
+    const result = await payload.find({
+      collection: 'playlists',
+      where: {
+        and: [
+          { isUserPlaylist: { equals: true } },
+          { isPublic: { equals: true } },
+          { status: { equals: 'published' } },
+        ],
+      },
+      sort: '-publishedAt',
+      limit,
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+
+    return (result.docs as PlaylistDocument[])
+      .map((document) => normalizeSnapshot(document.userSnapshot))
+      .filter((playlist): playlist is UserPlaylist => Boolean(playlist?.items.length))
+  } catch (error) {
+    console.error('Published user playlist query failed', error)
+    return []
+  }
+}
+
 export async function publishSharedUserPlaylist(ownerSiteUserId: string, playlist: UserPlaylist) {
   const payload = await loadPayloadClient()
   const existing = await payload.find({

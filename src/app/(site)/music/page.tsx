@@ -8,7 +8,7 @@ import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { artistProfiles } from '@/lib/artist-directory-data'
 import { curateMusicCatalog, getFairRotation } from '@/lib/music-curation'
-import { getUserPlaylists } from '@/lib/user-playlists'
+import { fetchPublishedUserPlaylists, getUserPlaylists, type UserPlaylist } from '@/lib/user-playlists'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog, type PublicMusicCatalogItem } from '@/lib/public-music-catalog'
 import {
   tidalAlbums,
@@ -40,6 +40,14 @@ type FeaturedUserPlaylist = {
   title: string
   subtitle: string
   cover: string
+  collection: PlayCollectionConfig
+}
+
+type CommunityMix = {
+  id: string
+  title: string
+  cover: string
+  meta: string
   collection: PlayCollectionConfig
 }
 
@@ -83,9 +91,10 @@ export default function MusicPage() {
   const [activeGenreTab, setActiveGenreTab] = useState<GenreTab>('all')
   const [genreTracks, setGenreTracks] = useState<AudioTrack[]>([])
   const [featuredPlaylists, setFeaturedPlaylists] = useState<FeaturedUserPlaylist[]>(communityPlaylistFallbacks)
-  const [communityMixOrder, setCommunityMixOrder] = useState<number[]>(() => tidalMixes.map((_, index) => index))
+  const [communityMixOrder, setCommunityMixOrder] = useState<string[]>([])
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
   const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
+  const [publishedUserPlaylists, setPublishedUserPlaylists] = useState<UserPlaylist[]>([])
   const openedTrackIdRef = useRef('')
   const publishedNonstopTracks = useMemo(
     () => publishedCatalog.filter((track) => track.type !== 'remix').map(catalogItemToAudioTrack),
@@ -108,11 +117,32 @@ export default function MusicPage() {
     { label: 'Thư viện của bạn', href: '/music/library' },
   ] as const
 
-  const mixCollections: readonly PlayCollectionConfig[] = [
-    { tracks: tidalNonstopTracks.slice(0, 4), sourceType: 'nonstop' },
-    { tracks: tidalNonstopTracks.slice(1, 5), sourceType: 'nonstop' },
-    { tracks: tidalNonstopTracks.slice(4, 8), sourceType: 'nonstop' },
-  ]
+  const communityMixCandidates = useMemo<CommunityMix[]>(() => {
+    const mappedTracks = publishedCatalog
+      .filter((track) => track.displayMap.includes('Music - DJ sets community'))
+      .map(catalogItemToAudioTrack)
+
+    if (mappedTracks.length) {
+      return mappedTracks.map((track) => ({
+        id: track.id,
+        title: track.title,
+        cover: track.cover ?? '/images/default-music-cover.png',
+        meta: `${track.artist} · ${track.duration}`,
+        collection: {
+          tracks: mappedTracks,
+          sourceType: publishedCatalog.find((item) => item.id === track.id)?.type ?? 'track',
+        },
+      }))
+    }
+
+    return tidalMixes.map((item, index) => ({
+      id: `fallback-${index}`,
+      title: item.title,
+      cover: item.cover,
+      meta: item.meta,
+      collection: { tracks: tidalNonstopTracks.slice(index, index + 4), sourceType: 'nonstop' },
+    }))
+  }, [publishedCatalog])
 
   const albumCollections: readonly PlayCollectionConfig[] = [
     { tracks: tidalRemixTracks.slice(0, 3), sourceType: 'remix' },
@@ -137,7 +167,15 @@ export default function MusicPage() {
   }
 
   useEffect(() => {
-    void fetchPublicMusicCatalog().then(setPublishedCatalog).catch(() => setPublishedCatalog([]))
+    void Promise.all([fetchPublicMusicCatalog(), fetchPublishedUserPlaylists()])
+      .then(([tracks, playlists]) => {
+        setPublishedCatalog(tracks)
+        setPublishedUserPlaylists(playlists)
+      })
+      .catch(() => {
+        setPublishedCatalog([])
+        setPublishedUserPlaylists([])
+      })
   }, [])
 
   useEffect(() => {
@@ -191,7 +229,9 @@ export default function MusicPage() {
       },
     })))
 
-    const userPlaylists = getUserPlaylists().filter((playlist) => playlist.items.length > 0)
+    const userPlaylists = publishedUserPlaylists.length
+      ? publishedUserPlaylists
+      : getUserPlaylists().filter((playlist) => playlist.items.length > 0)
     const candidates: FeaturedUserPlaylist[] = userPlaylists.length
       ? userPlaylists.map((playlist) => ({
         id: playlist.id,
@@ -208,11 +248,8 @@ export default function MusicPage() {
         .filter((playlist): playlist is FeaturedUserPlaylist => Boolean(playlist))
     )
 
-    const mixIndexById = new Map<string, number>(tidalMixes.map((item, index) => [item.title, index]))
     setCommunityMixOrder(
-      getFairRotation('nine-life-community-mix-rotation-v1', tidalMixes.map((item) => item.title), tidalMixes.length)
-        .map((title) => mixIndexById.get(title))
-        .filter((index): index is number => index !== undefined)
+      getFairRotation('nine-life-community-mix-rotation-v2', communityMixCandidates.map((item) => item.id), Math.min(3, communityMixCandidates.length))
     )
 
     const albumIndexById = new Map<string, number>(tidalAlbums.map((item, index) => [item.title, index]))
@@ -221,7 +258,7 @@ export default function MusicPage() {
         .map((title) => albumIndexById.get(title))
         .filter((index): index is number => index !== undefined)
     )
-  }, [publishedCatalog])
+  }, [communityMixCandidates, publishedCatalog, publishedUserPlaylists])
 
   useEffect(() => {
     setGenreTracks(getFairGenreTracks(activeGenreTab, liveNonstopTracks, liveRemixTracks))
@@ -384,18 +421,18 @@ export default function MusicPage() {
               </div>
 
               <div className="tidal-mix-grid">
-                {communityMixOrder.map((index) => {
-                  const item = tidalMixes[index]
+                {communityMixOrder.map((id) => {
+                  const item = communityMixCandidates.find((candidate) => candidate.id === id)
                   if (!item) return null
                   return (
-                  <article key={item.title} className="tidal-mix-card">
+                  <article key={item.id} className="tidal-mix-card">
                     <img src={item.cover} alt={item.title} />
                     <strong>{item.title}</strong>
                     <span>{item.meta}</span>
                     <button
                       type="button"
                       className="tidal-play-chip tidal-play-chip-card"
-                      onClick={() => playSet(mixCollections[index] ?? mixCollections[0])}
+                      onClick={() => playSet(item.collection, Math.max(0, item.collection.tracks.findIndex((track) => track.id === item.id)))}
                     >
                       <Play size={14} />
                       Play

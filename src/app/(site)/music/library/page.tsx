@@ -171,7 +171,9 @@ export default function MusicLibraryPage() {
 
   const handleAddTrack = (track: AudioTrack) => {
     if (!selectedPlaylist) return
-    addTrackToPlaylist(selectedPlaylist.id, track, getSourceType(track))
+    const next = addTrackToPlaylist(selectedPlaylist.id, track, getSourceType(track))
+    const updated = next.find((playlist) => playlist.id === selectedPlaylist.id)
+    if (updated) void publishUserPlaylist(updated)
     setFeedback(`Đã thêm “${track.title}” vào ${selectedPlaylist.name}.`)
     refreshPlaylists(selectedPlaylist.id)
   }

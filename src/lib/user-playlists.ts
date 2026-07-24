@@ -162,6 +162,16 @@ export function findPlaylistByShareCode(playlists: UserPlaylist[], shareCode: st
   return playlists.find((playlist) => playlist.shareCode === shareCode) ?? null
 }
 
+export async function fetchPublishedUserPlaylists() {
+  const response = await fetch('/api/music/playlists', {
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+  if (!response.ok) return [] as UserPlaylist[]
+  const payload = await response.json() as { ok?: boolean; playlists?: UserPlaylist[] }
+  return payload.ok ? payload.playlists ?? [] : []
+}
+
 export async function publishUserPlaylist(playlist: UserPlaylist) {
   const response = await fetch('/api/user-playlists/share', {
     method: 'POST',
