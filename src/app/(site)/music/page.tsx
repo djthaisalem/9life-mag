@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Plus } from 'lucide-react'
+import { Crown, Play, Plus } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { AlbumActions } from '@/components/album-actions'
 import { useMediaPlayer } from '@/components/global-media-player'
@@ -51,6 +51,7 @@ type CommunityMix = {
   cover: string
   meta: string
   collection: PlayCollectionConfig
+  isPremiumDrop?: boolean
 }
 
 type PublishedAlbum = {
@@ -63,6 +64,7 @@ type PublishedAlbum = {
 }
 
 type GenreTab = 'all' | 'nonstop' | 'remix' | 'afterhours'
+type ExpandedMusicList = 'genre' | 'community' | 'remix' | 'albums' | 'charts' | 'nonstop' | null
 
 const featuredArtistRotationKey = 'nine-life-music-artist-rotation-v1'
 const genreRotationPrefix = 'nine-life-music-genre-rotation-v1'
@@ -106,6 +108,7 @@ export default function MusicPage() {
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
   const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
   const [publishedUserPlaylists, setPublishedUserPlaylists] = useState<UserPlaylist[]>([])
+  const [expandedList, setExpandedList] = useState<ExpandedMusicList>(null)
   const openedTrackIdRef = useRef('')
   const publishedNonstopTracks = useMemo(
     () => publishedCatalog.filter((track) => track.type === 'nonstop').map(catalogItemToAudioTrack),
@@ -117,6 +120,13 @@ export default function MusicPage() {
   )
   const liveNonstopTracks = useMemo(() => [...publishedNonstopTracks, ...tidalNonstopTracks], [publishedNonstopTracks])
   const liveRemixTracks = useMemo(() => [...publishedRemixTracks, ...tidalRemixTracks], [publishedRemixTracks])
+  const communityTracks = useMemo(() => {
+    const tracks = publishedCatalog
+      .filter((track) => track.displayMap.includes('Music - DJ sets community'))
+      .map(catalogItemToAudioTrack)
+
+    return tracks.length ? tracks : tidalNonstopTracks
+  }, [publishedCatalog])
   const publishedAlbums = useMemo<PublishedAlbum[]>(() => {
     const groups = new Map<string, PublicMusicCatalogItem[]>()
     publishedCatalog.forEach((track) => {
@@ -158,6 +168,7 @@ export default function MusicPage() {
           tracks: mappedTracks,
           sourceType: publishedCatalog.find((item) => item.id === track.id)?.type ?? 'track',
         },
+        isPremiumDrop: track.isPremiumDrop,
       }))
     }
 
@@ -191,6 +202,32 @@ export default function MusicPage() {
   const playSet = (config: PlayCollectionConfig, startIndex = 0) => {
     playCollection(config.tracks, startIndex, config.sourceType)
   }
+
+  const openExpandedList = (list: Exclude<ExpandedMusicList, null>) => {
+    setExpandedList(list)
+    window.setTimeout(() => document.getElementById('music-expanded-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
+
+  const expandedTracks = useMemo(() => {
+    if (expandedList === 'nonstop') return liveNonstopTracks
+    if (expandedList === 'remix') return liveRemixTracks
+    if (expandedList === 'community') return communityTracks
+    if (expandedList === 'genre') return [...liveNonstopTracks, ...liveRemixTracks]
+    if (expandedList === 'charts') return [...liveRemixTracks, ...liveNonstopTracks]
+    if (expandedList === 'albums') return publishedAlbums.length
+      ? publishedAlbums.flatMap((album) => album.collection.tracks)
+      : albumCollections.flatMap((album) => album.tracks)
+    return []
+  }, [albumCollections, communityTracks, expandedList, liveNonstopTracks, liveRemixTracks, publishedAlbums])
+
+  const expandedTitle = {
+    genre: 'Tất cả playlist theo dòng nhạc',
+    community: 'Tất cả DJ set cho community',
+    remix: 'Tất cả Remix',
+    albums: 'Track từ Album và release',
+    charts: 'Toàn bộ bảng xếp hạng',
+    nonstop: 'Tất cả Nonstop',
+  }[expandedList ?? 'nonstop']
 
   useEffect(() => {
     void Promise.all([fetchPublicMusicCatalog(), fetchPublishedUserPlaylists()])
@@ -395,9 +432,9 @@ export default function MusicPage() {
                 <p className="section-eyebrow">Genre Channels</p>
                 <h2>Playlist theo dòng nhạc</h2>
               </div>
-              <a href="#listen-now" className="more-link-unified">
+              <button type="button" className="more-link-unified" onClick={() => openExpandedList('genre')}>
                 Xem thêm
-              </a>
+              </button>
             </div>
 
             <div className="music-genre-box">
@@ -418,7 +455,7 @@ export default function MusicPage() {
                   <article key={track.id} className="music-genre-row">
                     <span>{String(index + 1).padStart(2, '0')}</span>
                     <img src={track.cover ?? '/music-legacy/bg/14.jpg'} alt="" />
-                    <div><strong>{track.title}</strong><p>{track.artist}</p></div>
+                    <div><strong className={track.isPremiumDrop ? 'premium-track-title' : undefined}>{track.title}{track.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}</strong><p>{track.artist}</p></div>
                     <small>{track.duration}</small>
                     <div className="music-genre-row-actions"><button type="button" className="tidal-play-chip tidal-play-chip-inline" onClick={() => playCollection([track], 0, track.id.includes('remix') ? 'remix' : 'nonstop')}><Play size={14} /></button><button type="button" className="music-genre-add" onClick={() => openPlaylistModal(track, track.id.includes('remix') ? 'remix' : 'nonstop')} aria-label={`Thêm ${track.title} vào playlist`}><Plus size={14} /></button></div>
                   </article>
@@ -434,9 +471,9 @@ export default function MusicPage() {
                   <p className="section-eyebrow">Mixes</p>
                   <h2>DJ sets cho community</h2>
                 </div>
-                <a href="#listen-now" className="more-link-unified">
+                <button type="button" className="more-link-unified" onClick={() => openExpandedList('community')}>
                   Xem thêm
-                </a>
+                </button>
               </div>
 
               <div className="tidal-mix-grid">
@@ -446,7 +483,7 @@ export default function MusicPage() {
                   return (
                   <article key={item.id} className="tidal-mix-card">
                     <img src={item.cover} alt={item.title} />
-                    <strong>{item.title}</strong>
+                    <strong className={item.isPremiumDrop ? 'premium-track-title' : undefined}>{item.title}{item.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}</strong>
                     <span>{item.meta}</span>
                     <button
                       type="button"
@@ -468,9 +505,9 @@ export default function MusicPage() {
                   <p className="section-eyebrow">Trending Remix</p>
                   <h2>Remix đang lên</h2>
                 </div>
-                <a href="#top-remix" className="more-link-unified">
+                <button type="button" className="more-link-unified" onClick={() => openExpandedList('remix')}>
                   Xem thêm
-                </a>
+                </button>
               </div>
 
               <div className="tidal-remix-rail tidal-remix-rail-compact">
@@ -478,7 +515,7 @@ export default function MusicPage() {
                   <article key={item.title} className="tidal-remix-row">
                     <span className="tidal-remix-rank">0{index + 1}</span>
                     <div>
-                      <strong>{item.title}</strong>
+                      <strong className={item.isPremiumDrop ? 'premium-track-title' : undefined}>{item.title}{item.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}</strong>
                       <p>{item.artist}</p>
                     </div>
                     <button
@@ -495,15 +532,33 @@ export default function MusicPage() {
             </div>
           </section>
 
+          {expandedList ? (
+            <section className="tidal-section music-expanded-section" id="music-expanded-list">
+              <div className="tidal-section-head">
+                <div>
+                  <p className="section-eyebrow">Danh sách đầy đủ</p>
+                  <h2>{expandedTitle}</h2>
+                </div>
+                <button type="button" className="more-link-unified" onClick={() => setExpandedList(null)}>Thu gọn</button>
+              </div>
+              <AudioShowcasePlayer
+                title={expandedTitle}
+                subtitle="Nội dung mới được đưa lên đầu danh sách."
+                tracks={expandedTracks}
+                variant={expandedList === 'remix' ? 'remix' : 'track'}
+              />
+            </section>
+          ) : null}
+
           <section className="tidal-section" id="albums">
             <div className="tidal-section-head">
               <div>
                 <p className="section-eyebrow">Albums</p>
                 <h2>Album và release spotlight</h2>
               </div>
-              <a href="#listen-now" className="more-link-unified">
+              <button type="button" className="more-link-unified" onClick={() => openExpandedList('albums')}>
                 Xem thêm
-              </a>
+              </button>
             </div>
 
             <div className="tidal-album-grid">
@@ -536,9 +591,9 @@ export default function MusicPage() {
                 <p className="section-eyebrow">BXH</p>
                 <h2>Bảng xếp hạng nghe nhiều</h2>
               </div>
-              <a href="#charts" className="more-link-unified">
+              <button type="button" className="more-link-unified" onClick={() => openExpandedList('charts')}>
                 Xem thêm
-              </a>
+              </button>
             </div>
 
             <div className="tidal-remix-rail tidal-chart-grid">
@@ -609,9 +664,9 @@ export default function MusicPage() {
                   <p className="section-eyebrow">Playlist</p>
                   <h2>Nonstop picks</h2>
                 </div>
-                <a href="#listen-now" className="more-link-unified">
+                <button type="button" className="more-link-unified" onClick={() => openExpandedList('nonstop')}>
                   Xem thêm
-                </a>
+                </button>
               </div>
               <AudioShowcasePlayer
                 title="Nonstop Playlist"
@@ -627,9 +682,9 @@ export default function MusicPage() {
                   <p className="section-eyebrow">Remix</p>
                   <h2>Top Remix</h2>
                 </div>
-                <a href="#top-remix" className="more-link-unified">
+                <button type="button" className="more-link-unified" onClick={() => openExpandedList('remix')}>
                   Xem thêm
-                </a>
+                </button>
               </div>
               <AudioShowcasePlayer
                 title="Top Remix"

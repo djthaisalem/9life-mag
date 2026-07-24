@@ -14,6 +14,7 @@ type PublicTrackDocument = {
   durationLabel?: string
   displayMap?: string
   albumLabel?: string
+  accessLevel?: string
   coverImage?: MediaValue | string | number | null
 }
 
@@ -59,6 +60,7 @@ export async function GET() {
         musicCode: track.musicCode,
         cover,
         albumLabel: track.albumLabel || undefined,
+        isPremiumDrop: track.accessLevel === 'premium',
       }
     })
 

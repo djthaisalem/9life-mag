@@ -2817,6 +2817,15 @@ button.artist-dashboard-module-card {
     box-shadow 180ms ease;
 }
 
+button.more-link-unified {
+  font: inherit;
+  cursor: pointer;
+}
+
+.music-expanded-section {
+  scroll-margin-top: 96px;
+}
+
 .news-headline-dots { display: flex; gap: 7px; margin-top: 16px; }
 .news-headline-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: rgba(255,255,255,0.48); cursor: pointer; }
 .news-headline-dot-active { width: 24px; background: #ffd666; }

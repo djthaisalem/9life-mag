@@ -12,6 +12,7 @@ export type PublicMusicCatalogItem = {
   musicCode?: string
   cover?: string
   albumLabel?: string
+  isPremiumDrop?: boolean
 }
 
 export async function fetchPublicMusicCatalog() {
@@ -33,5 +34,6 @@ export function catalogItemToAudioTrack(item: PublicMusicCatalogItem): AudioTrac
     cover: item.cover || '/images/default-music-cover.png',
     audioUrl: '',
     protectedMedia: true,
+    isPremiumDrop: item.isPremiumDrop === true,
   }
 }
