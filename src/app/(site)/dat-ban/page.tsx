@@ -179,15 +179,6 @@ function TableBookingContent() {
             ))}
           </div>
 
-          {!activeRegion ? (
-            <div className="club-region-menu">
-              {randomizedRegions.map((region) => (
-                <a key={region.id} href={`#${region.id}`} className="artist-filter-chip">
-                  {region.label}
-                </a>
-              ))}
-            </div>
-          ) : null}
         </div>
       </section>
 

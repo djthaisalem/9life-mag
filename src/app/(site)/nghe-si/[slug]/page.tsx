@@ -66,7 +66,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
           <div className="artist-profile-hero-copy">
             <div className="tag-row">
               <span className="pill">{artist.role}</span>
-              <Link className="pill" href={`/tim-kiem?q=${encodeURIComponent(artist.location)}`}>{artist.location}</Link>
+              <Link className="pill" href={`/dia-diem?location=${encodeURIComponent(artist.location)}`}>{artist.location}</Link>
               <span className="pill">{artist.followers}</span>
             </div>
             <h1>{artist.name}</h1>
@@ -97,7 +97,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
               <div className="artist-overview-grid">
                 <article>
                   <MapPin size={18} />
-                  <strong><Link href={`/tim-kiem?q=${encodeURIComponent(artist.location)}`}>{artist.location}</Link></strong>
+                  <strong><Link href={`/dia-diem?location=${encodeURIComponent(artist.location)}`}>{artist.location}</Link></strong>
                   <span>Khu vực hoạt động chính</span>
                 </article>
                 <article>
@@ -256,10 +256,10 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
 
               <div className="artist-city-grid">
                 {artist.cities.map((city) => (
-                  <div key={city} className="artist-city-card">
+                  <Link key={city} href={`/dia-diem?location=${encodeURIComponent(city)}`} className="artist-city-card">
                     <strong>{city}</strong>
                     <span>Available for booking</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </article>

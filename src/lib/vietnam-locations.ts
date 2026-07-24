@@ -55,3 +55,19 @@ export function getVietnamRegionLabel(locationName: string) {
   const location = vietnamLocations.find((item) => item.name === locationName)
   return vietnamRegions.find((region) => region.id === location?.region)?.label ?? ''
 }
+
+export function normalizeVietnamLocation(value: string) {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+  if (['tphcm', 'tp hcm', 'tp ho chi minh', 'ho chi minh'].includes(normalized)) return 'ho chi minh'
+  return normalized
+}
+
+export function matchesVietnamLocation(value: string, locationName: string) {
+  return normalizeVietnamLocation(value) === normalizeVietnamLocation(locationName)
+}
