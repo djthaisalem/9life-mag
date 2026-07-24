@@ -7,6 +7,7 @@ import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
+import { normalizeSharePath } from '@/lib/url-slug'
 
 const FAVORITE_ALBUMS_KEY = 'nine-life-favorite-albums'
 
@@ -39,7 +40,7 @@ export function AlbumActions({ albumId, title, href, tracks, sourceType, compact
   }
 
   const share = async () => {
-    const fallbackUrl = new URL(href, window.location.origin).toString()
+    const fallbackUrl = new URL(normalizeSharePath(href), window.location.origin).toString()
     const referral = await createReferralShareUrl(href)
     const url = referral.url ?? fallbackUrl
     try {

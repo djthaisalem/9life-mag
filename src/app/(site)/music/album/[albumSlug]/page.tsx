@@ -6,6 +6,7 @@ import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { AlbumActions } from '@/components/album-actions'
 import { createShareMetadata } from '@/lib/seo'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { toUrlSlug } from '@/lib/url-slug'
 import type { AudioTrack } from '@/lib/audio-types'
 
 type MediaValue = { id?: string | number } | string | number | null | undefined
@@ -41,6 +42,10 @@ async function getAlbum(albumSlug: string) {
   const payload = await loadPayloadClient()
   let result = await payload.find({ collection: 'albums', where: { slug: { equals: albumSlug } }, limit: 1, depth: 1, pagination: false, overrideAccess: true })
   if (!result.docs[0]) result = await payload.find({ collection: 'albums', where: { title: { equals: decodeURIComponent(albumSlug) } }, limit: 1, depth: 1, pagination: false, overrideAccess: true })
+  if (!result.docs[0]) {
+    const candidates = await payload.find({ collection: 'albums', where: { isPublic: { equals: true } }, limit: 100, depth: 1, pagination: false, overrideAccess: true })
+    return candidates.docs.find((album) => toUrlSlug(album.title) === toUrlSlug(albumSlug))
+  }
   return result.docs[0]
 }
 
@@ -49,7 +54,7 @@ export async function generateMetadata({ params }: { params: Promise<{ albumSlug
   const album = await getAlbum(albumSlug)
   if (!album || album.isPublic !== true) return {}
   const image = coverUrl(album.coverImage as MediaValue)
-  return createShareMetadata({ title: `${album.title} | 9LIFE Music`, description: album.description || `Nghe trọn Album ${album.title} trên 9LIFE Music.`, path: `/music/album/${encodeURIComponent(albumSlug)}`, image })
+  return createShareMetadata({ title: `${album.title} | 9LIFE Music`, description: album.description || `Nghe trọn Album ${album.title} trên 9LIFE Music.`, path: `/music/album/${toUrlSlug(album.slug || album.title)}`, image })
 }
 
 export default async function AlbumPage({ params }: { params: Promise<{ albumSlug: string }> }) {
@@ -77,10 +82,10 @@ export default async function AlbumPage({ params }: { params: Promise<{ albumSlu
     <Link href="/music#albums" className="more-link-unified">Quay lại Music</Link>
     <div className="music-album-detail-head">
       <img src={coverUrl(album.coverImage as MediaValue)} alt={`Ảnh bìa Album ${album.title}`} />
-      <div><p className="section-eyebrow">Album / EP</p><h1>{album.title}</h1><p>{album.musician || '9LIFE Artist'}</p>{album.description ? <p className="cms-muted">{album.description}</p> : null}<span>{tracks.length} track</span><AlbumActions albumId={`album:${album.id}`} title={album.title} href={`/music/album/${encodeURIComponent(album.slug || album.title)}`} tracks={tracks} sourceType="track" /></div>
+      <div><p className="section-eyebrow">Album / EP</p><h1>{album.title}</h1><p>{album.musician || '9LIFE Artist'}</p>{album.description ? <p className="cms-muted">{album.description}</p> : null}<span>{tracks.length} track</span><AlbumActions albumId={`album:${album.id}`} title={album.title} href={`/music/album/${toUrlSlug(album.slug || album.title)}`} tracks={tracks} sourceType="track" /></div>
     </div>
     {tracks.length ? <AudioShowcasePlayer title="Tracklist" subtitle="Nghe trọn Album" tracks={tracks} variant="track" /> : <p className="cms-muted">Album này chưa có track công khai.</p>}
-    {albumSuggestions.docs.length ? <section className="music-album-discovery"><div className="tidal-section-head"><div><p className="section-eyebrow">Khám phá thêm</p><h2>Album khác có thể bạn sẽ thích</h2></div></div><div className="tidal-album-grid">{albumSuggestions.docs.map((suggestion) => <article key={suggestion.id} className="tidal-album-card"><Link href={`/music/album/${encodeURIComponent(suggestion.slug || suggestion.title)}`} className="tidal-album-cover-link"><img src={coverUrl(suggestion.coverImage as MediaValue)} alt={suggestion.title} /></Link><strong>{suggestion.title}</strong><span>{suggestion.musician || '9LIFE Artist'}</span></article>)}</div></section> : null}
+    {albumSuggestions.docs.length ? <section className="music-album-discovery"><div className="tidal-section-head"><div><p className="section-eyebrow">Khám phá thêm</p><h2>Album khác có thể bạn sẽ thích</h2></div></div><div className="tidal-album-grid">{albumSuggestions.docs.map((suggestion) => <article key={suggestion.id} className="tidal-album-card"><Link href={`/music/album/${toUrlSlug(suggestion.slug || suggestion.title)}`} className="tidal-album-cover-link"><img src={coverUrl(suggestion.coverImage as MediaValue)} alt={suggestion.title} /></Link><strong>{suggestion.title}</strong><span>{suggestion.musician || '9LIFE Artist'}</span></article>)}</div></section> : null}
     {suggestedTracks.length ? <section className="music-album-discovery"><AudioShowcasePlayer title="Khám phá thêm" subtitle="Track mới từ catalog 9LIFE Music" tracks={suggestedTracks} variant="track" /></section> : null}
   </section></main>
 }

@@ -11,6 +11,7 @@ import { artistProfiles } from '@/lib/artist-directory-data'
 import { curateMusicCatalog, getFairRotation } from '@/lib/music-curation'
 import { fetchPublishedUserPlaylists, getUserPlaylists, type UserPlaylist } from '@/lib/user-playlists'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog, type PublicMusicCatalogItem } from '@/lib/public-music-catalog'
+import { toUrlSlug } from '@/lib/url-slug'
 import {
   tidalAlbums,
   tidalFeatured,
@@ -127,7 +128,7 @@ export default function MusicPage() {
       title,
       artist: tracks[0]?.artist || '9LIFE Artist',
       cover: tracks[0]?.cover || '/images/default-music-cover.png',
-      href: `/music/album/${encodeURIComponent(title)}`,
+      href: `/music/album/${toUrlSlug(title)}`,
       collection: { tracks: tracks.map(catalogItemToAudioTrack), sourceType: 'track' },
     }))
   }, [publishedCatalog])
@@ -513,7 +514,7 @@ export default function MusicPage() {
                   title: item.title,
                   artist: item.artist,
                   cover: item.cover,
-                  href: `/music/album/${encodeURIComponent(item.title)}`,
+                  href: `/music/album/${toUrlSlug(item.title)}`,
                   collection: albumCollections[index] ?? albumCollections[0],
                 } : null
               }).filter((item): item is PublishedAlbum => Boolean(item))).map((item) => {
