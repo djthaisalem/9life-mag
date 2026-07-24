@@ -1,20 +1,12 @@
 import Link from 'next/link'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsMusicAlbumForm } from '@/components/cms-music-album-form'
-import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { loadPayloadClient } from '@/lib/payload-runtime'
-import { normalizeCmsRole } from '@/lib/cms-role-policy'
 
 export const revalidate = 0
 
 export default async function CmsMusicCreateAlbumPage() {
-  const cookieStore = await cookies()
-  const session = await verifyCmsSessionToken(cookieStore.get(CMS_SESSION_COOKIE)?.value)
-  if (!session || normalizeCmsRole(session.role) !== 'super_admin') redirect('/cms/forbidden')
-
   const payload = await loadPayloadClient()
   const [artistResult, categoryResult, trackResult] = await Promise.all([
     payload.find({ collection: 'artists', sort: 'stageName', limit: 500, depth: 0, pagination: false, overrideAccess: true }),
