@@ -204,8 +204,7 @@ export default function MusicPage() {
   }
 
   const openExpandedList = (list: Exclude<ExpandedMusicList, null>) => {
-    setExpandedList(list)
-    window.setTimeout(() => document.getElementById('music-expanded-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+    window.location.assign(`/music/list?section=${encodeURIComponent(list)}`)
   }
 
   const expandedTracks = useMemo(() => {
