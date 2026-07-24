@@ -54,6 +54,10 @@ export async function POST(request: Request) {
     const input = createAlbumSchema.parse(await request.json())
     const payload = await loadPayloadClient()
     const cover = parseCoverDataUrl(input.coverDataUrl)
+    const relationTrackIds = input.trackIds.map((id) => Number(id))
+    if (relationTrackIds.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+      return NextResponse.json({ ok: false, message: 'Track không hợp lệ để tạo Album / EP.' }, { status: 400 })
+    }
     const tracks = await payload.find({
       collection: 'tracks',
       where: { id: { in: input.trackIds } },
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
         musicCategory: input.musicCategory || undefined,
         releaseDate: input.releaseDate || undefined,
         isPublic: input.isPublic,
-        tracks: input.trackIds,
+        tracks: relationTrackIds,
         status: input.isPublic ? 'published' : 'draft',
         publishedAt: input.isPublic ? new Date().toISOString() : undefined,
         seoTitle: input.title,
@@ -113,7 +117,7 @@ export async function POST(request: Request) {
     }
 
     const uploadedTrackIds = new Set(input.uploadedTrackIds)
-    for (const trackId of input.trackIds) {
+    for (const trackId of relationTrackIds) {
       await payload.update({
         collection: 'tracks',
         id: trackId,
@@ -122,7 +126,7 @@ export async function POST(request: Request) {
         data: {
           albumLabel: input.title,
           trackType: 'single',
-          ...(uploadedTrackIds.has(trackId) && albumCoverId ? { coverImage: albumCoverId } : {}),
+          ...(uploadedTrackIds.has(String(trackId)) && albumCoverId ? { coverImage: albumCoverId } : {}),
         },
       })
     }
