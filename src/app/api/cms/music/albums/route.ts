@@ -67,6 +67,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: 'One or more selected tracks no longer exist.' }, { status: 400 })
     }
 
+    const artistResult = input.artistId
+      ? await payload.find({ collection: 'artists', where: { id: { equals: input.artistId } }, limit: 1, depth: 0, pagination: false, overrideAccess: true })
+      : null
+    const artist = artistResult?.docs[0] ?? null
+
     const album = await payload.create({
       collection: 'albums',
       depth: 0,
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
         title: input.title,
         slug: `${toSlug(input.title)}-${Date.now().toString(36)}`,
         description: input.description || undefined,
-        artist: input.artistId || undefined,
+        artist: artist?.id,
         musician: input.musician || undefined,
         musicCategory: input.musicCategory || undefined,
         releaseDate: input.releaseDate || undefined,
@@ -107,25 +112,20 @@ export async function POST(request: Request) {
       await payload.update({ collection: 'albums', id: album.id, depth: 0, overrideAccess: true, data: { coverImage: media.id } })
     }
 
-    const artist = input.artistId
-      ? await payload.findByID({ collection: 'artists', id: input.artistId, depth: 0, overrideAccess: true })
-      : null
-
     const uploadedTrackIds = new Set(input.uploadedTrackIds)
-    await Promise.all(input.trackIds.map((trackId) => payload.update({
-      collection: 'tracks',
-      id: trackId,
-      depth: 0,
-      overrideAccess: true,
-      data: {
-        albumLabel: input.title,
-        trackType: 'album',
-        ...(uploadedTrackIds.has(trackId) && albumCoverId ? { coverImage: albumCoverId } : {}),
-        visibility: input.isPublic ? 'public' : 'draft',
-        isPublic: input.isPublic,
-        status: input.isPublic ? 'published' : 'draft',
-      },
-    })))
+    for (const trackId of input.trackIds) {
+      await payload.update({
+        collection: 'tracks',
+        id: trackId,
+        depth: 0,
+        overrideAccess: true,
+        data: {
+          albumLabel: input.title,
+          trackType: 'single',
+          ...(uploadedTrackIds.has(trackId) && albumCoverId ? { coverImage: albumCoverId } : {}),
+        },
+      })
+    }
 
     return NextResponse.json({
       ok: true,
@@ -136,8 +136,10 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? 'Album details are invalid.' }, { status: 400 })
     }
-    const code = error instanceof Error ? error.message.split(':')[0] : ''
+    const details = error as { message?: string; data?: { errors?: Array<{ field?: string; message?: string }> } }
+    const issue = details.data?.errors?.[0]
+    const code = issue?.field || details.message?.split(':')[0] || ''
     console.error('CMS album creation failed', { code, error })
-    return NextResponse.json({ ok: false, message: `Không thể tạo Album / EP lúc này${code ? ` (${code})` : ''}.` }, { status: 500 })
+    return NextResponse.json({ ok: false, message: `Không thể tạo Album / EP lúc này${code ? `: ${code}` : ''}.` }, { status: 500 })
   }
 }
