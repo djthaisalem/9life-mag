@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { normalizeCmsRole } from '@/lib/cms-role-policy'
 
 const createAlbumSchema = z.object({
   title: z.string().trim().min(2).max(180),
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   )
   const access = capability ? { ok: true as const, session: capability } : await requireCmsApiAccess('music')
   if (!access.ok) return access.response
-  if (access.session.role !== 'super_admin') {
+  if (normalizeCmsRole(access.session.role) !== 'super_admin') {
     return NextResponse.json({ ok: false, message: 'Chỉ Super Admin được tạo Album / EP từ kho track.' }, { status: 403 })
   }
 

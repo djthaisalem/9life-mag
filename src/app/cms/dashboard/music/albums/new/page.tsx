@@ -6,13 +6,14 @@ import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CmsMusicAlbumForm } from '@/components/cms-music-album-form'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { normalizeCmsRole } from '@/lib/cms-role-policy'
 
 export const revalidate = 0
 
 export default async function CmsMusicCreateAlbumPage() {
   const cookieStore = await cookies()
   const session = await verifyCmsSessionToken(cookieStore.get(CMS_SESSION_COOKIE)?.value)
-  if (session?.role !== 'super_admin') redirect('/cms/forbidden')
+  if (!session || normalizeCmsRole(session.role) !== 'super_admin') redirect('/cms/forbidden')
 
   const payload = await loadPayloadClient()
   const [artistResult, categoryResult, trackResult] = await Promise.all([
