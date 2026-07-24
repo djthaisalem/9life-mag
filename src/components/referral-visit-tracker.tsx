@@ -1,46 +1,95 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 const QUALIFY_DELAY_MS = 31_500
 const QUALIFY_RETRY_DELAY_MS = 2_000
+const STORAGE_KEY = 'nine_life_active_referral'
 
-async function sendReferralEvent(action: 'visit' | 'qualify', token: string) {
+type ActiveReferral = {
+  token: string
+  startedAt: number
+  timer?: number
+}
+
+async function sendReferralEvent(action: 'visit' | 'qualify', token: string, keepalive = false) {
   const response = await fetch('/api/referrals', {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, token }),
+    keepalive,
   })
   return (await response.json()) as { ok?: boolean }
 }
 
+function readStoredReferral() {
+  try {
+    const value = window.sessionStorage.getItem(STORAGE_KEY)
+    if (!value) return null
+    const referral = JSON.parse(value) as Pick<ActiveReferral, 'token' | 'startedAt'>
+    return /^[a-f0-9]{32}$/i.test(referral.token) && Number.isFinite(referral.startedAt) ? referral : null
+  } catch {
+    return null
+  }
+}
+
+function saveStoredReferral(referral: Pick<ActiveReferral, 'token' | 'startedAt'>) {
+  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(referral))
+}
+
 export function ReferralVisitTracker() {
   const searchParams = useSearchParams()
-  const token = searchParams.get('ref')
+  const queryToken = searchParams.get('ref')
+  const activeRef = useRef<ActiveReferral | null>(null)
 
   useEffect(() => {
-    if (!token || !/^[a-f0-9]{32}$/i.test(token)) return
-    let active = true
-    let timer: number | undefined
+    const stored = readStoredReferral()
+    const token = queryToken && /^[a-f0-9]{32}$/i.test(queryToken) ? queryToken : stored?.token
+    if (!token || activeRef.current?.token === token) return
 
-    void sendReferralEvent('visit', token).then((visit) => {
-      if (!active || !visit.ok) return
+    const startTracking = async () => {
+      const visit = await sendReferralEvent('visit', token)
+      if (!visit.ok) return
 
-      timer = window.setTimeout(() => {
-        if (!active) return
-        void sendReferralEvent('qualify', token).then((qualification) => {
-          if (!active || qualification.ok) return
-          window.setTimeout(() => {
-            if (active) void sendReferralEvent('qualify', token)
-          }, QUALIFY_RETRY_DELAY_MS)
-        })
-      }, QUALIFY_DELAY_MS)
-    }).catch(() => undefined)
+      const active: ActiveReferral = { token, startedAt: Date.now() }
+      activeRef.current = active
+      saveStoredReferral(active)
 
-    return () => { active = false; window.clearTimeout(timer) }
-  }, [token])
+      const qualify = async () => {
+        const result = await sendReferralEvent('qualify', token)
+        if (result.ok) {
+          if (activeRef.current?.token === token) activeRef.current = null
+          window.sessionStorage.removeItem(STORAGE_KEY)
+          return
+        }
+        window.setTimeout(() => { void sendReferralEvent('qualify', token) }, QUALIFY_RETRY_DELAY_MS)
+      }
+
+      active.timer = window.setTimeout(() => { void qualify() }, QUALIFY_DELAY_MS)
+    }
+
+    void startTracking().catch(() => undefined)
+  }, [queryToken])
+
+  useEffect(() => {
+    const qualifyBeforeLeaving = () => {
+      const active = activeRef.current
+      if (!active || Date.now() - active.startedAt < QUALIFY_DELAY_MS) return
+      void sendReferralEvent('qualify', active.token, true)
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') qualifyBeforeLeaving()
+    }
+    window.addEventListener('pagehide', qualifyBeforeLeaving)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('pagehide', qualifyBeforeLeaving)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      activeRef.current?.timer && window.clearTimeout(activeRef.current.timer)
+    }
+  }, [])
 
   return null
 }
