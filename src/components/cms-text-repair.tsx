@@ -9,7 +9,6 @@ function normalizeTextNodes(root: Element) {
   let node = walker.nextNode()
   while (node) { nodes.push(node as Text); node = walker.nextNode() }
   nodes.forEach((textNode) => {
-    if (textNode.parentElement?.closest('[data-cms-text-repair-ignore]')) return
     const repaired = repairVietnameseText(textNode.nodeValue ?? '')
     if (repaired !== textNode.nodeValue) textNode.nodeValue = repaired
   })
