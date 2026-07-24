@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Play, Plus } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
+import { AlbumActions } from '@/components/album-actions'
 import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { artistProfiles } from '@/lib/artist-directory-data'
@@ -381,14 +382,7 @@ export default function MusicPage() {
                     <strong>{item.title}</strong>
                     <span>{item.subtitle}</span>
                   </div>
-                  <button
-                    type="button"
-                    className="tidal-play-chip tidal-play-chip-card"
-                    onClick={() => playSet(item.collection)}
-                  >
-                    <Play size={14} />
-                    Play
-                  </button>
+                  <button type="button" className="tidal-play-chip tidal-play-chip-card" onClick={() => playSet(item.collection)}><Play size={14} />Play</button>
                 </article>
               ))}
             </div>
@@ -528,14 +522,7 @@ export default function MusicPage() {
                   <Link href={item.href} className="tidal-album-cover-link" aria-label={`Mở Album ${item.title}`}><img src={item.cover} alt={item.title} /></Link>
                   <strong>{item.title}</strong>
                   <span>{item.artist}</span>
-                  <button
-                    type="button"
-                    className="tidal-play-chip tidal-play-chip-card"
-                    onClick={() => playSet(item.collection)}
-                  >
-                    <Play size={14} />
-                    Play
-                  </button>
+                  <AlbumActions albumId={item.id} title={item.title} href={item.href} tracks={item.collection.tracks} sourceType={item.collection.sourceType} compact />
                 </article>
                 )
               })}

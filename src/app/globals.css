@@ -7571,6 +7571,41 @@ button.artist-dashboard-module-card {
   margin-top: 42px;
 }
 
+.album-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.album-actions-compact {
+  margin-top: 14px;
+}
+
+.album-action-icon {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 214, 92, 0.36);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f7df9a;
+  cursor: pointer;
+}
+
+.album-action-icon-active {
+  background: #f7ce47;
+  color: #16120a;
+}
+
+.album-action-feedback {
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 @media (max-width: 640px) {
   .music-album-detail-head { grid-template-columns: 1fr; gap: 18px; }
   .music-album-detail-head img { max-width: 280px; }
