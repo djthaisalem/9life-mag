@@ -5141,6 +5141,11 @@ button.artist-dashboard-module-card {
   white-space: nowrap;
 }
 
+.global-media-player-wallet-button {
+  cursor: pointer;
+  font: inherit;
+}
+
 .global-media-player-center {
   display: grid;
   gap: 8px;

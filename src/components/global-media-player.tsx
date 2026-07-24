@@ -346,7 +346,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
     if (!targetTrack) return
 
-    if (targetTrack.protectedMedia && !targetTrack.audioUrl) {
+    if (targetTrack.protectedMedia) {
       const protectedResult = await requestProtectedMedia(targetTrack, 'preview')
       if (!protectedResult.ok || !protectedResult.url) {
         if (protectedResult.status === 401) {
@@ -363,7 +363,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         setIsAuthenticated(true)
         setStarBalance(protectedResult.stars)
       }
-    } else {
+    } else if (isAuthenticated) {
       const result = await accessTrackWithStars(targetTrack.id, 'playback')
 
       if (!result.ok) {
@@ -822,12 +822,12 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 <strong>{activeTrack.title}</strong>
                 <span>{activeTrack.artist}</span>
                 <small>
-                  {isAuthenticated ? `Còn ${starBalance} sao trong ví` : 'Nhấn play sẽ yêu cầu đăng nhập và trừ 1 sao'}
+                  {isAuthenticated ? `Còn ${starBalance} sao trong ví` : 'Track miễn phí phát ngay; nội dung tính sao sẽ yêu cầu đăng nhập.'}
                 </small>
               </div>
-              <span className="global-media-player-wallet" aria-live="polite">
+              <button type="button" className="global-media-player-wallet global-media-player-wallet-button" aria-live="polite" onClick={() => { if (!isAuthenticated) setShowLoginModal(true) }}>
                 {isAuthenticated ? `${starBalance} sao` : 'Đăng nhập'}
-              </span>
+              </button>
             </div>
 
             <div className="global-media-player-center">

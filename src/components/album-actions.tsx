@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 import { useMediaPlayer } from '@/components/global-media-player'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
+import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 
 const FAVORITE_ALBUMS_KEY = 'nine-life-favorite-albums'
@@ -38,7 +39,9 @@ export function AlbumActions({ albumId, title, href, tracks, sourceType, compact
   }
 
   const share = async () => {
-    const url = new URL(href, window.location.origin).toString()
+    const fallbackUrl = new URL(href, window.location.origin).toString()
+    const referral = await createReferralShareUrl(href)
+    const url = referral.url ?? fallbackUrl
     try {
       if (navigator.share) {
         await navigator.share({ title: `${title} | 9LIFE Music`, text: `Nghe Album ${title} trên 9LIFE Music`, url })
