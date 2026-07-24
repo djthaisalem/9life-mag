@@ -15,6 +15,7 @@ import {
 } from '@/lib/artist-segments'
 import { fetchUserAccessState, spendUserStars, toggleFollowedArtist } from '@/lib/client-user-access'
 import { getFairRotation } from '@/lib/music-curation'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const artistDisplayOverrides: Record<string, Partial<Record<'location' | 'rate', string>>> = {
   'kai-motion': {
@@ -47,6 +48,7 @@ function ArtistsPageContent() {
   const [followedArtists, setFollowedArtists] = useState<string[]>([])
   const [votedArtists, setVotedArtists] = useState<string[]>([])
   const [accessPrompt, setAccessPrompt] = useState<'vote' | 'follow' | null>(null)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [artistOrder, setArtistOrder] = useState<string[]>([])
 
   useEffect(() => {
@@ -108,6 +110,11 @@ function ArtistsPageContent() {
     if (!result.ok) {
       if (result.reason === 'not_authenticated') {
         setAccessPrompt('vote')
+        return
+      }
+
+      if (result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
         return
       }
 
@@ -297,6 +304,7 @@ function ArtistsPageContent() {
           </div>
         </div>
       ) : null}
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </main>
   )
 }

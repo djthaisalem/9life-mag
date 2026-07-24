@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
 import { regionalOutlets } from '@/lib/club-booking-data'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const DEFAULT_VISIBLE = 6
 
@@ -52,6 +53,7 @@ function TableBookingContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(0)
   const [showVoteLogin, setShowVoteLogin] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingOutletVote, setPendingOutletVote] = useState<string | null>(null)
@@ -92,6 +94,11 @@ function TableBookingContent() {
       if (result.reason === 'not_authenticated') {
         setPendingOutletVote(slug)
         setShowVoteLogin(true)
+        return
+      }
+
+      if (result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
         return
       }
 
@@ -303,6 +310,7 @@ function TableBookingContent() {
           </div>
         </div>
       ) : null}
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </main>
   )
 }

@@ -13,6 +13,7 @@ import { curateMusicCatalog } from '@/lib/music-curation'
 import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 type NewsCategory = 'all' | 'events' | 'music' | 'nightlife' | 'interview' | 'review' | 'tech'
 type ArtistFilter = 'all' | 'dj' | 'mc' | 'rapper' | 'dancer' | 'photographer' | 'model' | 'designer' | 'female' | 'male'
@@ -568,6 +569,7 @@ export default function HomePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
   const [showVoteLogin, setShowVoteLogin] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState<RankingVoteTarget | null>(null)
@@ -648,6 +650,11 @@ export default function HomePage() {
       if (result.reason === 'not_authenticated') {
         setPendingVote(vote)
         setShowVoteLogin(true)
+        return
+      }
+
+      if (result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
         return
       }
 
@@ -1230,6 +1237,7 @@ export default function HomePage() {
           </div>
         </div>
       ) : null}
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </main>
   )
 }

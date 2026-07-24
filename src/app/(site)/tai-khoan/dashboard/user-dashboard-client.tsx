@@ -28,6 +28,7 @@ import {
 import { copyText } from '@/lib/client-share'
 import { createReferralShareUrl, getReferralSummary, type ReferralSummary } from '@/lib/client-referrals'
 import { paymentProviders, starPackages, type PaymentProviderId, type StarTopupRequest } from '@/lib/star-payment-shared'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const topUpPlans = starPackages.map((plan) => ({
   ...plan,
@@ -67,6 +68,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
   const [rewardMessage, setRewardMessage] = useState('')
   const [premiumAccessUntil, setPremiumAccessUntil] = useState('')
   const [isActivatingPremium, setIsActivatingPremium] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [accessState, setAccessState] = useState<UserAccessState>(initialAccessState)
   const [profile, setProfile] = useState<StoredUserProfile>(initialProfile)
   const [selectedTopupPackageId, setSelectedTopupPackageId] = useState<string>(topUpPlans[0]?.id ?? 'star-50')
@@ -156,6 +158,10 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
       const result = await activatePremiumAccess()
       if (result.state) setAccessState(result.state)
       setPremiumAccessUntil(result.premiumAccess?.expiresAt ?? '')
+      if (!result.ok && result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
+        return
+      }
       setRewardMessage(result.message ?? (result.ok
         ? 'Đã kích hoạt Premium Drop trong 24 giờ.'
         : 'Không thể kích hoạt Premium Drop lúc này.'))
@@ -436,7 +442,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
       <section className="section">
         <div className="container user-dashboard-main">
           <div className="user-dashboard-column">
-            <article className="artist-dashboard-panel user-dashboard-wallet-panel">
+            <article id="star-wallet" className="artist-dashboard-panel user-dashboard-wallet-panel">
               <div className="artist-dashboard-panel-head">
                 <div>
                   <p className="section-eyebrow">Star Wallet</p>
@@ -813,6 +819,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
           </aside>
         </div>
       </section>
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </main>
   )
 }

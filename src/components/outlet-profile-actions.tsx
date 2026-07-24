@@ -7,6 +7,7 @@ import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/clien
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const outletVoteSeed: Record<string, number> = {
   'luxe-district': 4231,
@@ -49,6 +50,7 @@ export function OutletProfileActions({
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
   const [showVoteLogin, setShowVoteLogin] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState(false)
@@ -70,6 +72,11 @@ export function OutletProfileActions({
       if (result.reason === 'not_authenticated') {
         setPendingVote(true)
         setShowVoteLogin(true)
+        return
+      }
+
+      if (result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
         return
       }
 
@@ -190,6 +197,7 @@ export function OutletProfileActions({
           </div>
         </div>
       ) : null}
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </>
   )
 }

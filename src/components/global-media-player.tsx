@@ -30,6 +30,7 @@ import {
   type UserPlaylist,
 } from '@/lib/user-playlists'
 import { recordDownload, recordListening } from '@/lib/music-history'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const FAVORITE_TRACKS_STORAGE_KEY = 'nine-life-favorite-tracks'
 const PLAYER_RESUME_STORAGE_KEY = 'nine-life-media-player-resume'
@@ -131,6 +132,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [pendingPlaybackAction, setPendingPlaybackAction] = useState<PendingPlaybackAction | null>(null)
   const [pendingDownloadTrack, setPendingDownloadTrack] = useState<AudioTrack | null>(null)
   const [pendingPlaylistTrack, setPendingPlaylistTrack] = useState<AudioTrack | null>(null)
@@ -354,6 +356,10 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           setShowLoginModal(true)
           return
         }
+        if (protectedResult.status === 402) {
+          setShowTopupModal(true)
+          return
+        }
         window.alert(protectedResult.message ?? 'Không thể cấp quyền phát track này.')
         return
       }
@@ -373,7 +379,12 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           return
         }
 
-        if (result.reason !== 'insufficient_stars') {
+        if (result.reason === 'insufficient_stars') {
+          setShowTopupModal(true)
+          return
+        }
+
+        if (result.reason !== undefined) {
           window.alert(result.message ?? 'Không thể xác thực quyền phát nhạc lúc này. Vui lòng thử lại sau.')
           return
         }
@@ -500,9 +511,19 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     if (track.protectedMedia) {
       const result = await requestProtectedMedia(track, 'download')
       if (!result.ok || !result.url) {
+        if (result.status === 401) {
+          setPendingDownloadTrack(track)
+          setShowLoginModal(true)
+          return
+        }
+        if (result.status === 402) {
+          setShowTopupModal(true)
+          return
+        }
         window.alert(result.message ?? 'Không thể cấp quyền download lúc này.')
         return
       }
+      if (typeof result.stars === 'number') setStarBalance(result.stars)
       openDownload({ ...track, downloadUrl: result.url })
       return
     }
@@ -510,7 +531,12 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     if (isAuthenticated) {
       const result = await accessTrackWithStars(track.id, 'download')
       if (!result.ok) {
-        if (result.reason !== 'insufficient_stars') {
+        if (result.reason === 'insufficient_stars') {
+          setShowTopupModal(true)
+          return
+        }
+
+        if (result.reason !== undefined) {
           window.alert(
             result.reason === 'not_authenticated'
               ? 'Vui lòng đăng nhập để tải nhạc.'
@@ -651,7 +677,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     setLoginPassword('')
 
     if (pendingDownloadTrack) {
-      openDownload(pendingDownloadTrack)
+      void openDownloadRequest(pendingDownloadTrack)
       setPendingDownloadTrack(null)
     }
 
@@ -1046,6 +1072,8 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           </div>
         </div>
       ) : null}
+
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
 
       {showLoginModal ? (
         <div className="login-gate-overlay" role="dialog" aria-modal="true">

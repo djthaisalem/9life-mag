@@ -7,6 +7,7 @@ import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/clien
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
+import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 const artistVoteSeed: Record<string, number> = {
   'neon-viper': 12847,
@@ -37,6 +38,7 @@ export function ArtistProfileActions({
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
   const [showVoteLogin, setShowVoteLogin] = useState(false)
+  const [showTopupModal, setShowTopupModal] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState(false)
@@ -58,6 +60,11 @@ export function ArtistProfileActions({
       if (result.reason === 'not_authenticated') {
         setPendingVote(true)
         setShowVoteLogin(true)
+        return
+      }
+
+      if (result.reason === 'insufficient_stars') {
+        setShowTopupModal(true)
         return
       }
 
@@ -178,6 +185,7 @@ export function ArtistProfileActions({
           </div>
         </div>
       ) : null}
+      <StarTopupDialog open={showTopupModal} onClose={() => setShowTopupModal(false)} />
     </>
   )
 }

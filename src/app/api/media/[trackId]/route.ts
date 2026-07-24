@@ -70,19 +70,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
       return NextResponse.json({ ok: false, message: 'Nội dung này không cho phép tải xuống.' }, { status: 403 })
     }
 
-    // Generate the short-lived URL first so a storage failure never charges the user.
+    const downloadCost = getStarCost(track.downloadStarCost)
+    let remainingStars = authenticated.account.stars
+    if (downloadCost > 0) {
+      const result = await accessMediaWithStars(authenticated.session.userId, trackId, 'download', downloadCost)
+      if (result.ok) remainingStars = result.state.stars
+      if (!result.ok) return NextResponse.json({ ok: false, message: `Bạn cần ${downloadCost} sao để tải file.` }, { status: 402 })
+    }
     const downloadUrl = await getPrivateObjectUrl(
       track.masterR2Key,
       60 * 5,
       { downloadFilename: getDownloadFilename(track) },
     )
-
-    const downloadCost = getStarCost(track.downloadStarCost)
-    if (downloadCost > 0) {
-      const result = await accessMediaWithStars(authenticated.session.userId, trackId, 'download', downloadCost)
-      if (!result.ok) return NextResponse.json({ ok: false, message: `Bạn cần ${downloadCost} sao để tải file.` }, { status: 402 })
-    }
-    return NextResponse.json({ ok: true, kind, url: downloadUrl, expiresInSeconds: 60 * 5 })
+    return NextResponse.json({ ok: true, kind, url: downloadUrl, stars: remainingStars, expiresInSeconds: 60 * 5 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: 'Yêu cầu media không hợp lệ.' }, { status: 400 })

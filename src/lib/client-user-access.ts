@@ -178,6 +178,7 @@ export async function claimBonusStars() {
 export type PremiumAccessResponse = {
   ok: boolean
   active: boolean
+  reason?: string
   alreadyCharged?: boolean
   message?: string
   premiumAccess?: {
