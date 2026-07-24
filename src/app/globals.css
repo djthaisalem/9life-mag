@@ -70,6 +70,13 @@
   object-fit: cover;
 }
 
+.content-discovery-image-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255, 203, 76, 0.28), rgba(89, 218, 255, 0.16));
+}
+
 .content-discovery-card div {
   display: grid;
   gap: 4px;
