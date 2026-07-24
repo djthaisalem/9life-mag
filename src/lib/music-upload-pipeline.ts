@@ -1,12 +1,13 @@
 import 'server-only'
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { CopyObjectCommand, DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { spawn } from 'child_process'
 import { createReadStream, createWriteStream, promises as fs } from 'fs'
 import os from 'os'
 import path from 'path'
-import { randomInt, randomUUID } from 'crypto'
+import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'crypto'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { loadPayloadClient } from '@/lib/payload-runtime'
@@ -26,6 +27,21 @@ type MusicUploadInput = {
   albumLabel: string
   visibility: 'draft' | 'pending' | 'public' | 'hidden'
   audio: File
+}
+
+type DirectMusicUploadInput = Omit<MusicUploadInput, 'audio'> & {
+  fileName: string
+  fileSize: number
+  contentType: string
+  uploadedBy: string
+}
+
+type DirectMusicUploadTicket = DirectMusicUploadInput & {
+  musicCode: string
+  uploadId: string
+  sourceKey: string
+  masterKey: string
+  expiresAt: number
 }
 
 function getR2Client() {
@@ -53,6 +69,43 @@ function getMaxUploadBytes() {
   const configured = Number(process.env.MUSIC_MAX_UPLOAD_MB ?? DEFAULT_MAX_UPLOAD_MB)
   const megabytes = Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_UPLOAD_MB
   return megabytes * 1024 * 1024
+}
+
+function validateUploadFile(fileName: string, fileSize: number, contentType: string) {
+  const extension = path.extname(fileName).toLowerCase()
+  if (!ALLOWED_AUDIO_EXTENSIONS.has(extension) || (contentType && !contentType.startsWith('audio/'))) {
+    throw new Error('unsupported_audio_format')
+  }
+  if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > getMaxUploadBytes()) {
+    throw new Error('audio_file_size_invalid')
+  }
+  return extension
+}
+
+function ticketSecret() {
+  const secret = process.env.CMS_SESSION_SECRET?.trim() || process.env.PAYLOAD_SECRET?.trim()
+  if (!secret) throw new Error('cms_upload_ticket_secret_missing')
+  return secret
+}
+
+function signDirectUploadTicket(ticket: DirectMusicUploadTicket) {
+  const payload = Buffer.from(JSON.stringify(ticket)).toString('base64url')
+  const signature = createHmac('sha256', ticketSecret()).update(payload).digest('base64url')
+  return `${payload}.${signature}`
+}
+
+function readDirectUploadTicket(token: string) {
+  const [payload, signature] = token.split('.')
+  if (!payload || !signature) throw new Error('direct_upload_ticket_invalid')
+  const expected = createHmac('sha256', ticketSecret()).update(payload).digest('base64url')
+  const signatureBuffer = Buffer.from(signature)
+  const expectedBuffer = Buffer.from(expected)
+  if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    throw new Error('direct_upload_ticket_invalid')
+  }
+  const ticket = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as DirectMusicUploadTicket
+  if (!ticket.expiresAt || ticket.expiresAt < Date.now()) throw new Error('direct_upload_ticket_expired')
+  return ticket
 }
 
 function formatDuration(totalSeconds: number) {
@@ -156,15 +209,129 @@ async function uploadDefaultCover(client: S3Client, bucket: string) {
   return DEFAULT_COVER_KEY
 }
 
+function toTrackRecord(input: Pick<MusicUploadInput, 'title' | 'type' | 'genre' | 'artistSlug' | 'access' | 'displayMap' | 'albumLabel' | 'visibility'>, values: {
+  uploadId: string
+  musicCode: string
+  durationSeconds: number
+  coverR2Key: string
+  playbackKey: string
+  masterKey: string
+  sourceFormat: string
+}) {
+  return {
+    title: input.title.trim(),
+    slug: `${toSlug(input.title)}-${values.uploadId.slice(0, 8)}`,
+    musicCode: values.musicCode,
+    coverR2Key: values.coverR2Key,
+    trackType: trackTypeFromUploadType(input.type),
+    durationLabel: formatDuration(values.durationSeconds),
+    durationSeconds: Math.round(values.durationSeconds),
+    previewR2Key: values.playbackKey,
+    masterR2Key: values.masterKey,
+    sourceFormat: values.sourceFormat,
+    submittedArtistSlug: input.artistSlug.trim(),
+    genreLabel: input.genre.trim(),
+    albumLabel: input.albumLabel.trim(),
+    accessLevel: input.access,
+    displayMap: input.displayMap.trim(),
+    visibility: input.visibility,
+    isPublic: input.visibility === 'public',
+    requiresLoginToDownload: true,
+    status: input.visibility === 'public' ? 'published' : 'draft',
+  }
+}
+
+export async function prepareDirectMp3Upload(input: DirectMusicUploadInput) {
+  const extension = validateUploadFile(input.fileName, input.fileSize, input.contentType)
+  if (extension !== '.mp3') throw new Error('direct_upload_requires_mp3')
+
+  const musicCode = await createUniqueMusicCode()
+  const uploadId = randomUUID()
+  const namedFile = fileStem(input.title, musicCode)
+  const keyBase = `${new Date().getUTCFullYear()}/${namedFile}-${uploadId}`
+  const ticket: DirectMusicUploadTicket = {
+    ...input,
+    musicCode,
+    uploadId,
+    sourceKey: `music/incoming/${keyBase}.mp3`,
+    masterKey: `music/master/${keyBase}.mp3`,
+    expiresAt: Date.now() + 60 * 60 * 1000,
+  }
+  const { client, bucket } = getR2Client()
+  const uploadUrl = await getSignedUrl(client, new PutObjectCommand({
+    Bucket: bucket,
+    Key: ticket.sourceKey,
+    ContentType: input.contentType || 'audio/mpeg',
+  }), { expiresIn: 60 * 60 })
+
+  return { uploadUrl, ticket: signDirectUploadTicket(ticket), musicCode }
+}
+
+export async function completeDirectMp3Upload(ticketToken: string, uploadedBy: string, durationSeconds: number) {
+  const ticket = readDirectUploadTicket(ticketToken)
+  if (ticket.uploadedBy !== uploadedBy) throw new Error('direct_upload_ticket_invalid')
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 24 * 60 * 60) {
+    throw new Error('audio_duration_not_found')
+  }
+
+  const { client, bucket } = getR2Client()
+  const source = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: ticket.sourceKey }))
+  if (!source.ContentLength || source.ContentLength !== ticket.fileSize) throw new Error('direct_upload_missing_file')
+
+  const coverR2Key = await uploadDefaultCover(client, bucket)
+  let copiedMaster = false
+  try {
+    await client.send(new CopyObjectCommand({
+      Bucket: bucket,
+      Key: ticket.masterKey,
+      CopySource: `${bucket}/${ticket.sourceKey.split('/').map(encodeURIComponent).join('/')}`,
+      ContentType: ticket.contentType || 'audio/mpeg',
+      MetadataDirective: 'REPLACE',
+      Metadata: {
+        title: ticket.title.trim(),
+        website: MUSIC_METADATA_URL,
+        musiccode: ticket.musicCode,
+      },
+    }))
+    copiedMaster = true
+
+    const payload = await loadPayloadClient()
+    const track = await payload.create({
+      collection: 'tracks',
+      data: toTrackRecord(ticket, {
+        uploadId: ticket.uploadId,
+        musicCode: ticket.musicCode,
+        durationSeconds,
+        coverR2Key,
+        playbackKey: ticket.masterKey,
+        masterKey: ticket.masterKey,
+        sourceFormat: 'MP3',
+      }),
+      depth: 0,
+    }) as { id: string; slug?: string }
+
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: ticket.sourceKey }))
+    return {
+      trackId: String(track.id),
+      slug: track.slug ?? '',
+      musicCode: ticket.musicCode,
+      durationSeconds: Math.round(durationSeconds),
+      durationLabel: formatDuration(durationSeconds),
+      previewKey: ticket.masterKey,
+      masterKey: ticket.masterKey,
+      coverR2Key,
+    }
+  } catch (error) {
+    if (copiedMaster) {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: ticket.masterKey })).catch(() => undefined)
+    }
+    throw error
+  }
+}
+
 export async function processMusicUpload(input: MusicUploadInput) {
-  const extension = path.extname(input.audio.name).toLowerCase()
+  const extension = validateUploadFile(input.audio.name, input.audio.size, input.audio.type)
   const shouldCreatePreview = extension !== '.mp3'
-  if (!ALLOWED_AUDIO_EXTENSIONS.has(extension) || (input.audio.type && !input.audio.type.startsWith('audio/'))) {
-    throw new Error('unsupported_audio_format')
-  }
-  if (input.audio.size <= 0 || input.audio.size > getMaxUploadBytes()) {
-    throw new Error('audio_file_size_invalid')
-  }
 
   const tempBase = process.env.MUSIC_TEMP_DIR?.trim() || os.tmpdir()
   await fs.mkdir(tempBase, { recursive: true })
@@ -208,27 +375,15 @@ export async function processMusicUpload(input: MusicUploadInput) {
     const payload = await loadPayloadClient()
     const track = await payload.create({
       collection: 'tracks',
-      data: {
-        title: input.title.trim(),
-        slug: `${toSlug(input.title)}-${uploadId.slice(0, 8)}`,
+      data: toTrackRecord(input, {
+        uploadId,
         musicCode,
+        durationSeconds,
         coverR2Key,
-        trackType: trackTypeFromUploadType(input.type),
-        durationLabel: formatDuration(durationSeconds),
-        durationSeconds: Math.round(durationSeconds),
-        previewR2Key: playbackKey,
-        masterR2Key: masterKey,
+        playbackKey,
+        masterKey,
         sourceFormat: extension.slice(1).toUpperCase(),
-        submittedArtistSlug: input.artistSlug.trim(),
-        genreLabel: input.genre.trim(),
-        albumLabel: input.albumLabel.trim(),
-        accessLevel: input.access,
-        displayMap: input.displayMap.trim(),
-        visibility: input.visibility,
-        isPublic: input.visibility === 'public',
-        requiresLoginToDownload: true,
-        status: input.visibility === 'public' ? 'published' : 'draft',
-      },
+      }),
       depth: 0,
     }) as { id: string; slug?: string }
 

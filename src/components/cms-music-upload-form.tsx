@@ -8,6 +8,7 @@ type GenreOption = { id: string; slug: string; name: string }
 type AlbumOption = { id: string; title: string; artist: string }
 
 type UploadResult = { durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string; visibility: 'draft' | 'pending' | 'public' | 'hidden' }
+type DirectUploadPreparation = { uploadUrl: string; ticket: string; musicCode: string }
 
 const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
 
@@ -17,6 +18,89 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
   const [message, setMessage] = useState('')
   const [result, setResult] = useState<UploadResult | null>(null)
 
+  function cmsHeaders() {
+    return uploadCapability ? { Authorization: `Bearer ${uploadCapability}` } : undefined
+  }
+
+  async function readAudioDuration(audio: File) {
+    const objectUrl = URL.createObjectURL(audio)
+    try {
+      return await new Promise<number>((resolve, reject) => {
+        const preview = document.createElement('audio')
+        preview.preload = 'metadata'
+        preview.onloadedmetadata = () => Number.isFinite(preview.duration) && preview.duration > 0
+          ? resolve(preview.duration)
+          : reject(new Error('duration'))
+        preview.onerror = () => reject(new Error('duration'))
+        preview.src = objectUrl
+      })
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }
+
+  function uploadFileToR2(uploadUrl: string, audio: File, onProgress: (percentage: number) => void) {
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', uploadUrl)
+      xhr.setRequestHeader('Content-Type', audio.type || 'audio/mpeg')
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress(Math.max(1, Math.round((event.loaded / event.total) * 100)))
+      }
+      xhr.onload = () => xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`r2_http_${xhr.status}`))
+      xhr.onerror = () => reject(new Error('r2_network'))
+      xhr.onabort = () => reject(new Error('r2_aborted'))
+      xhr.send(audio)
+    })
+  }
+
+  async function uploadMp3Directly(form: HTMLFormElement, audio: File) {
+    const formData = new FormData(form)
+    const response = await fetch('/cms/api/music/upload/direct', {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', ...cmsHeaders() },
+      body: JSON.stringify({
+        action: 'prepare',
+        title: String(formData.get('title') ?? ''),
+        type: String(formData.get('type') ?? 'track'),
+        genre: String(formData.get('genre') ?? ''),
+        artistSlug: String(formData.get('artistSlug') ?? ''),
+        access: String(formData.get('access') ?? 'public'),
+        displayMap: formData.getAll('displayMap').map(String).join(' / '),
+        albumLabel: String(formData.get('albumLabel') ?? ''),
+        visibility: String(formData.get('visibility') ?? 'draft'),
+        fileName: audio.name,
+        fileSize: audio.size,
+        contentType: audio.type || 'audio/mpeg',
+      }),
+    })
+    const prepared = await response.json() as { ok?: boolean; message?: string; result?: DirectUploadPreparation }
+    if (!response.ok || !prepared.ok || !prepared.result) throw new Error(prepared.message ?? 'Không thể tạo phiên upload R2.')
+
+    setMessage('Đang đọc thời lượng MP3...')
+    const durationSeconds = await readAudioDuration(audio)
+    setMessage('Đang upload trực tiếp lên R2: 0%')
+    await uploadFileToR2(prepared.result.uploadUrl, audio, (percentage) => {
+      setMessage(`Đang upload trực tiếp lên R2: ${percentage}%`)
+    })
+
+    setMessage('R2 đã nhận file. Đang tạo track và cập nhật CMS...')
+    const completed = await fetch('/cms/api/music/upload/direct', {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', ...cmsHeaders() },
+      body: JSON.stringify({ action: 'complete', ticket: prepared.result.ticket, durationSeconds }),
+    })
+    const completedPayload = await completed.json() as { ok?: boolean; message?: string; result?: UploadResult }
+    if (!completed.ok || !completedPayload.ok || !completedPayload.result) throw new Error(completedPayload.message ?? 'Không thể tạo track sau khi R2 nhận file.')
+    return completedPayload.result
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
@@ -25,11 +109,20 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
     setResult(null)
 
     try {
+      const selectedAudio = new FormData(form).get('audio')
+      if (selectedAudio instanceof File && selectedAudio.name.toLowerCase().endsWith('.mp3')) {
+        const directResult = await uploadMp3Directly(form, selectedAudio)
+        setResult(directResult)
+        setMessage(`Đã xử lý xong. Mã nhạc: ${directResult.musicCode}. Thời lượng: ${directResult.durationLabel}.`)
+        form.reset()
+        return
+      }
+
       const response = await fetch('/cms/api/music/upload', {
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',
-        headers: uploadCapability ? { Authorization: `Bearer ${uploadCapability}` } : undefined,
+        headers: cmsHeaders(),
         body: new FormData(form),
       })
       const contentType = response.headers.get('content-type') ?? ''
@@ -46,8 +139,11 @@ export function CmsMusicUploadForm({ artists, genres, albums }: { artists: Artis
       setResult(payload.result)
       setMessage(`Đã xử lý xong. Mã nhạc: ${payload.result.musicCode}. Thời lượng: ${payload.result.durationLabel}.`)
       form.reset()
-    } catch {
-      setMessage('Kết nối upload bị ngắt trước khi server phản hồi. Với file WAV lớn, hãy kiểm tra giới hạn upload của IIS/Cloudflare.')
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : ''
+      setMessage(reason.startsWith('r2_')
+        ? 'Không thể upload trực tiếp lên R2. Hãy kiểm tra R2 CORS đã cho phép domain 9lifemag.com với phương thức PUT.'
+        : reason || 'Kết nối upload bị ngắt trước khi server phản hồi. Với file WAV lớn, hãy kiểm tra giới hạn upload của IIS/Cloudflare.')
     } finally {
       setIsPending(false)
     }
