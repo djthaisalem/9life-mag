@@ -8,11 +8,16 @@ function normalizeTextNodes(root: Element) {
   const nodes: Text[] = []
   let node = walker.nextNode()
   while (node) { nodes.push(node as Text); node = walker.nextNode() }
-  nodes.forEach((textNode) => { const repaired = repairVietnameseText(textNode.nodeValue ?? ''); if (repaired !== textNode.nodeValue) textNode.nodeValue = repaired })
+  nodes.forEach((textNode) => {
+    if (textNode.parentElement?.closest('[data-cms-text-repair-ignore]')) return
+    const repaired = repairVietnameseText(textNode.nodeValue ?? '')
+    if (repaired !== textNode.nodeValue) textNode.nodeValue = repaired
+  })
 }
 
 function normalizeFormContent(root: Element) {
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea').forEach((element) => {
+    if (element.closest('[data-cms-text-repair-ignore]')) return
     const value = repairVietnameseText(element.value)
     if (value !== element.value) element.value = value
     const placeholder = repairVietnameseText(element.placeholder)
@@ -20,6 +25,7 @@ function normalizeFormContent(root: Element) {
   })
 
   root.querySelectorAll<HTMLElement>('[title], [aria-label]').forEach((element) => {
+    if (element.closest('[data-cms-text-repair-ignore]')) return
     const title = element.getAttribute('title')
     const ariaLabel = element.getAttribute('aria-label')
     if (title) element.setAttribute('title', repairVietnameseText(title))

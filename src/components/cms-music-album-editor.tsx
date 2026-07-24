@@ -51,7 +51,8 @@ export function CmsMusicAlbumEditor({ albumId, initialAlbum, initialTrackIds, tr
     }
   }
 
-  return <div className="artist-album-track-picker">
+  // This is a controlled form. Keep the CMS text repair observer away from its live values.
+  return <div className="artist-album-track-picker" data-cms-text-repair-ignore>
     <div className="cms-form-two">
       <div className="field"><label>Tên Album / EP</label><input value={album.title} onChange={(event) => setAlbum((current) => ({ ...current, title: event.currentTarget.value }))} /></div>
       <label className="cms-checkbox-row"><input type="checkbox" checked={album.isPublic} onChange={(event) => setAlbum((current) => ({ ...current, isPublic: event.currentTarget.checked }))} />Hiển thị Album trên site Music</label>
