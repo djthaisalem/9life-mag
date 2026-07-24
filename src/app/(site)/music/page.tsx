@@ -107,7 +107,7 @@ export default function MusicPage() {
   const [publishedUserPlaylists, setPublishedUserPlaylists] = useState<UserPlaylist[]>([])
   const openedTrackIdRef = useRef('')
   const publishedNonstopTracks = useMemo(
-    () => publishedCatalog.filter((track) => track.type !== 'remix').map(catalogItemToAudioTrack),
+    () => publishedCatalog.filter((track) => track.type === 'nonstop').map(catalogItemToAudioTrack),
     [publishedCatalog],
   )
   const publishedRemixTracks = useMemo(
