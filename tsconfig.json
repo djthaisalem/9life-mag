@@ -39,6 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-    "payload-types.ts"
+    "payload-types.ts",
+    "9life-mag"
   ]
 }

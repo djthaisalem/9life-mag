@@ -1,5 +1,7 @@
 import { TalentManagementDashboard } from '@/components/talent-management-dashboard'
+import { requireArtistPortalAccess } from '@/lib/artist-portal-access'
 
-export default function BookingCoordinatorDashboardPage() {
-  return <TalentManagementDashboard role="booking" />
+export default async function BookingCoordinatorDashboardPage() {
+  const account = await requireArtistPortalAccess('booking')
+  return <TalentManagementDashboard role="booking" account={account} />
 }

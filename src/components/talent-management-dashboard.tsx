@@ -22,11 +22,20 @@ type OutletBooking = {
   status: string
 }
 
-const roster = [
-  { name: 'Neon Viper', slug: 'neon-viper', role: 'DJ / Producer', profile: 'Chờ duyệt', release: '01 bản nháp', booking: '06 lead mới' },
-  { name: 'Luna Flux', slug: 'luna-flux', role: 'Open Format DJ', profile: 'Đang hoạt động', release: '02 đã phát hành', booking: '03 đang trao đổi' },
-  { name: 'Nova Fire', slug: 'nova-fire', role: 'Rapper / Performer', profile: 'Cần bổ sung', release: 'Chưa có', booking: '02 lead mới' },
-]
+type ArtistRosterItem = {
+  name: string
+  slug: string
+  role: string
+  profile: string
+  release: string
+  booking: string
+}
+
+type PortalAccount = {
+  fullName: string
+  email?: string
+  phone?: string
+}
 
 const managerViews: Array<{ id: ManagerView; label: string; title: string; description: string }> = [
   { id: 'agency', label: 'Profile Agent', title: 'Hồ sơ đơn vị quản lý', description: 'Cập nhật giới thiệu, khu vực, hình ảnh và dịch vụ của Agent trên trang công khai.' },
@@ -47,15 +56,15 @@ const bookingStatuses = ['Mới', 'Đang báo giá', 'Chờ chốt', 'Đã xác 
 
 function ManagerWorkspace() {
   const [view, setView] = useState<ManagerView>('roster')
-  const [managedRoster, setManagedRoster] = useState<typeof roster | null>(null)
+  const [managedRoster, setManagedRoster] = useState<ArtistRosterItem[] | null>(null)
   const [agentName, setAgentName] = useState('')
   const [message, setMessage] = useState('')
   const selected = managerViews.find((item) => item.id === view) ?? managerViews[0]
-  const rosterItems = managedRoster ?? roster
+  const rosterItems = managedRoster ?? []
 
   useEffect(() => {
     void fetch('/api/portal/manager/roster', { cache: 'no-store' })
-      .then(async (response) => ({ response, body: await response.json() as { ok: boolean; message?: string; agent?: string; artists?: typeof roster } }))
+      .then(async (response) => ({ response, body: await response.json() as { ok: boolean; message?: string; agent?: string; artists?: ArtistRosterItem[] } }))
       .then(({ response, body }) => {
         if (!response.ok || !body.ok) { setMessage(body.message ?? 'Không thể tải roster được map.'); return }
         setManagedRoster(body.artists ?? [])
@@ -141,15 +150,14 @@ function BookingWorkspace() {
   </>
 }
 
-export function TalentManagementDashboard({ role }: { role: TalentManagementRole }) {
+export function TalentManagementDashboard({ role, account }: { role: TalentManagementRole; account: PortalAccount }) {
   const isManager = role === 'manager'
   const title = isManager ? 'Không gian quản lý nghệ sĩ' : 'Trung tâm điều phối đặt bàn outlet'
   const intro = isManager ? 'Quản lý roster, tiến độ hồ sơ, phát hành và pipeline booking của các nghệ sĩ phụ trách.' : 'Tiếp nhận yêu cầu đặt bàn, cập nhật trạng thái và điều phối vận hành cho các outlet.'
-  const metrics = isManager ? [{ value: '12', label: 'Nghệ sĩ trong roster' }, { value: '03', label: 'Hồ sơ chờ duyệt' }, { value: '07', label: 'Release đang xử lý' }, { value: '18', label: 'Booking cần theo dõi' }] : [{ value: '09', label: 'Yêu cầu mới' }, { value: '06', label: 'Đã tiếp nhận' }, { value: '04', label: 'Cần chuẩn bị' }, { value: '02', label: 'Cần follow-up' }]
 
   return <main className="artist-dashboard-page talent-management-page">
-    <section className="artist-dashboard-hero"><div className="container artist-dashboard-hero-row"><div><p className="section-eyebrow">{isManager ? 'Manager Workspace' : 'Booking Coordinator Workspace'}</p><h1>{title}</h1><p className="section-intro">{intro}</p></div><div className="artist-dashboard-hero-actions"><PortalNotificationCenter /><Link href={isManager ? '#roster' : '#inbox'} className="button">{isManager ? 'Quản lý roster' : 'Mở đặt bàn'}</Link><Link href="/tai-khoan/nghe-si" className="button-secondary">Cổng nghệ sĩ</Link><DashboardLogoutButton accountType="artist" /></div></div></section>
-    <section className="section talent-management-summary"><div className="container artist-dashboard-stats artist-dashboard-stats-4">{metrics.map((item) => <article key={item.label} className="artist-dashboard-stat"><strong>{item.value}</strong><span>{item.label}</span></article>)}</div><div className="container talent-management-tabs"><Link href="/tai-khoan/nghe-si/dashboard" className="artist-editor-tab">Nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/manager/dashboard" className={`artist-editor-tab${isManager ? ' artist-editor-tab-active' : ''}`}>Manager</Link><Link href="/tai-khoan/nghe-si/booking/dashboard" className={`artist-editor-tab${!isManager ? ' artist-editor-tab-active' : ''}`}>Booking Coordinator</Link></div></section>
+    <section className="artist-dashboard-hero"><div className="container artist-dashboard-hero-row"><div><p className="section-eyebrow">{isManager ? 'Manager Workspace' : 'Booking Coordinator Workspace'}</p><h1>{title}</h1><p className="section-intro">Chào mừng, <strong>{account.fullName}</strong>{account.email ? ` · ${account.email}` : account.phone ? ` · ${account.phone}` : ''}.</p><p className="artist-editor-panel-note">{intro} Chỉ dữ liệu đã được quản trị viên map vào phạm vi của bạn mới hiển thị tại đây.</p></div><div className="artist-dashboard-hero-actions"><PortalNotificationCenter /><Link href={isManager ? '#roster' : '#inbox'} className="button">{isManager ? 'Quản lý roster' : 'Mở đặt bàn'}</Link><Link href="/tai-khoan/nghe-si" className="button-secondary">Cổng nghệ sĩ</Link><DashboardLogoutButton accountType="artist" /></div></div></section>
+    <section className="section talent-management-summary"><div className="container talent-management-tabs"><Link href="/tai-khoan/nghe-si/dashboard" className="artist-editor-tab">Nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/manager/dashboard" className={`artist-editor-tab${isManager ? ' artist-editor-tab-active' : ''}`}>Manager</Link><Link href="/tai-khoan/nghe-si/booking/dashboard" className={`artist-editor-tab${!isManager ? ' artist-editor-tab-active' : ''}`}>Booking Coordinator</Link></div></section>
     <section className="section"><div className="container">{isManager ? <ManagerWorkspace /> : <BookingWorkspace />}</div></section>
   </main>
 }

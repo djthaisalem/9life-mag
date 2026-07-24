@@ -8892,6 +8892,25 @@ button.artist-dashboard-module-card {
   background: rgba(255, 214, 102, 0.06);
 }
 
+.artist-portal-pending-notice {
+  margin-top: 14px;
+}
+
+.artist-portal-pending-notice strong {
+  color: #ffe27a;
+}
+
+.artist-portal-pending-notice ul {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.artist-portal-pending-notice a {
+  color: #8eeeff;
+}
+
 .cms-security-note {
   margin-bottom: 0;
   color: #ffe7a0;
