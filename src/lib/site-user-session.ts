@@ -1031,6 +1031,16 @@ export async function assignArtistToAgent(accountId: string, artistAgent?: strin
   })
 }
 
+export async function setArtistProfileSlug(accountId: string, artistProfileSlug: string) {
+  if (getStorageDriver() === 'payload') {
+    return updatePayloadAccount(accountId, { artistProfileSlug })
+  }
+
+  return updateFileAccount(accountId, (account) => {
+    account.artistProfileSlug = artistProfileSlug
+  })
+}
+
 export async function getArtistAgentAssignments() {
   if (getStorageDriver() === 'payload') {
     const payload = await loadPayloadClient()

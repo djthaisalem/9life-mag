@@ -135,14 +135,26 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     }
 
     try {
-      const response = await fetch('/api/portal/artist/onboarding', { method: 'POST', credentials: 'same-origin' })
-      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; message?: string }
+      const response = await fetch('/api/portal/artist/profile', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          artistName: profileValues.artistName,
+          headline: profileValues.headline,
+          shortBio: profileValues.shortBio,
+          primaryRole: profileValues.primaryRole,
+          bookingRate: profileValues.bookingRate,
+          availability: profileValues.availability,
+        }),
+      })
+      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; profileStatus?: string; message?: string }
       if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setFeedback((current) => ({
         ...current,
         [id]: result.awarded
-          ? `Đã hoàn tất hồ sơ lần đầu và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
-          : 'Hồ sơ đã được xác nhận trước đó. Phần thưởng +300 sao chỉ áp dụng một lần.',
+          ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
+          : 'Hồ sơ đã được cập nhật và đang chờ duyệt. Phần thưởng +300 sao chỉ áp dụng một lần.',
       }))
     } catch (error) {
       setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Đã lưu bản nháp nhưng chưa thể xác nhận phần thưởng.' }))
