@@ -75,13 +75,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: 'Thao tác upload không hợp lệ.' }, { status: 400 })
   } catch (error) {
     const code = error instanceof Error ? error.message.split(':')[0] : ''
+    console.error('Direct MP3 upload failed', { code, error })
     const message = code === 'direct_upload_missing_file'
       ? 'R2 chưa nhận đủ file nhạc. Vui lòng thử lại.'
       : code === 'direct_upload_ticket_expired'
         ? 'Phiên upload đã hết hạn. Vui lòng chọn file và upload lại.'
         : code === 'direct_upload_requires_mp3'
           ? 'Luồng upload trực tiếp chỉ áp dụng cho file MP3.'
-          : 'Không thể hoàn tất upload MP3 lúc này.'
+          : `Không thể hoàn tất upload MP3 (${code || 'unknown_error'}).`
     return NextResponse.json({ ok: false, message }, { status: 500 })
   }
 }
