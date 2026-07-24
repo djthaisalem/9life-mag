@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArtistAgentPanel } from '@/components/artist-agent-panel'
 import { PortalNotificationCenter } from '@/components/portal-notification-center'
+import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
 import { requireArtistPortalAccess } from '@/lib/artist-portal-access'
 
 const onboardingSteps = [
@@ -50,6 +51,7 @@ export default async function ArtistDashboardPage() {
             <PortalNotificationCenter />
             <Link href="/tai-khoan/nghe-si/dashboard/booking" className="button">Theo dõi Booking</Link>
             <Link href="/tai-khoan/nghe-si/dashboard/profile" className="button-secondary">Chỉnh sửa hồ sơ</Link>
+            <DashboardLogoutButton accountType="artist" />
           </div>
         </div>
       </section>

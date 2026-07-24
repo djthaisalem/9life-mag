@@ -2,15 +2,22 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import {
   getSiteSessionCookieOptions,
+  getSiteSessionCookieName,
   createSiteSessionToken,
   getAuthenticatedSiteSession,
   getSiteSessionSnapshot,
-  SITE_SESSION_COOKIE,
+  type SiteAccountType,
 } from '@/lib/site-user-session'
 
-export async function GET() {
+function accountTypeFromRequest(request: Request): SiteAccountType {
+  return new URL(request.url).searchParams.get('accountType') === 'artist' ? 'artist' : 'user'
+}
+
+export async function GET(request: Request) {
   const cookieStore = await cookies()
-  const token = cookieStore.get(SITE_SESSION_COOKIE)?.value
+  const accountType = accountTypeFromRequest(request)
+  const cookieName = getSiteSessionCookieName(accountType)
+  const token = cookieStore.get(cookieName)?.value
   const snapshot = await getSiteSessionSnapshot(token)
 
   const response = NextResponse.json(
@@ -29,14 +36,14 @@ export async function GET() {
       userId: authenticated.session.userId,
       accountType: authenticated.account.accountType,
     })
-    response.cookies.set(SITE_SESSION_COOKIE, refreshedToken, getSiteSessionCookieOptions())
+    response.cookies.set(cookieName, refreshedToken, getSiteSessionCookieOptions())
   }
   return response
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const cookieStore = await cookies()
-  cookieStore.set(SITE_SESSION_COOKIE, '', {
+  cookieStore.set(getSiteSessionCookieName(accountTypeFromRequest(request)), '', {
     ...getSiteSessionCookieOptions(),
     maxAge: 0,
   })

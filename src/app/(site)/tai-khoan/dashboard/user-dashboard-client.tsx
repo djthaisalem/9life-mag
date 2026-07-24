@@ -15,6 +15,7 @@ import {
   saveUserPlaylists,
   type UserPlaylist,
 } from '@/lib/user-playlists'
+import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
 import {
   activatePremiumAccess,
   claimBonusStars,
@@ -354,6 +355,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
           <div className="artist-dashboard-hero-actions">
             <Link href="/music" className="button">Mở music ngay</Link>
             <Link href="/dat-ban" className="button-secondary">Đi đến đặt bàn</Link>
+            <DashboardLogoutButton accountType="user" />
           </div>
         </div>
       </section>

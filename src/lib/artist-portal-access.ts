@@ -4,13 +4,13 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import {
   getAuthenticatedSiteSession,
-  SITE_SESSION_COOKIE,
+  SITE_ARTIST_SESSION_COOKIE,
   type ArtistPortalRole,
 } from '@/lib/site-user-session'
 
 export async function requireArtistPortalAccess(role: ArtistPortalRole) {
   const cookieStore = await cookies()
-  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_ARTIST_SESSION_COOKIE)?.value)
 
   if (!authenticated) {
     redirect('/tai-khoan/nghe-si')
@@ -28,7 +28,7 @@ export async function requireArtistPortalAccess(role: ArtistPortalRole) {
 
 export async function getArtistPortalApiAccess(role: ArtistPortalRole) {
   const cookieStore = await cookies()
-  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_ARTIST_SESSION_COOKIE)?.value)
 
   if (!authenticated) return null
 
@@ -44,7 +44,7 @@ export async function getArtistPortalApiAccess(role: ArtistPortalRole) {
 
 export async function getPortalNotificationIdentity() {
   const cookieStore = await cookies()
-  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_SESSION_COOKIE)?.value)
+  const authenticated = await getAuthenticatedSiteSession(cookieStore.get(SITE_ARTIST_SESSION_COOKIE)?.value)
   if (!authenticated || authenticated.account.accountType !== 'artist') return null
   const account = authenticated.account
   const role = account.portalRole ?? 'artist'

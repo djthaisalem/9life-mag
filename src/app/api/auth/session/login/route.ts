@@ -4,8 +4,8 @@ import { z } from 'zod'
 import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
 import {
   getSiteSessionCookieOptions,
+  getSiteSessionCookieName,
   loginSiteAccount,
-  SITE_SESSION_COOKIE,
 } from '@/lib/site-user-session'
 
 const loginSchema = z.object({
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       portalRole: result.account.portalRole,
       portalAccessStatus: result.account.portalAccessStatus,
     })
-    response.cookies.set(SITE_SESSION_COOKIE, result.token, getSiteSessionCookieOptions())
+    response.cookies.set(getSiteSessionCookieName(result.account.accountType), result.token, getSiteSessionCookieOptions())
     return response
   } catch (error) {
     if (error instanceof z.ZodError) {

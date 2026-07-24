@@ -5,8 +5,8 @@ import { createPortalNotifications } from '@/lib/portal-notifications'
 import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
 import {
   getSiteSessionCookieOptions,
+  getSiteSessionCookieName,
   registerSiteAccount,
-  SITE_SESSION_COOKIE,
 } from '@/lib/site-user-session'
 
 const registerSchema = z
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       portalRole: result.account.portalRole,
       portalAccessStatus: result.account.portalAccessStatus,
     })
-    response.cookies.set(SITE_SESSION_COOKIE, result.token, getSiteSessionCookieOptions())
+    response.cookies.set(getSiteSessionCookieName(result.account.accountType), result.token, getSiteSessionCookieOptions())
     return response
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -8,7 +8,14 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { assertProductionPersistence, canUseDevelopmentSeeds, getRuntimeSecret } from '@/lib/runtime-security'
 import { getRecentPremiumAccess, hasRecentMediaStarCharge, recordWalletLedgerEntry, type WalletEventType } from '@/lib/wallet-ledger'
 
-export const SITE_SESSION_COOKIE = 'nine_life_site_session_v2'
+export const SITE_USER_SESSION_COOKIE = 'nine_life_user_session_v2'
+export const SITE_ARTIST_SESSION_COOKIE = 'nine_life_artist_session_v2'
+// Site actions such as stars, playlists and follows always use the User session.
+export const SITE_SESSION_COOKIE = SITE_USER_SESSION_COOKIE
+
+export function getSiteSessionCookieName(accountType: SiteAccountType) {
+  return accountType === 'artist' ? SITE_ARTIST_SESSION_COOKIE : SITE_USER_SESSION_COOKIE
+}
 
 const SITE_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 const SIGNUP_STARS = 100

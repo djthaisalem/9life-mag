@@ -7,6 +7,7 @@ import { AgentTicketQueue } from '@/components/agent-ticket-queue'
 import { ArtistAgencyProfileEditor } from '@/components/artist-agency-profile-editor'
 import { StudentApplicationsInbox } from '@/components/student-applications-inbox'
 import { StudentRegistrationSettings } from '@/components/student-registration-settings'
+import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
 
 type TalentManagementRole = 'manager' | 'booking'
 type ManagerView = 'agency' | 'roster' | 'releases' | 'bookings' | 'media'
@@ -147,7 +148,7 @@ export function TalentManagementDashboard({ role }: { role: TalentManagementRole
   const metrics = isManager ? [{ value: '12', label: 'Nghệ sĩ trong roster' }, { value: '03', label: 'Hồ sơ chờ duyệt' }, { value: '07', label: 'Release đang xử lý' }, { value: '18', label: 'Booking cần theo dõi' }] : [{ value: '09', label: 'Yêu cầu mới' }, { value: '06', label: 'Đã tiếp nhận' }, { value: '04', label: 'Cần chuẩn bị' }, { value: '02', label: 'Cần follow-up' }]
 
   return <main className="artist-dashboard-page talent-management-page">
-    <section className="artist-dashboard-hero"><div className="container artist-dashboard-hero-row"><div><p className="section-eyebrow">{isManager ? 'Manager Workspace' : 'Booking Coordinator Workspace'}</p><h1>{title}</h1><p className="section-intro">{intro}</p></div><div className="artist-dashboard-hero-actions"><PortalNotificationCenter /><Link href={isManager ? '#roster' : '#inbox'} className="button">{isManager ? 'Quản lý roster' : 'Mở đặt bàn'}</Link><Link href="/tai-khoan/nghe-si" className="button-secondary">Cổng nghệ sĩ</Link></div></div></section>
+    <section className="artist-dashboard-hero"><div className="container artist-dashboard-hero-row"><div><p className="section-eyebrow">{isManager ? 'Manager Workspace' : 'Booking Coordinator Workspace'}</p><h1>{title}</h1><p className="section-intro">{intro}</p></div><div className="artist-dashboard-hero-actions"><PortalNotificationCenter /><Link href={isManager ? '#roster' : '#inbox'} className="button">{isManager ? 'Quản lý roster' : 'Mở đặt bàn'}</Link><Link href="/tai-khoan/nghe-si" className="button-secondary">Cổng nghệ sĩ</Link><DashboardLogoutButton accountType="artist" /></div></div></section>
     <section className="section talent-management-summary"><div className="container artist-dashboard-stats artist-dashboard-stats-4">{metrics.map((item) => <article key={item.label} className="artist-dashboard-stat"><strong>{item.value}</strong><span>{item.label}</span></article>)}</div><div className="container talent-management-tabs"><Link href="/tai-khoan/nghe-si/dashboard" className="artist-editor-tab">Nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/manager/dashboard" className={`artist-editor-tab${isManager ? ' artist-editor-tab-active' : ''}`}>Manager</Link><Link href="/tai-khoan/nghe-si/booking/dashboard" className={`artist-editor-tab${!isManager ? ' artist-editor-tab-active' : ''}`}>Booking Coordinator</Link></div></section>
     <section className="section"><div className="container">{isManager ? <ManagerWorkspace /> : <BookingWorkspace />}</div></section>
   </main>
