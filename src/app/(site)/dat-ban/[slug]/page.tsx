@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Clock3, GlassWater, MapPin, Music4, Sparkles, Star, Users2 } from 'lucide-react'
 import { OutletProfileActions } from '@/components/outlet-profile-actions'
+import { ContentDiscovery } from '@/components/content-discovery'
 import { clubOutlets, getOutletBySlug, getOutletProfile } from '@/lib/club-booking-data'
 import { createShareMetadata } from '@/lib/seo'
 
@@ -29,6 +30,7 @@ export default async function OutletProfilePage({
   const relatedOutlets = clubOutlets.filter((item) => item.slug !== outlet.slug).slice(0, 3)
 
   return (
+    <>
     <main className="outlet-profile-page">
       <section className="artist-profile-hero outlet-profile-hero">
         <img src={outlet.cover} alt={outlet.name} className="artist-profile-hero-image" />
@@ -292,5 +294,7 @@ export default async function OutletProfilePage({
         </div>
       </section>
     </main>
+    <ContentDiscovery current={{ kind: 'outlet', id: outlet.slug }} />
+    </>
   )
 }

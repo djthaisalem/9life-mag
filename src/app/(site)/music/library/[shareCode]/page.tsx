@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { SharedPlaylistClient } from '@/components/shared-playlist-client'
+import { ContentDiscovery } from '@/components/content-discovery'
 import { createShareMetadata } from '@/lib/seo'
 import { getSharedUserPlaylist } from '@/lib/shared-user-playlists'
 
@@ -40,5 +41,5 @@ export async function generateMetadata({ params }: SharedPlaylistPageProps): Pro
 export default async function SharedPlaylistPage({ params }: SharedPlaylistPageProps) {
   const { shareCode } = await params
   const playlist = await getSharedUserPlaylist(shareCode)
-  return <SharedPlaylistClient initialPlaylist={playlist} shareCode={shareCode} />
+  return <><SharedPlaylistClient initialPlaylist={playlist} shareCode={shareCode} /><ContentDiscovery current={{ kind: 'playlist', id: shareCode }} /></>
 }

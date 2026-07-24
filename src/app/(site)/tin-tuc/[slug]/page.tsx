@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createShareMetadata } from '@/lib/seo'
 import { ArticleShareButton } from '@/components/article-share-button'
+import { ContentDiscovery } from '@/components/content-discovery'
 import { getSupplementArticleDetail, newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 
 type Article = { category: string; date: string; title: string; summary: string; image: string; body: string[] }
@@ -54,9 +55,9 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
   const related = articles.filter((entry) => entry.slug !== slug && entry.category === article.category).concat(articles.filter((entry) => entry.slug !== slug && entry.category !== article.category)).slice(0, 3)
   const latest = articles.filter((entry) => entry.slug !== slug).slice(0, 4)
   const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: article.title, description: article.summary, image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: `${process.env.NEXT_PUBLIC_SITE_URL}/tin-tuc/${slug}`, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
-  return <main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} /><section className="section"><div className="container article-layout"><div className="tag-row"><span className="pill">{article.category}</span><span className="pill">{article.date}</span></div><h1 className="page-title article-title">{article.title}</h1><p className="page-intro article-summary">{article.summary}</p><ArticleShareButton slug={slug} title={article.title} /><img className="article-hero-image" src={article.image} alt="" />
+  return <><main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} /><section className="section"><div className="container article-layout"><div className="tag-row"><span className="pill">{article.category}</span><span className="pill">{article.date}</span></div><h1 className="page-title article-title">{article.title}</h1><p className="page-intro article-summary">{article.summary}</p><ArticleShareButton slug={slug} title={article.title} /><img className="article-hero-image" src={article.image} alt="" />
     <div className="article-body-shell">{article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}</div>
     <section className="article-continue-section"><div className="article-section-head"><div><p className="section-eyebrow">Continue Reading</p><h2>Đọc tiếp cùng chủ đề</h2></div><Link href="/tin-tuc" className="view-more-link">Xem tất cả tin</Link></div><div className="article-related-grid">{related.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`} className="article-related-card"><img src={entry.image} alt="" /><div><span>{entry.category} • {entry.date}</span><strong>{entry.title}</strong><p>{entry.summary}</p></div></Link>)}</div></section>
     <section className="article-latest-section"><div><p className="section-eyebrow">Latest Feed</p><h2>Không bỏ lỡ những bài mới</h2></div><div className="article-latest-list">{latest.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`}><span>{entry.category}</span><strong>{entry.title}</strong><small>{entry.date}</small></Link>)}</div></section>
-    <div className="article-actions"><Link href="/tin-tuc" className="button-secondary">Khám phá thêm tin tức</Link><Link href="/" className="button-secondary">Về trang chủ</Link></div></div></section></main>
+    <div className="article-actions"><Link href="/tin-tuc" className="button-secondary">Khám phá thêm tin tức</Link><Link href="/" className="button-secondary">Về trang chủ</Link></div></div></section></main><ContentDiscovery current={{ kind: 'article', id: slug }} /></>
 }

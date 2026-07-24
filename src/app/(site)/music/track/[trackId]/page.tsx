@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { SharedTrackClient } from '@/components/shared-track-client'
+import { ContentDiscovery } from '@/components/content-discovery'
 import { getMusicShareData } from '@/lib/music-share-data'
 import { createShareMetadata } from '@/lib/seo'
 
@@ -31,5 +32,5 @@ export async function generateMetadata({ params }: SharedTrackPageProps): Promis
 export default async function SharedTrackPage({ params }: SharedTrackPageProps) {
   const { trackId } = await params
   const data = await getMusicShareData(trackId)
-  return <SharedTrackClient data={data} />
+  return <><SharedTrackClient data={data} /><ContentDiscovery current={{ kind: 'music', id: trackId }} /></>
 }

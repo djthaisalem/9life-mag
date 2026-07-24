@@ -20,6 +20,7 @@ import { getArtistAgency, getArtistAgentName } from '@/lib/artist-agency-data'
 import { getStoredArtistAgency } from '@/lib/artist-agency-store'
 import { ArtistProfileActions } from '@/components/artist-profile-actions'
 import { StudentApplicationButton } from '@/components/student-application-button'
+import { ContentDiscovery } from '@/components/content-discovery'
 import { ArtistGalleryLightbox } from '@/components/artist-gallery-lightbox'
 import { getArtistAgentAssignments } from '@/lib/site-user-session'
 import { createShareMetadata } from '@/lib/seo'
@@ -56,6 +57,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
   const studentRegistrationEnabled = await getStudentRegistrationEnabled('artist', artist.slug)
 
   return (
+    <>
     <main className="artist-profile-page">
       <section className="artist-profile-hero">
         <img src={artist.cover} alt={artist.name} className="artist-profile-hero-image" />
@@ -435,5 +437,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
         </div>
       </section>
     </main>
+    <ContentDiscovery current={{ kind: 'artist', id: artist.slug }} />
+    </>
   )
 }
