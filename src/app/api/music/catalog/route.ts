@@ -11,6 +11,7 @@ type PublicTrackDocument = {
   genreLabel?: string
   durationLabel?: string
   displayMap?: string
+  coverImage?: { url?: string | null } | string | null
 }
 
 function normalizeType(value?: string): 'track' | 'nonstop' | 'remix' {
@@ -33,12 +34,15 @@ export async function GET() {
       },
       sort: '-updatedAt',
       limit: 100,
-      depth: 0,
+      depth: 1,
       overrideAccess: true,
     })
 
     const tracks = result.docs.map((value) => {
       const track = value as PublicTrackDocument
+      const cover = typeof track.coverImage === 'object' && track.coverImage
+        ? track.coverImage.url || undefined
+        : undefined
       return {
         id: String(track.id),
         slug: track.slug || String(track.id),
@@ -49,6 +53,7 @@ export async function GET() {
         type: normalizeType(track.trackType),
         displayMap: (track.displayMap || '').split('/').map((item) => item.trim()).filter(Boolean),
         musicCode: track.musicCode,
+        cover,
       }
     })
 

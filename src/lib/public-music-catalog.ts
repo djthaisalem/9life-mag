@@ -10,6 +10,7 @@ export type PublicMusicCatalogItem = {
   type: 'track' | 'nonstop' | 'remix'
   displayMap: string[]
   musicCode?: string
+  cover?: string
 }
 
 export async function fetchPublicMusicCatalog() {
@@ -28,7 +29,7 @@ export function catalogItemToAudioTrack(item: PublicMusicCatalogItem): AudioTrac
     title: item.title,
     artist: item.artist,
     duration: item.duration,
-    cover: '/images/default-music-cover.png',
+    cover: item.cover || '/images/default-music-cover.png',
     audioUrl: '',
     protectedMedia: true,
   }

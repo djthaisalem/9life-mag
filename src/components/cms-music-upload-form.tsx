@@ -7,12 +7,12 @@ type ArtistOption = { slug: string; name: string }
 type GenreOption = { id: string; slug: string; name: string }
 type AlbumOption = { id: string; title: string; artist: string }
 
-type UploadResult = { trackId: string; durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string; visibility: 'draft' | 'pending' | 'public' | 'hidden' }
+type UploadResult = { trackId: string; slug: string; durationLabel: string; previewKey: string; masterKey: string; musicCode: string; coverR2Key: string; visibility: 'draft' | 'pending' | 'public' | 'hidden' }
 type DirectUploadPreparation = { uploadUrl: string; ticket: string; musicCode: string }
 
 const displayMapOptions = ['Trang chủ - Nonstop picks', 'Trang chủ - Top Remix', 'Music - Hero exclusive', 'Music - DJ sets community', 'Music - Remix đang lên', 'Music - Album / release', 'Music - Artist spotlight', 'Profile nghệ sĩ', 'Playlist User nổi bật'] as const
 
-export function CmsMusicUploadForm({ artists, genres, albums, defaultAlbumLabel = '', onUploaded }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[]; defaultAlbumLabel?: string; onUploaded?: (result: UploadResult) => Promise<void> | void }) {
+export function CmsMusicUploadForm({ artists, genres, albums, defaultAlbumLabel = '', defaultArtistSlug = '', defaultVisibility = 'draft', forceTrackType = false, onUploaded }: { artists: ArtistOption[]; genres: GenreOption[]; albums: AlbumOption[]; defaultAlbumLabel?: string; defaultArtistSlug?: string; defaultVisibility?: 'draft' | 'pending' | 'public' | 'hidden'; forceTrackType?: boolean; onUploaded?: (result: UploadResult) => Promise<void> | void }) {
   const uploadCapability = useCmsMusicCapability()
   const [isPending, setIsPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -66,7 +66,7 @@ export function CmsMusicUploadForm({ artists, genres, albums, defaultAlbumLabel 
       body: JSON.stringify({
         action: 'prepare',
         title: String(formData.get('title') ?? ''),
-        type: String(formData.get('type') ?? 'track'),
+        type: forceTrackType ? 'track' : String(formData.get('type') ?? 'track'),
         genre: String(formData.get('genre') ?? ''),
         artistSlug: String(formData.get('artistSlug') ?? ''),
         access: String(formData.get('access') ?? 'public'),
@@ -153,17 +153,17 @@ export function CmsMusicUploadForm({ artists, genres, albums, defaultAlbumLabel 
 
   return (
     <form className="form-shell cms-embedded-form" onSubmit={handleSubmit}>
-      <div className="field"><label htmlFor="musicTitle">Tên nội dung</label><input id="musicTitle" name="title" required placeholder="Water Lily Club Remix" /></div>
+      <div className="field"><label htmlFor="musicTitle">{forceTrackType ? 'Tiêu đề track' : 'Tên nội dung'}</label><input id="musicTitle" name="title" required placeholder={forceTrackType ? 'Ví dụ: Track 01 - Into The Night' : 'Water Lily Club Remix'} /></div>
       <div className="cms-form-two">
-        <div className="field"><label htmlFor="musicType">Loại file audio</label><select id="musicType" name="type" defaultValue="track"><option value="track">Track</option><option value="nonstop">Nonstop</option><option value="remix">Remix</option></select><span className="cms-muted">Album/EP là bộ sưu tập phát hành, không upload như một file audio.</span></div>
+        <div className="field"><label htmlFor="musicType">Loại file audio</label><select id="musicType" name="type" defaultValue="track" disabled={forceTrackType}><option value="track">Track</option><option value="nonstop">Nonstop</option><option value="remix">Remix</option></select>{forceTrackType ? <input type="hidden" name="type" value="track" /> : null}<span className="cms-muted">{forceTrackType ? 'Track trong album luôn được phân loại là Track để hiển thị và thêm vào playlist.' : 'Album/EP là bộ sưu tập phát hành, không upload như một file audio.'}</span></div>
         <div className="field"><label htmlFor="musicGenre">Thể loại</label><select id="musicGenre" name="genre" defaultValue=""><option value="">Chọn thể loại</option>{genres.map((genre) => <option key={genre.id} value={genre.slug}>{genre.name}</option>)}</select></div>
       </div>
       <div className="cms-form-two">
-        <div className="field"><label htmlFor="musicArtist">Nghệ sĩ</label><select id="musicArtist" name="artistSlug" defaultValue=""><option value="">Để trống nếu chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.slug} value={artist.slug}>{artist.name}</option>)}</select></div>
+        <div className="field"><label htmlFor="musicArtist">Nghệ sĩ</label><select id="musicArtist" name="artistSlug" defaultValue={defaultArtistSlug}><option value="">Để trống nếu chưa gắn nghệ sĩ</option>{artists.map((artist) => <option key={artist.slug} value={artist.slug}>{artist.name}</option>)}</select></div>
         <div className="field"><label htmlFor="musicAccess">Quyền truy cập</label><select id="musicAccess" name="access" defaultValue="public"><option value="public">Công khai - nghe miễn phí</option><option value="stars">Trừ sao để phát</option><option value="premium">Chỉ Premium</option><option value="internal">Chỉ nội bộ CMS</option></select></div>
       </div>
       <div className="cms-form-two">
-        <div className="field"><label htmlFor="musicVisibility">Hiển thị</label><select id="musicVisibility" name="visibility" defaultValue="draft"><option value="draft">Nháp nội bộ</option><option value="pending">Chờ admin duyệt</option><option value="public">Đang public</option><option value="hidden">Tạm ẩn</option></select><span className="cms-muted">Map vị trí không tự public. Track chỉ xuất hiện ngoài site khi chọn “Đang public”.</span></div>
+        <div className="field"><label htmlFor="musicVisibility">Hiển thị</label><select id="musicVisibility" name="visibility" defaultValue={defaultVisibility}><option value="draft">Nháp nội bộ</option><option value="pending">Chờ admin duyệt</option><option value="public">Đang public</option><option value="hidden">Tạm ẩn</option></select><span className="cms-muted">Map vị trí không tự public. Track chỉ xuất hiện ngoài site khi chọn “Đang public”.</span></div>
         <div className="field"><label htmlFor="musicAlbum">Gắn vào Album / EP</label><select id="musicAlbum" name="albumLabel" defaultValue={defaultAlbumLabel}><option value="">Không thuộc album</option>{defaultAlbumLabel && !albums.some((album) => album.title === defaultAlbumLabel) ? <option value={defaultAlbumLabel}>{defaultAlbumLabel} · Album mới tạo</option> : null}{albums.map((album) => <option key={album.id} value={album.title}>{album.title} · {album.artist}</option>)}</select></div>
       </div>
       <div className="field"><label htmlFor="musicAudio">File nhạc gốc</label><input id="musicAudio" name="audio" type="file" required accept="audio/mpeg,audio/wav,audio/flac,audio/mp4,audio/aac" /><span className="cms-muted">Hỗ trợ MP3, WAV, FLAC, M4A, AAC. MP3 dùng trực tiếp master để phát; các định dạng còn lại sẽ tạo thêm preview MP3 256 kbps. Master gốc vẫn được giữ cho download.</span></div>

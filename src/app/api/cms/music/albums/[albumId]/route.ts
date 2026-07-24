@@ -9,6 +9,9 @@ const attachTrackSchema = z.object({ trackId: z.string().trim().min(1) })
 export async function PATCH(request: Request, context: { params: Promise<{ albumId: string }> }) {
   const access = await requireCmsApiAccess('music')
   if (!access.ok) return access.response
+  if (access.session.role !== 'super_admin') {
+    return NextResponse.json({ ok: false, message: 'Chỉ Super Admin được thêm track vào Album / EP.' }, { status: 403 })
+  }
 
   try {
     const { albumId } = await context.params
@@ -22,10 +25,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ album
       ? album.tracks.map((item) => typeof item === 'object' && item ? String(item.id) : String(item))
       : []
     const trackIds = [...new Set([...existingTrackIds, String(track.id)])]
+    const albumCoverId = typeof album.coverImage === 'object' && album.coverImage
+      ? String(album.coverImage.id)
+      : typeof album.coverImage === 'string' ? album.coverImage : null
 
     await Promise.all([
       payload.update({ collection: 'albums', id: albumId, depth: 0, overrideAccess: true, data: { tracks: trackIds } }),
-      payload.update({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true, data: { albumLabel: album.title } }),
+      payload.update({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true, data: { albumLabel: album.title, trackType: 'single', coverImage: albumCoverId, visibility: album.isPublic ? 'public' : 'draft', isPublic: album.isPublic === true, status: album.isPublic ? 'published' : 'draft' } }),
     ])
 
     return NextResponse.json({ ok: true })

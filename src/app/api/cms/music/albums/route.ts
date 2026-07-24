@@ -12,7 +12,7 @@ const createAlbumSchema = z.object({
   musicCategory: z.string().trim().max(120).default(''),
   releaseDate: z.string().datetime().optional(),
   isPublic: z.boolean().default(false),
-  trackIds: z.array(z.string().trim().min(1)).min(1).max(100),
+  trackIds: z.array(z.string().trim().min(1)).max(100).default([]),
   coverDataUrl: z.string().max(4_500_000).optional(),
 })
 
@@ -38,6 +38,9 @@ function toSlug(value: string) {
 export async function POST(request: Request) {
   const access = await requireCmsApiAccess('music')
   if (!access.ok) return access.response
+  if (access.session.role !== 'super_admin') {
+    return NextResponse.json({ ok: false, message: 'Chỉ Super Admin được tạo Album / EP từ kho track.' }, { status: 403 })
+  }
 
   try {
     const input = createAlbumSchema.parse(await request.json())
@@ -76,6 +79,7 @@ export async function POST(request: Request) {
         seoDescription: input.description || undefined,
       },
     })
+    let albumCoverId: string | null = null
 
     if (cover) {
       const extension = cover.mimeType === 'image/png' ? 'png' : cover.mimeType === 'image/webp' ? 'webp' : 'jpg'
@@ -91,21 +95,33 @@ export async function POST(request: Request) {
           size: cover.data.length,
         },
       })
+      albumCoverId = String(media.id)
       await payload.update({ collection: 'albums', id: album.id, depth: 0, overrideAccess: true, data: { coverImage: media.id } })
     }
+
+    const artist = input.artistId
+      ? await payload.findByID({ collection: 'artists', id: input.artistId, depth: 0, overrideAccess: true })
+      : null
 
     await Promise.all(input.trackIds.map((trackId) => payload.update({
       collection: 'tracks',
       id: trackId,
       depth: 0,
       overrideAccess: true,
-      data: { albumLabel: input.title },
+      data: {
+        albumLabel: input.title,
+        trackType: 'single',
+        coverImage: albumCoverId,
+        visibility: input.isPublic ? 'public' : 'draft',
+        isPublic: input.isPublic,
+        status: input.isPublic ? 'published' : 'draft',
+      },
     })))
 
     return NextResponse.json({
       ok: true,
-      message: 'Album / EP created and selected tracks were attached.',
-      album: { id: album.id, slug: album.slug, title: album.title },
+      message: 'Đã tạo Album / EP. Bạn có thể upload từng track ngay bên dưới.',
+      album: { id: album.id, slug: album.slug, title: album.title, artistSlug: artist?.slug || '', isPublic: input.isPublic },
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
