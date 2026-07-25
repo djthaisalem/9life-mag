@@ -167,10 +167,16 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const activeTrack = queue[activeIndex] ?? null
 
   const openVisualizer = () => {
+    // Opening the visual is independent from browser-specific stream capture support.
+    setIsVisualizerOpen(true)
+
     const audio = audioRef.current
-    if (audio && typeof window !== 'undefined') {
+    if (!audio || typeof window === 'undefined') return
+
+    try {
       const AudioContextConstructor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (AudioContextConstructor) {
+      if (!AudioContextConstructor) return
+
         const context = audioContextRef.current ?? new AudioContextConstructor()
         audioContextRef.current = context
 
@@ -195,10 +201,10 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         }
 
         void context.resume()
-      }
+    } catch {
+      // The 3D scene remains available with its idle animation when captureStream is unavailable.
+      setAudioAnalyser(null)
     }
-
-    setIsVisualizerOpen(true)
   }
 
   useEffect(() => {
