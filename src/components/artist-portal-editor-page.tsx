@@ -194,6 +194,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           primaryRole: profileValues.primaryRole,
           bookingRate: profileValues.bookingRate,
           availability: profileValues.availability,
+          profileSnapshot: forms,
         }),
       })
       const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string }

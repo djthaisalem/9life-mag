@@ -6,6 +6,7 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { createPortalNotifications } from '@/lib/portal-notifications'
 import { completeArtistProfileOnboarding, setArtistProfileSlug } from '@/lib/site-user-session'
 import { sendTelegramOperationsNotice } from '@/lib/telegram'
+import { saveArtistProfileDraft, type ArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 
 const profileSchema = z.object({
   artistName: z.string().trim().min(2).max(120),
@@ -14,6 +15,7 @@ const profileSchema = z.object({
   primaryRole: z.enum(['DJ Producer', 'MC Hype', 'Rapper', 'Dancer', 'Photographer', 'Singer']).optional(),
   bookingRate: z.string().trim().max(120).optional().default(''),
   availability: z.string().trim().max(120).optional().default(''),
+  profileSnapshot: z.record(z.string(), z.object({ values: z.record(z.string(), z.string()).optional(), files: z.record(z.string(), z.string()).optional() })).optional(),
 })
 
 function toSlug(value: string) {
@@ -77,6 +79,8 @@ export async function POST(request: Request) {
     } else {
       await payload.create({ collection: 'artists', data, depth: 0, overrideAccess: true })
     }
+
+    if (input.profileSnapshot) await saveArtistProfileDraft(slug, input.profileSnapshot as ArtistProfileDraft)
 
     await setArtistProfileSlug(account.id, slug)
     const reward = isReadyForReview
