@@ -6,7 +6,7 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { createPortalNotifications } from '@/lib/portal-notifications'
 import { completeArtistProfileOnboarding, setArtistProfileSlug } from '@/lib/site-user-session'
 import { sendTelegramOperationsNotice } from '@/lib/telegram'
-import { saveArtistProfileDraft, type ArtistProfileDraft } from '@/lib/artist-profile-draft-store'
+import { saveArtistProfileDraft, storeArtistDraftImages, type ArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 
 const profileSchema = z.object({
   artistName: z.string().trim().min(2).max(120),
@@ -83,7 +83,10 @@ export async function POST(request: Request) {
       await payload.create({ collection: 'artists', data, depth: 0, overrideAccess: true })
     }
 
-    if (input.profileSnapshot) await saveArtistProfileDraft(slug, input.profileSnapshot as ArtistProfileDraft)
+    if (input.profileSnapshot) {
+      const snapshot = await storeArtistDraftImages(slug, input.profileSnapshot as ArtistProfileDraft)
+      await saveArtistProfileDraft(slug, snapshot)
+    }
 
     await setArtistProfileSlug(account.id, slug)
     const reward = isReadyForReview

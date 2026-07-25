@@ -11,6 +11,7 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
 import { getArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 import { getMediaEmbed } from '@/lib/media-embed'
+import { getPrivateObjectUrl } from '@/lib/r2-media-access'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -51,8 +52,10 @@ export default async function CmsArtistDetailPage({
     const genreText = Array.isArray(realArtist.genres) && realArtist.genres.length ? realArtist.genres.map((item) => typeof item === 'object' && item ? String((item as Record<string, unknown>).value ?? '') : String(item)).filter(Boolean).join(', ') : 'Chưa cập nhật'
     const draft = await getArtistProfileDraft(String(realArtist.slug ?? ''))
     const lookup = (name: string) => Object.values(draft).map((item) => item.values?.[name] ?? item.files?.[name] ?? '').find(Boolean) ?? ''
-    const portrait = lookup('portraitUpload')
-    const cover = lookup('coverUpload')
+    const portraitValue = lookup('portraitUpload')
+    const coverValue = lookup('coverUpload')
+    const portrait = portraitValue.startsWith('artist-drafts/') ? await getPrivateObjectUrl(portraitValue, 15 * 60) : portraitValue
+    const cover = coverValue.startsWith('artist-drafts/') ? await getPrivateObjectUrl(coverValue, 15 * 60) : coverValue
     const musicUrl = lookup('sourceUrl')
     const videoUrl = lookup('videoUrl')
     const musicEmbed = getMediaEmbed(musicUrl)

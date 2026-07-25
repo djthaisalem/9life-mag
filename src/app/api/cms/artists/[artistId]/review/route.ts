@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { hasTrustedCmsRequestOrigin, requireCmsApiAccess } from '@/lib/cms-access'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { deleteArtistDraftImages } from '@/lib/artist-profile-draft-store'
 
 const reviewSchema = z.object({
   profileStatus: z.enum(['draft', 'pending_review', 'published', 'archived']),
@@ -20,6 +21,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ artis
     const { artistId } = await context.params
     const input = reviewSchema.parse(await request.json())
     const payload = await loadPayloadClient()
+    const current = await payload.findByID({ collection: 'artists', id: artistId, depth: 0, overrideAccess: true }) as Record<string, unknown>
     const artist = await payload.update({
       collection: 'artists',
       id: artistId,
@@ -27,6 +29,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ artis
       depth: 0,
       overrideAccess: true,
     })
+    if (input.profileStatus === 'archived' && typeof current.slug === 'string') {
+      await deleteArtistDraftImages(current.slug)
+    }
     return NextResponse.json({ ok: true, artist: { id: artist.id, profileStatus: artist.profileStatus } })
   } catch (error) {
     const message = error instanceof z.ZodError
