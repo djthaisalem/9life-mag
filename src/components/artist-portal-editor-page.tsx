@@ -126,6 +126,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   const [savedTemplates, setSavedTemplates] = useState<Record<string, boolean>>({})
   const [profileSlug, setProfileSlug] = useState('')
   const [profileStatus, setProfileStatus] = useState<'draft' | 'pending_review' | 'published' | ''>('')
+  const [reviewFeedback, setReviewFeedback] = useState('')
   const [isDraftPreviewOpen, setIsDraftPreviewOpen] = useState(false)
   const [activeMusicTemplate, setActiveMusicTemplate] = useState('Mẫu track đầu tiên')
   const templates = section.key === 'booking' ? [bookingSetupTemplate, ...section.templates] : section.templates
@@ -166,6 +167,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   }
 
   const save = async (id: string, submitForReview = false) => {
+    if (submitForReview) setReviewFeedback('Đang gửi hồ sơ đến Admin...')
     window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(forms))
     const profileBasicsId = templateId('profile', 'Mẫu bio cơ bản')
     const profileValues = forms[profileBasicsId]?.values ?? {}
@@ -220,8 +222,14 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
             ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
             : 'Hồ sơ đã được cập nhật và đang chờ duyệt. Phần thưởng +300 sao chỉ áp dụng một lần.',
       }))
+      if (submitForReview) {
+        setReviewFeedback(result.profileStatus === 'published'
+          ? 'Đã gửi bản cập nhật. Admin đã nhận thông báo để theo dõi.'
+          : 'Đã gửi duyệt thành công. Admin đã nhận thông báo CMS và Telegram.')
+      }
     } catch (error) {
       setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Đã lưu bản nháp nhưng chưa thể xác nhận phần thưởng.' }))
+      if (submitForReview) setReviewFeedback(error instanceof Error ? `Chưa gửi được: ${error.message}` : 'Chưa gửi được hồ sơ. Vui lòng thử lại.')
     }
   }
 
@@ -350,6 +358,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
                 <div><p className="section-eyebrow">Trạng thái</p><h2>{section.key === 'booking' ? 'Booking đã sẵn sàng đến đâu?' : 'Trạng thái nội dung hiện tại'}</h2><p className="artist-editor-panel-note">Các mục này giúp bạn biết phần nào cần hoàn thiện tiếp theo.</p></div>
                 <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button" onClick={() => void save(profileBasicsId, true)}>{profileStatus === 'published' ? 'Gửi bản cập nhật' : profileStatus === 'pending_review' ? 'Gửi lại bản cập nhật' : 'Gửi duyệt hồ sơ'}</button> : null}<button type="button" className="button-secondary" onClick={() => section.key === 'profile' ? openPublicProfile() : setIsDraftPreviewOpen(true)}>{section.key === 'profile' && profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button></div>
               </div>
+              {section.key === 'profile' && reviewFeedback ? <p className="artist-editor-save-feedback">{reviewFeedback}</p> : null}
               {section.key === 'profile' ? <div className="cms-security-panel"><strong>Trước khi gửi duyệt</strong><p>Bạn hãy xem kỹ bản nháp, chỉnh sửa những thông tin cần thiết và thật chỉnh chu trước khi public. Khi gửi, Admin sẽ nhận thông báo CMS và Telegram để kiểm tra.</p>{profileMissing.length ? <p><strong>Còn thiếu:</strong> {profileMissing.join(', ')}.</p> : <p>Hồ sơ đã có đủ các phần cơ bản để gửi Admin duyệt.</p>}</div> : null}
               <div className="artist-editor-workflow">
                 {section.workflow.map((item) => <article key={item.title} className="artist-editor-workflow-card"><div className="artist-editor-status-row"><strong>{text(item.title)}</strong><span className="artist-editor-status-pill">{text(item.status)}</span></div><p>{text(item.detail)}</p></article>)}

@@ -12,6 +12,9 @@ import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
 import { getArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 import { getMediaEmbed } from '@/lib/media-embed'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const artistStatusLabel: Record<string, string> = {
   draft: 'Bản nháp',
   pending_review: 'Chờ duyệt',
