@@ -93,12 +93,13 @@ export async function POST(request: Request) {
           href: '/cms/dashboard/artists',
         },
       ])
-      await sendTelegramOperationsNotice([
+      const telegram = await sendTelegramOperationsNotice([
         '9LIFE MAG - HO SO NGHE SI CHO DUYET',
         `Nghe si: ${input.artistName}`,
         `Vai tro: ${input.primaryRole}`,
         'Vui long kiem tra trong CMS / Quan ly Nghe si.',
       ].join('\n'))
+      if (!telegram.ok) console.error('Artist profile review Telegram notice was not delivered', telegram)
     } catch (notificationError) {
       console.error('Could not create artist profile review notification', notificationError)
     }

@@ -8,6 +8,13 @@ type CmsArtistReviewActionsProps = {
   initialStatus: string
 }
 
+const statusLabel: Record<string, string> = {
+  draft: 'Bản nháp',
+  pending_review: 'Chờ duyệt',
+  published: 'Đã duyệt và công khai',
+  archived: 'Đã hủy',
+}
+
 export function CmsArtistReviewActions({ artistId, initialStatus }: CmsArtistReviewActionsProps) {
   const capability = useCmsCapability('artists')
   const [status, setStatus] = useState(initialStatus)
@@ -36,7 +43,7 @@ export function CmsArtistReviewActions({ artistId, initialStatus }: CmsArtistRev
   }
 
   return <div className="cms-artist-review-actions">
-    <span className="cms-status-chip">{status}</span>
+    <span className="cms-status-chip">{statusLabel[status] ?? 'Bản nháp'}</span>
     {status !== 'published' && status !== 'archived' ? <><button type="button" className="button" disabled={busy} onClick={() => void update('published')}>Duyệt public</button><button type="button" className="button-secondary" disabled={busy} onClick={() => void update('archived')}>Hủy hồ sơ</button></> : null}
     {message ? <small>{message}</small> : null}
   </div>
