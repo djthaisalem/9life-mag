@@ -181,7 +181,8 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           analyser.smoothingTimeConstant = 0.78
           const source = context.createMediaElementSource(audio)
           source.connect(analyser)
-          analyser.connect(context.destination)
+          // Keep the speaker route separate from the analyser so opening visual mode cannot mute playback.
+          source.connect(context.destination)
           audioSourceRef.current = source
           analysedAudioRef.current = audio
           setAudioAnalyser(analyser)
@@ -1014,7 +1015,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       {activeTrack && isVisualizerOpen ? (
         <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Màn hình nghe nhạc">
           <section className="music-visualizer-shell">
-            <AudioVisualizer3D analyser={audioAnalyser} isPlaying={isPlaying} />
+            <AudioVisualizer3D analyser={audioAnalyser} isPlaying={isPlaying} trackId={activeTrack.id} />
             <button type="button" className="music-visualizer-close" onClick={() => setIsVisualizerOpen(false)} aria-label="Đóng màn hình nghe nhạc">
               <X size={20} />
               <span>Trở lại website</span>
