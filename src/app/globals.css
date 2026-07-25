@@ -5626,6 +5626,33 @@ button.more-link-unified {
   object-fit: cover;
 }
 
+.artist-profile-draft-preview {
+  background: #080a12;
+}
+
+.artist-profile-draft-hero-public {
+  min-height: 360px;
+  margin-bottom: 28px;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.artist-profile-draft-hero-public .artist-profile-hero-inner {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 42px;
+}
+
+.artist-profile-draft-preview .artist-profile-grid-main {
+  width: auto;
+  margin: 0;
+}
+
+html, body { background: #080a12; }
+
 .artist-profile-draft-hero {
   display: grid;
   grid-template-columns: 150px 1fr;
