@@ -5,12 +5,13 @@ import { getArtistPortalApiAccess } from '@/lib/artist-portal-access'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { createPortalNotifications } from '@/lib/portal-notifications'
 import { completeArtistProfileOnboarding, setArtistProfileSlug } from '@/lib/site-user-session'
+import { sendTelegramOperationsNotice } from '@/lib/telegram'
 
 const profileSchema = z.object({
   artistName: z.string().trim().min(2).max(120),
-  headline: z.string().trim().min(4).max(180),
-  shortBio: z.string().trim().min(20).max(1_200),
-  primaryRole: z.enum(['DJ Producer', 'MC Hype', 'Rapper', 'Dancer', 'Photographer', 'Singer']),
+  headline: z.string().trim().max(180).optional().default(''),
+  shortBio: z.string().trim().max(1_200).optional().default(''),
+  primaryRole: z.enum(['DJ Producer', 'MC Hype', 'Rapper', 'Dancer', 'Photographer', 'Singer']).optional(),
   bookingRate: z.string().trim().max(120).optional().default(''),
   availability: z.string().trim().max(120).optional().default(''),
 })
@@ -26,7 +27,7 @@ function toSlug(value: string) {
     .slice(0, 72) || 'artist'
 }
 
-function toCatalogRole(primaryRole: z.infer<typeof profileSchema>['primaryRole']) {
+function toCatalogRole(primaryRole?: z.infer<typeof profileSchema>['primaryRole']) {
   if (primaryRole === 'DJ Producer') return 'producer'
   if (primaryRole === 'MC Hype') return 'mc'
   if (primaryRole === 'Rapper') return 'rapper'
@@ -53,17 +54,23 @@ export async function POST(request: Request) {
       overrideAccess: true,
     })
     const current = existing.docs[0] as Record<string, unknown> | undefined
+    const isReadyForReview = Boolean(input.headline && input.shortBio.length >= 20 && input.primaryRole)
+    const profileStatus = current?.profileStatus === 'published'
+      ? 'published'
+      : isReadyForReview
+        ? 'pending_review'
+        : 'draft'
     const data = {
       stageName: input.artistName,
       slug,
       role: toCatalogRole(input.primaryRole),
-      genres: [{ value: input.primaryRole }],
+      genres: input.primaryRole ? [{ value: input.primaryRole }] : [],
       bookingPriceLabel: input.bookingRate || undefined,
       isAvailable: !/tạm ngưng|unavailable|không nhận/i.test(input.availability),
       seoTitle: input.headline,
       seoDescription: input.shortBio,
       managedBy: account.id,
-      profileStatus: current?.profileStatus === 'published' ? 'published' : 'pending_review',
+      profileStatus,
     }
 
     if (current) {
@@ -73,10 +80,12 @@ export async function POST(request: Request) {
     }
 
     await setArtistProfileSlug(account.id, slug)
-    const reward = await completeArtistProfileOnboarding(account.id)
+    const reward = isReadyForReview
+      ? await completeArtistProfileOnboarding(account.id)
+      : { ok: true, awarded: false, state: { stars: account.stars } }
     if (!reward.ok) throw new Error('Không thể hoàn tất phần thưởng hồ sơ.')
 
-    try {
+    if (isReadyForReview && current?.profileStatus !== 'pending_review' && current?.profileStatus !== 'published') try {
       await createPortalNotifications([
         {
           recipientKey: 'admin',
@@ -85,6 +94,12 @@ export async function POST(request: Request) {
           href: '/cms/dashboard/artists',
         },
       ])
+      await sendTelegramOperationsNotice([
+        '9LIFE MAG - HO SO NGHE SI CHO DUYET',
+        `Nghe si: ${input.artistName}`,
+        `Vai tro: ${input.primaryRole}`,
+        'Vui long kiem tra trong CMS / Quan ly Nghe si.',
+      ].join('\n'))
     } catch (notificationError) {
       console.error('Could not create artist profile review notification', notificationError)
     }
@@ -92,7 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       slug,
-      profileStatus: current?.profileStatus === 'published' ? 'published' : 'pending_review',
+      profileStatus,
       awarded: reward.awarded,
       stars: reward.state.stars,
     })

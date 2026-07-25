@@ -6,6 +6,7 @@ import {
   Download,
   Heart,
   ListMusic,
+  Maximize2,
   Pause,
   Play,
   Plus,
@@ -954,6 +955,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                   onClick={() => setIsRepeatOn((current) => !current)}
                 >
                   <Repeat2 size={16} />
+                </button>
+                <button type="button" className="player-icon-button" onClick={openVisualizer} aria-label="Mở visual toàn màn hình" title="Mở visual toàn màn hình">
+                  <Maximize2 size={16} />
                 </button>
               </div>
 

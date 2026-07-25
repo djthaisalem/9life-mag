@@ -14,7 +14,8 @@ type Preset = {
   animate: (time: number, energy: number, bass: number, beat: number) => void
 }
 
-const PRESET_DURATION_SECONDS = 14
+const PRESET_DURATION_SECONDS = 10
+const VARIANTS_PER_PRESET = 5
 
 function hueColor(hue: number) {
   return new THREE.Color().setHSL((hue % 360) / 360, 0.92, 0.66)
@@ -23,7 +24,18 @@ function hueColor(hue: number) {
 function addLine(group: THREE.Group, points: THREE.Vector3[], hue: number, opacity = 0.78, loop = false) {
   const geometry = new THREE.BufferGeometry().setFromPoints(points)
   const material = new THREE.LineBasicMaterial({ color: hueColor(hue), transparent: true, opacity })
+  material.userData.baseHue = hue
   group.add(loop ? new THREE.LineLoop(geometry, material) : new THREE.Line(geometry, material))
+}
+
+function applyVariant(group: THREE.Group, variant: number) {
+  group.traverse((item) => {
+    const material = (item as THREE.Line).material
+    if (!material || Array.isArray(material) || !(material instanceof THREE.LineBasicMaterial)) return
+    const baseHue = typeof material.userData.baseHue === 'number' ? material.userData.baseHue : 190
+    material.color.copy(hueColor(baseHue + variant * 68))
+    material.opacity = 0.48 + variant * 0.075
+  })
 }
 
 function createWeavePreset() {
@@ -92,6 +104,7 @@ function createFanPreset() {
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(segments)
   const material = new THREE.LineBasicMaterial({ color: '#56e9ff', transparent: true, opacity: 0.76 })
+  material.userData.baseHue = 190
   group.add(new THREE.LineSegments(geometry, material))
   return { group, animate: (time, energy, bass, beat) => {
     group.rotation.z = time * 0.64
@@ -282,11 +295,14 @@ export function AudioVisualizer3D({ analyser, isPlaying, trackId }: Readonly<Aud
         frameId = window.requestAnimationFrame(animate)
         if (now - lastFrame < 33) return
         lastFrame = now
-        const time = ((now - startedAt) / 1000) * 2
-        const presetIndex = Math.floor(time / PRESET_DURATION_SECONDS) % presets.length
-        if (activePreset !== presetIndex) {
-          activePreset = presetIndex
+        const time = ((now - startedAt) / 1000) * 4
+        const sceneIndex = Math.floor(time / PRESET_DURATION_SECONDS) % (presets.length * VARIANTS_PER_PRESET)
+        const presetIndex = sceneIndex % presets.length
+        const variant = Math.floor(sceneIndex / presets.length)
+        if (activePreset !== sceneIndex) {
+          activePreset = sceneIndex
           presets.forEach(({ group }, index) => { group.visible = index === presetIndex })
+          applyVariant(presets[presetIndex].group, variant)
         }
 
         if (analyser && isPlayingRef.current) analyser.getByteFrequencyData(data)
@@ -304,6 +320,12 @@ export function AudioVisualizer3D({ analyser, isPlaying, trackId }: Readonly<Aud
         beatPulse = Math.max(beatPulse * 0.84, beat ? 1 : 0)
 
         presets[presetIndex].animate(time, energy, bass, beatPulse)
+        const activeGroup = presets[presetIndex].group
+        const direction = variant % 2 === 0 ? 1 : -1
+        activeGroup.rotation.y += direction * (0.0015 + variant * 0.0006)
+        activeGroup.position.x = Math.sin(time * (0.16 + variant * 0.025)) * variant * 0.055
+        activeGroup.position.y = Math.cos(time * (0.12 + variant * 0.02)) * variant * 0.035
+        camera.position.z = 7.4 + variant * 0.16 + Math.sin(time * 0.3) * (0.22 + bass * 0.45)
         stars.rotation.z = time * 0.012
         stars.rotation.y = time * 0.019
         renderer?.render(scene, camera)

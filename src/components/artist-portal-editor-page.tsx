@@ -89,6 +89,8 @@ function ArtistMediaEmbedPreview({ url }: { url: string }) {
 export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps) {
   const [forms, setForms] = useState<StoredPortalState>({})
   const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const [profileSlug, setProfileSlug] = useState('')
+  const [profileStatus, setProfileStatus] = useState<'draft' | 'pending_review' | 'published' | ''>('')
   const [activeMusicTemplate, setActiveMusicTemplate] = useState('Mẫu track đầu tiên')
   const templates = section.key === 'booking' ? [bookingSetupTemplate, ...section.templates] : section.templates
 
@@ -122,7 +124,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(forms))
     const profileBasicsId = templateId('profile', 'Mẫu bio cơ bản')
     const profileValues = forms[profileBasicsId]?.values ?? {}
-    const hasCompletedProfileBasics = ['artistName', 'headline', 'shortBio', 'primaryRole'].every((field) => profileValues[field]?.trim())
+    const hasCompletedProfileBasics = Boolean(profileValues.artistName?.trim())
 
     if (section.key !== 'profile' || id !== profileBasicsId || !hasCompletedProfileBasics) {
       setFeedback((current) => ({
@@ -148,11 +150,15 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           availability: profileValues.availability,
         }),
       })
-      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; profileStatus?: string; message?: string }
+      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string }
+      setProfileSlug(result.slug ?? '')
+      setProfileStatus(result.profileStatus ?? '')
       if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setFeedback((current) => ({
         ...current,
-        [id]: result.awarded
+        [id]: (result.profileStatus === 'draft'
+          ? 'Da luu ho so nhap vao he thong. Hoan thien headline, bio ngan va vai tro chinh de gui Admin duyet.'
+          : result.awarded)
           ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
           : 'Hồ sơ đã được cập nhật và đang chờ duyệt. Phần thưởng +300 sao chỉ áp dụng một lần.',
       }))
@@ -173,6 +179,20 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     if (template.title === 'Mẫu track đầu tiên') return 'Track'
     if (template.title === 'Mẫu playlist / nonstop') return 'Nonstop / Mixset'
     return 'Album / EP'
+  }
+
+  const openPublicProfile = () => {
+    const basicsId = templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')
+    if (profileStatus !== 'published' || !profileSlug) {
+      setFeedback((current) => ({
+        ...current,
+        [basicsId]: profileStatus === 'pending_review'
+          ? 'Ho so dang cho Admin duyet. Profile public se mo dung ho so cua ban ngay sau khi duoc xuat ban.'
+          : 'Hay luu ho so co ban truoc de tao ho so that va gui duyet.',
+      }))
+      return
+    }
+    window.location.assign(`/nghe-si/${profileSlug}`)
   }
 
   const renderTemplate = (template: ArtistPortalTemplate) => {
@@ -210,7 +230,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
             <p className="section-intro">{text(section.intro)}</p>
           </div>
           <div className="artist-dashboard-hero-actions">
-            <Link href={section.publicHref} className="button-secondary">{text(section.publicLabel)}</Link>
+            {section.key === 'profile' ? <button type="button" onClick={openPublicProfile} className="button-secondary">{text(section.publicLabel)}</button> : <Link href={section.publicHref} className="button-secondary">{text(section.publicLabel)}</Link>}
             <a href="#artist-editor-form" className="button">Đi tới form</a>
           </div>
         </div>
