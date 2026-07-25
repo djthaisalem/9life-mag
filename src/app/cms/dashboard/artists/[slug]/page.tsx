@@ -10,6 +10,13 @@ import { vietnamLocationNames } from '@/lib/vietnam-locations'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
 
+const artistStatusLabel: Record<string, string> = {
+  draft: 'Bản nháp',
+  pending_review: 'Chờ duyệt',
+  published: 'Đã duyệt và công khai',
+  archived: 'Đã hủy',
+}
+
 export default async function CmsArtistDetailPage({
   params,
 }: {
@@ -33,16 +40,16 @@ export default async function CmsArtistDetailPage({
       !realArtist.serviceArea && 'Khu vực hoạt động',
       !Array.isArray(realArtist.genres) || realArtist.genres.length === 0 ? 'Phong cách / dòng nhạc' : false,
     ].filter(Boolean) as string[]
-    return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${String(realArtist.stageName ?? 'Nghệ sĩ')}`} description="Kiểm tra nội dung hồ sơ trước khi duyệt hiển thị ngoài site.">
+    const stageName = String(realArtist.stageName ?? 'Nghệ sĩ')
+    const headline = String(realArtist.seoTitle ?? 'Nghệ sĩ chưa bổ sung câu giới thiệu nổi bật.')
+    const biography = String(realArtist.seoDescription ?? 'Nghệ sĩ chưa bổ sung giới thiệu ngắn.')
+    const genreText = Array.isArray(realArtist.genres) && realArtist.genres.length ? realArtist.genres.map((item) => typeof item === 'object' && item ? String((item as Record<string, unknown>).value ?? '') : String(item)).filter(Boolean).join(', ') : 'Chưa cập nhật'
+    return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${stageName}`} description="Bản xem duyệt hiển thị theo bố cục profile public; các mục thiếu vẫn được giữ lại để Admin nhắc nghệ sĩ bổ sung.">
       <section className="cms-split-grid">
         <article className="panel">
-          <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Artist Review</p><h2>{String(realArtist.stageName ?? 'Nghệ sĩ')}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
-          <div className="cms-overview-stats cms-overview-stats-2"><article className="metric"><strong>{String(realArtist.role ?? 'Chưa chọn')}</strong><span>Vai trò</span></article><article className="metric"><strong>{status}</strong><span>Trạng thái</span></article></div>
-          <div className="field"><label>Headline</label><p>{String(realArtist.seoTitle ?? 'Nghệ sĩ chưa bổ sung headline.')}</p></div>
-          <div className="field"><label>Giới thiệu ngắn</label><p>{String(realArtist.seoDescription ?? 'Nghệ sĩ chưa bổ sung giới thiệu ngắn.')}</p></div>
-          <div className="field"><label>Giá booking</label><p>{String(realArtist.bookingPriceLabel ?? 'Chưa cập nhật')}</p></div>
-          <div className="field"><label>Khu vực hoạt động</label><p>{String(realArtist.serviceArea ?? 'Chưa cập nhật')}</p></div>
-          <div className="field"><label>Phong cách / dòng nhạc</label><p>{Array.isArray(realArtist.genres) && realArtist.genres.length ? realArtist.genres.map((item) => typeof item === 'object' && item ? String((item as Record<string, unknown>).value ?? '') : String(item)).filter(Boolean).join(', ') : 'Chưa cập nhật'}</p></div>
+          <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Bản xem duyệt hồ sơ</p><h2>{stageName}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
+          <div className="artist-profile-draft-hero"><div className="artist-profile-draft-avatar"><span>{stageName.slice(0, 1)}</span></div><div><strong>{headline}</strong><p>{biography}</p><span className="cms-status-chip">{artistStatusLabel[status] ?? 'Bản nháp'}</span></div></div>
+          <div className="artist-dashboard-module-grid"><article className="artist-dashboard-module-card"><strong>Vai trò và phong cách</strong><p>{String(realArtist.role ?? 'Chưa chọn vai trò')}</p><p>{genreText}</p></article><article className="artist-dashboard-module-card"><strong>Booking</strong><p>{String(realArtist.bookingPriceLabel ?? 'Chưa cập nhật mức giá booking')}</p><p>{String(realArtist.serviceArea ?? 'Chưa cập nhật khu vực hoạt động')}</p></article><article className="artist-dashboard-module-card"><strong>Giới thiệu đầy đủ</strong><p>{biography}</p></article><article className="artist-dashboard-module-card"><strong>Media và kinh nghiệm</strong><p>Chưa có dữ liệu media / video được gửi kèm hồ sơ.</p></article></div>
         </article>
         <article className="panel"><p className="section-eyebrow">Review action</p><h2>Duyệt sau khi kiểm tra</h2><p className="cms-muted">Chỉ public khi thông tin trên đã đúng. Có thể hủy để nghệ sĩ cập nhật lại.</p>{missingFields.length ? <div className="cms-security-panel"><strong>Các mục nghệ sĩ còn thiếu</strong><ul>{missingFields.map((item) => <li key={item}>{item}</li>)}</ul></div> : <div className="cms-security-panel"><strong>Hồ sơ cơ bản đã đủ để duyệt</strong><p>Admin vẫn nên đọc lại headline, bio và giá booking trước khi public.</p></div>}<CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
       </section>

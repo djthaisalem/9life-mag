@@ -5563,6 +5563,19 @@ button.more-link-unified {
   font: inherit;
 }
 
+.global-media-player-wallet-link {
+  border: 1px solid rgba(255, 202, 77, .9);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 192, 59, .3), rgba(255, 110, 110, .24));
+  box-shadow: 0 0 16px rgba(255, 189, 57, .25);
+  color: #ffe49a;
+  cursor: pointer;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 800;
+  padding: 4px 9px;
+}
+
 .artist-profile-draft-preview {
   width: min(1100px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);

@@ -14,6 +14,13 @@ type ArtistRow = {
   status: string
 }
 
+const statusLabel: Record<string, string> = {
+  draft: 'Bản nháp',
+  pending_review: 'Chờ duyệt',
+  published: 'Đã duyệt',
+  archived: 'Đã hủy',
+}
+
 export default async function CmsArtistsPage({ searchParams }: { searchParams: Promise<{ page?: string; status?: string }> }) {
   const params = await searchParams
   let artists: ArtistRow[] = []
@@ -53,7 +60,7 @@ export default async function CmsArtistsPage({ searchParams }: { searchParams: P
           <Link className="cms-artist-catalog-action" href="/cms/dashboard/artists/new"><span aria-hidden="true">+</span><span><strong>Tạo catalog nghệ sĩ</strong><small>Tạo profile mới để chờ duyệt hoặc xuất bản</small></span></Link>
         </div>
         <div className="cms-booking-tabs" role="tablist" aria-label="Trạng thái hồ sơ nghệ sĩ"><Link className={activeStatus === 'pending_review' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'} href="/cms/dashboard/artists?status=pending_review">Đang chờ duyệt</Link><Link className={activeStatus === 'published' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'} href="/cms/dashboard/artists?status=published">Đã duyệt</Link><Link className={activeStatus === 'archived' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'} href="/cms/dashboard/artists?status=archived">Đã hủy</Link></div>
-        {visibleArtists.length ? <div className="cms-table-wrap"><table className="cms-table cms-table-artists"><thead><tr><th>STT</th><th>Nghệ sĩ</th><th>Vai trò</th><th>Giới tính</th><th>Khu vực</th><th>Trạng thái</th><th>Xem hồ sơ</th></tr></thead><tbody>{visibleArtists.map((artist, index) => <tr key={artist.id}><td>{String((page - 1) * CMS_LIST_PAGE_SIZE + index + 1).padStart(2, '0')}</td><td><strong>{artist.name}</strong><span>{artist.slug}</span></td><td>{artist.role}</td><td>{artist.gender}</td><td>{artist.area}</td><td><span className="cms-status-chip">{artist.status}</span></td><td><Link className="button-secondary" href={`/cms/dashboard/artists/${artist.slug}`}>Xem hồ sơ</Link></td></tr>)}</tbody></table></div> : <p className="cms-empty-state">Nhóm này chưa có hồ sơ.</p>}
+        {visibleArtists.length ? <div className="cms-table-wrap"><table className="cms-table cms-table-artists"><thead><tr><th>STT</th><th>Nghệ sĩ</th><th>Vai trò</th><th>Giới tính</th><th>Khu vực</th><th>Trạng thái</th><th>Xem hồ sơ</th></tr></thead><tbody>{visibleArtists.map((artist, index) => <tr key={artist.id}><td>{String((page - 1) * CMS_LIST_PAGE_SIZE + index + 1).padStart(2, '0')}</td><td><strong>{artist.name}</strong><span>{artist.slug}</span></td><td>{artist.role}</td><td>{artist.gender}</td><td>{artist.area}</td><td><span className="cms-status-chip">{statusLabel[artist.status] ?? 'Bản nháp'}</span></td><td><Link className="button-secondary" href={`/cms/dashboard/artists/${artist.slug}`}>Xem hồ sơ</Link></td></tr>)}</tbody></table></div> : <p className="cms-empty-state">Nhóm này chưa có hồ sơ.</p>}
         <CmsListPagination page={page} totalItems={filteredArtists.length} baseHref={`/cms/dashboard/artists?status=${activeStatus}`} />
       </section>
     </CmsDashboardShell>
