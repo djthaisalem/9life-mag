@@ -15,6 +15,7 @@ const profileSchema = z.object({
   primaryRole: z.enum(['DJ Producer', 'MC Hype', 'Rapper', 'Dancer', 'Photographer', 'Singer']).optional(),
   bookingRate: z.string().trim().max(120).optional().default(''),
   availability: z.string().trim().max(120).optional().default(''),
+  submitForReview: z.boolean().optional().default(false),
   profileSnapshot: z.record(z.string(), z.object({ values: z.record(z.string(), z.string()).optional(), files: z.record(z.string(), z.string()).optional() })).optional(),
 })
 
@@ -59,9 +60,11 @@ export async function POST(request: Request) {
     const isReadyForReview = Boolean(input.headline && input.shortBio.length >= 20 && input.primaryRole)
     const profileStatus = current?.profileStatus === 'published'
       ? 'published'
-      : isReadyForReview
+      : input.submitForReview && isReadyForReview
         ? 'pending_review'
-        : 'draft'
+        : current?.profileStatus === 'pending_review'
+          ? 'pending_review'
+          : 'draft'
     const data = {
       stageName: input.artistName,
       slug,
@@ -88,20 +91,23 @@ export async function POST(request: Request) {
       : { ok: true, awarded: false, state: { stars: account.stars } }
     if (!reward.ok) throw new Error('Không thể hoàn tất phần thưởng hồ sơ.')
 
-    if (isReadyForReview && current?.profileStatus !== 'pending_review' && current?.profileStatus !== 'published') try {
+    if (input.submitForReview && isReadyForReview) try {
+      const isPublishedUpdate = current?.profileStatus === 'published'
       await createPortalNotifications([
         {
           recipientKey: 'admin',
-          title: 'Hồ sơ nghệ sĩ chờ duyệt',
-          body: `${input.artistName} vừa hoàn tất hồ sơ cơ bản. Vui lòng kiểm tra và duyệt trước khi public ngoài site.`,
+          title: isPublishedUpdate ? 'Nghệ sĩ vừa cập nhật hồ sơ' : 'Hồ sơ nghệ sĩ chờ duyệt',
+          body: isPublishedUpdate
+            ? `${input.artistName} vừa gửi bản cập nhật profile. Vui lòng kiểm tra thay đổi trong CMS.`
+            : `${input.artistName} vừa gửi hồ sơ để duyệt. Vui lòng kiểm tra trước khi public ngoài site.`,
           href: '/cms/dashboard/artists',
         },
       ])
       const telegram = await sendTelegramOperationsNotice([
-        '9LIFE MAG - HO SO NGHE SI CHO DUYET',
+        isPublishedUpdate ? '9LIFE MAG - HO SO NGHE SI CAP NHAT' : '9LIFE MAG - HO SO NGHE SI CHO DUYET',
         `Nghe si: ${input.artistName}`,
         `Vai tro: ${input.primaryRole}`,
-        'Vui long kiem tra trong CMS / Quan ly Nghe si.',
+        isPublishedUpdate ? 'Vui long kiem tra ban cap nhat trong CMS / Quan ly Nghe si.' : 'Vui long kiem tra va duyet trong CMS / Quan ly Nghe si.',
       ].join('\n'))
       if (!telegram.ok) console.error('Artist profile review Telegram notice was not delivered', telegram)
     } catch (notificationError) {

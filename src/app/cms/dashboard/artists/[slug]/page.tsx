@@ -55,7 +55,7 @@ export default async function CmsArtistDetailPage({
     const musicEmbed = getMediaEmbed(musicUrl)
     const videoEmbed = getMediaEmbed(videoUrl)
     return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${stageName}`} description="Bản xem duyệt hiển thị theo bố cục profile public; các mục thiếu vẫn được giữ lại để Admin nhắc nghệ sĩ bổ sung.">
-      <section className="cms-split-grid cms-artist-review-layout">
+      <section className="cms-artist-review-layout">
         <article className="panel">
           <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Bản xem duyệt hồ sơ</p><h2>{stageName}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
           <section className="artist-profile-page artist-profile-draft-preview cms-artist-review-preview">
@@ -80,8 +80,8 @@ export default async function CmsArtistDetailPage({
             </div>
           </section>
         </article>
-        <article className="panel cms-artist-review-action-panel"><p className="section-eyebrow">Duyệt hồ sơ</p><h2>Quyết định</h2><p className="cms-muted">Chỉ public sau khi kiểm tra.</p>{missingFields.length ? <div className="cms-security-panel"><strong>Còn thiếu</strong><ul>{missingFields.map((item) => <li key={item}>{item}</li>)}</ul></div> : <div className="cms-security-panel"><strong>Đủ thông tin cơ bản</strong></div>}<CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
       </section>
+      <section className="panel cms-artist-review-action-panel"><p className="section-eyebrow">Duyệt hồ sơ</p><h2>Quyết định</h2><p className="cms-muted">Chỉ public sau khi kiểm tra.</p>{missingFields.length ? <div className="cms-security-panel"><strong>Còn thiếu</strong><ul>{missingFields.map((item) => <li key={item}>{item}</li>)}</ul></div> : <div className="cms-security-panel"><strong>Đủ thông tin cơ bản</strong></div>}<CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></section>
     </CmsDashboardShell>
   }
 

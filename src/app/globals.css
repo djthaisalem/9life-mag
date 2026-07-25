@@ -5568,13 +5568,14 @@ button.more-link-unified {
 }
 
 .cms-artist-review-layout {
-  grid-template-columns: minmax(0, 1fr) 220px !important;
+  display: block;
   align-items: start;
 }
 
 .cms-artist-review-action-panel {
-  max-width: 220px;
-  padding: 16px;
+  max-width: 680px;
+  margin-top: 20px;
+  padding: 18px;
 }
 
 .cms-artist-review-action-panel h2 {
@@ -5582,7 +5583,6 @@ button.more-link-unified {
 }
 
 @media (max-width: 820px) {
-  .cms-artist-review-layout { grid-template-columns: 1fr !important; }
   .cms-artist-review-action-panel { max-width: none; }
 }
 

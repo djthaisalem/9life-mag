@@ -130,6 +130,7 @@ export default function MusicPage() {
   )
   const liveNonstopTracks = useMemo(() => [...publishedNonstopTracks, ...tidalNonstopTracks], [publishedNonstopTracks])
   const liveRemixTracks = useMemo(() => [...publishedRemixTracks, ...tidalRemixTracks], [publishedRemixTracks])
+  const fairTopRemixTracks = useMemo(() => curateMusicCatalog(liveRemixTracks, 'nine-life-music-top-remix-rotation-v1'), [liveRemixTracks])
   const communityTracks = useMemo(() => {
     const tracks = publishedCatalog
       .filter((track) => track.displayMap.includes('Music - DJ sets community'))
@@ -521,7 +522,7 @@ export default function MusicPage() {
               </div>
 
               <div className="tidal-remix-rail tidal-remix-rail-compact">
-                {liveRemixTracks.slice(0, 5).map((item, index) => (
+                {fairTopRemixTracks.slice(0, 5).map((item, index) => (
                   <article key={item.title} className="tidal-remix-row">
                     <span className="tidal-remix-rank">0{index + 1}</span>
                     <div>
@@ -531,7 +532,7 @@ export default function MusicPage() {
                     <button
                       type="button"
                       className="tidal-play-chip tidal-play-chip-inline"
-                      onClick={() => playCollection(liveRemixTracks, index, 'remix')}
+                      onClick={() => playCollection(fairTopRemixTracks, index, 'remix')}
                     >
                       <Play size={14} />
                     </button>
@@ -699,7 +700,7 @@ export default function MusicPage() {
               <AudioShowcasePlayer
                 title="Top Remix"
                 subtitle="List remix dày hơn để tận dụng chiều ngang tốt hơn."
-                tracks={liveRemixTracks.slice(0, 10)}
+                tracks={fairTopRemixTracks}
                 variant="remix"
                 density="compact"
               />

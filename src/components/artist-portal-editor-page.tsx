@@ -165,7 +165,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     }
   }
 
-  const save = async (id: string) => {
+  const save = async (id: string, submitForReview = false) => {
     window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(forms))
     const profileBasicsId = templateId('profile', 'Mẫu bio cơ bản')
     const profileValues = forms[profileBasicsId]?.values ?? {}
@@ -197,6 +197,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           bookingRate: profileValues.bookingRate,
           availability: profileValues.availability,
           profileSnapshot: forms,
+          submitForReview,
         }),
       })
       const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string }
@@ -207,7 +208,11 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
       window.localStorage.setItem(ARTIST_PORTAL_PROFILE_KEY, JSON.stringify({ slug: result.slug, status: result.profileStatus }))
       setFeedback((current) => ({
         ...current,
-        [id]: section.key !== 'profile'
+        [id]: submitForReview
+          ? result.profileStatus === 'published'
+            ? 'Đã gửi bản cập nhật cho Admin theo dõi. Hồ sơ công khai vẫn được giữ nguyên.'
+            : 'Đã gửi hồ sơ để Admin duyệt. Thông báo đã được chuyển đến CMS và Telegram.'
+          : section.key !== 'profile'
           ? 'Đã lưu và đồng bộ bản nháp để Admin có thể xem đầy đủ trong CMS.'
           : result.profileStatus === 'draft'
           ? 'Đã lưu hồ sơ nháp vào hệ thống. Hoàn thiện câu giới thiệu, giới thiệu ngắn và vai trò chính để gửi Admin duyệt.'
@@ -343,7 +348,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
             <article className="artist-dashboard-panel">
               <div className="artist-dashboard-panel-head">
                 <div><p className="section-eyebrow">Trạng thái</p><h2>{section.key === 'booking' ? 'Booking đã sẵn sàng đến đâu?' : 'Trạng thái nội dung hiện tại'}</h2><p className="artist-editor-panel-note">Các mục này giúp bạn biết phần nào cần hoàn thiện tiếp theo.</p></div>
-                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button" onClick={() => void save(profileBasicsId)}>{profileStatus === 'pending_review' || profileStatus === 'published' ? 'Đã gửi thành công' : 'Public profile'}</button> : null}<button type="button" className="button-secondary" onClick={() => section.key === 'profile' ? openPublicProfile() : setIsDraftPreviewOpen(true)}>{section.key === 'profile' && profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button></div>
+                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button" onClick={() => void save(profileBasicsId, true)}>{profileStatus === 'published' ? 'Gửi bản cập nhật' : profileStatus === 'pending_review' ? 'Gửi lại bản cập nhật' : 'Gửi duyệt hồ sơ'}</button> : null}<button type="button" className="button-secondary" onClick={() => section.key === 'profile' ? openPublicProfile() : setIsDraftPreviewOpen(true)}>{section.key === 'profile' && profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button></div>
               </div>
               {section.key === 'profile' ? <div className="cms-security-panel"><strong>Trước khi gửi duyệt</strong><p>Bạn hãy xem kỹ bản nháp, chỉnh sửa những thông tin cần thiết và thật chỉnh chu trước khi public. Khi gửi, Admin sẽ nhận thông báo CMS và Telegram để kiểm tra.</p>{profileMissing.length ? <p><strong>Còn thiếu:</strong> {profileMissing.join(', ')}.</p> : <p>Hồ sơ đã có đủ các phần cơ bản để gửi Admin duyệt.</p>}</div> : null}
               <div className="artist-editor-workflow">
