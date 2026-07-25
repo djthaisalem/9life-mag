@@ -91,8 +91,11 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [profileSlug, setProfileSlug] = useState('')
   const [profileStatus, setProfileStatus] = useState<'draft' | 'pending_review' | 'published' | ''>('')
+  const [isDraftPreviewOpen, setIsDraftPreviewOpen] = useState(false)
   const [activeMusicTemplate, setActiveMusicTemplate] = useState('Mẫu track đầu tiên')
   const templates = section.key === 'booking' ? [bookingSetupTemplate, ...section.templates] : section.templates
+  const profileBasicsId = templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')
+  const profileBasics = forms[profileBasicsId]?.values ?? {}
 
   useEffect(() => setForms(readState()), [])
 
@@ -126,7 +129,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const profileValues = forms[profileBasicsId]?.values ?? {}
     const hasCompletedProfileBasics = Boolean(profileValues.artistName?.trim())
 
-    if (section.key !== 'profile' || id !== profileBasicsId || !hasCompletedProfileBasics) {
+    if (section.key !== 'profile' || !hasCompletedProfileBasics) {
       setFeedback((current) => ({
         ...current,
         [id]: section.key === 'profile' && id === profileBasicsId
@@ -183,13 +186,15 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
   const openPublicProfile = () => {
     const basicsId = templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')
-    if (profileStatus !== 'published' || !profileSlug) {
+    if (!profileSlug) {
       setFeedback((current) => ({
         ...current,
-        [basicsId]: profileStatus === 'pending_review'
-          ? 'Ho so dang cho Admin duyet. Profile public se mo dung ho so cua ban ngay sau khi duoc xuat ban.'
-          : 'Hay luu ho so co ban truoc de tao ho so that va gui duyet.',
+        [basicsId]: 'Hay luu ho so co ban truoc de tao ho so that va gui duyet.',
       }))
+      return
+    }
+    if (profileStatus !== 'published') {
+      setIsDraftPreviewOpen(true)
       return
     }
     window.location.assign(`/nghe-si/${profileSlug}`)
@@ -235,7 +240,12 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   }
 
   return (
+    <>
+      {isDraftPreviewOpen ? <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Artist profile preview"><section className="music-visualizer-shell artist-dashboard-panel"><button type="button" className="music-visualizer-close" onClick={() => setIsDraftPreviewOpen(false)}>Dong</button><p className="section-eyebrow">Ban xem truoc</p><h2>{profileBasics.artistName || 'Ho so nghe si'}</h2><p>{profileBasics.headline}</p><p>{profileBasics.shortBio}</p><p className="artist-editor-save-feedback">Ban xem truoc nay chi hien thi cho tai khoan cua ban. Admin can duyet truoc khi public.</p></section></div> : null}
     <main className="artist-editor-page">
+      {/*
+      {isDraftPreviewOpen ? <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Xem trước hồ sơ nháp"><section className="music-visualizer-shell artist-dashboard-panel"><button type="button" className="music-visualizer-close" onClick={() => setIsDraftPreviewOpen(false)}>Đóng</button><p className="section-eyebrow">Bản xem trước</p><h2>{forms[templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')]?.values.artistName || 'Hồ sơ nghệ sĩ'}</h2><p>{forms[templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.values.shortBio || '']}</p><p className="artist-editor-save-feedback">Bản này chỉ bạn xem được. Admin cần duyệt trước khi hồ sơ xuất hiện công khai.</p></section></div> : null}
+      */}
       <section className="artist-dashboard-hero artist-editor-hero">
         <div className="container artist-editor-hero-row">
           <div className="artist-editor-copy">
@@ -282,11 +292,13 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
           <aside className="artist-editor-side">
             {section.key === 'profile' ? <StudentRegistrationSettings /> : null}
+            {section.key === 'profile' ? <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Huong dan dien ho so</p><h2>De Admin duyet nhanh</h2></div></div><div className="artist-dashboard-update-list"><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Ten nghe si:</strong> dung nghe danh muon hien thi tren poster, booking va trang tim kiem.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Headline:</strong> viet mot cau ngan ve vai tro va phong cach, vi du: DJ open format cho club, lounge va su kien thuong hieu.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Bio ngan:</strong> viet 2-3 cau ve kinh nghiem, dong nhac, khu vuc hoat dong va diem manh khi bieu dien.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Vai tro chinh:</strong> chon dung de CMS phan loai va Admin duyet profile chinh xac.</p></div></div></article> : null}
             <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Bắt đầu</p><h2>Checklist cho lần đăng ký đầu</h2></div></div><div className="artist-dashboard-update-list">{section.starterChecklist.map((item) => <div key={item} className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p>{text(item)}</p></div>)}</div></article>
             <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Điều hướng</p><h2>Quản lý nhanh</h2></div></div><div className="artist-dashboard-quick-links"><Link href="/tai-khoan/nghe-si/dashboard" className="artist-dashboard-quick-link">Về dashboard nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/dashboard/profile" className="artist-dashboard-quick-link">Hồ sơ nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/dashboard/music" className="artist-dashboard-quick-link">Link nhạc và playlist</Link><Link href="/tai-khoan/nghe-si/dashboard/booking" className="artist-dashboard-quick-link">Booking và rider</Link></div></article>
           </aside>
         </div>
       </section>
     </main>
+    </>
   )
 }

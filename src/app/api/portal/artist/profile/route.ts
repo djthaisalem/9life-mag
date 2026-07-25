@@ -69,7 +69,6 @@ export async function POST(request: Request) {
       isAvailable: !/tạm ngưng|unavailable|không nhận/i.test(input.availability),
       seoTitle: input.headline,
       seoDescription: input.shortBio,
-      managedBy: account.id,
       profileStatus,
     }
 
