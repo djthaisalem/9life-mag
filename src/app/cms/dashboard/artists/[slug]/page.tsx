@@ -10,6 +10,7 @@ import { vietnamLocationNames } from '@/lib/vietnam-locations'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
 import { getArtistProfileDraft } from '@/lib/artist-profile-draft-store'
+import { getMediaEmbed } from '@/lib/media-embed'
 
 const artistStatusLabel: Record<string, string> = {
   draft: 'Bản nháp',
@@ -49,12 +50,35 @@ export default async function CmsArtistDetailPage({
     const lookup = (name: string) => Object.values(draft).map((item) => item.values?.[name] ?? item.files?.[name] ?? '').find(Boolean) ?? ''
     const portrait = lookup('portraitUpload')
     const cover = lookup('coverUpload')
+    const musicUrl = lookup('sourceUrl')
+    const videoUrl = lookup('videoUrl')
+    const musicEmbed = getMediaEmbed(musicUrl)
+    const videoEmbed = getMediaEmbed(videoUrl)
     return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${stageName}`} description="Bản xem duyệt hiển thị theo bố cục profile public; các mục thiếu vẫn được giữ lại để Admin nhắc nghệ sĩ bổ sung.">
       <section className="cms-split-grid cms-artist-review-layout">
         <article className="panel">
           <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Bản xem duyệt hồ sơ</p><h2>{stageName}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
-          {cover ? <img className="artist-profile-draft-cover" src={cover} alt="Cover hồ sơ" /> : null}<div className="artist-profile-draft-hero"><div className="artist-profile-draft-avatar">{portrait ? <img src={portrait} alt="" /> : <span>{stageName.slice(0, 1)}</span>}</div><div><strong>{headline}</strong><p>{biography}</p><span className="cms-status-chip">{artistStatusLabel[status] ?? 'Bản nháp'}</span></div></div>
-          <div className="artist-dashboard-module-grid"><article className="artist-dashboard-module-card"><strong>Vai trò và phong cách</strong><p>{lookup('primaryRole') || String(realArtist.role ?? 'Chưa chọn vai trò')}</p><p>{lookup('genres') || genreText}</p></article><article className="artist-dashboard-module-card"><strong>Booking</strong><p>{lookup('bookingRate') || String(realArtist.bookingPriceLabel ?? 'Chưa cập nhật mức giá booking')}</p><p>{lookup('bookingNotes') || String(realArtist.serviceArea ?? 'Chưa cập nhật khu vực hoạt động')}</p></article><article className="artist-dashboard-module-card"><strong>Kinh nghiệm và Editorial</strong><p>{lookup('workExperience') || 'Chưa có kinh nghiệm làm việc.'}</p><p>{lookup('articleTitle') || lookup('editorialNote') || 'Chưa có nội dung editorial.'}</p></article><article className="artist-dashboard-module-card"><strong>Music và Video</strong><p>{lookup('trackTitle') || lookup('playlistName') || 'Chưa có nội dung music.'}</p><p>{lookup('sourceUrl') || lookup('videoUrl') || 'Chưa có link music hoặc video.'}</p></article></div>
+          <section className="artist-profile-page artist-profile-draft-preview cms-artist-review-preview">
+            <section className="artist-profile-hero artist-profile-draft-hero-public">
+              {cover ? <img className="artist-profile-hero-image" src={cover} alt={`Cover ${stageName}`} /> : null}
+              <div className="artist-profile-hero-overlay" />
+              <div className="artist-profile-hero-inner">
+                <div className="artist-profile-hero-copy"><div className="tag-row"><span className="pill">{lookup('primaryRole') || String(realArtist.role ?? 'Chưa chọn vai trò')}</span><span className="pill">{lookup('city') || String(realArtist.serviceArea ?? 'Chưa có tỉnh thành')}</span></div><h1>{stageName}</h1><p className="artist-profile-lead">{biography}</p><span className="cms-status-chip">{artistStatusLabel[status] ?? 'Bản nháp'}</span></div>
+                <div className="artist-profile-draft-avatar">{portrait ? <img src={portrait} alt={`Ảnh ${stageName}`} /> : <span>{stageName.slice(0, 1)}</span>}</div>
+              </div>
+            </section>
+            <div className="artist-profile-grid-main">
+              <div className="artist-profile-main">
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Overview</p><h2>Thông tin nổi bật</h2></div></div><div className="artist-overview-grid"><article><strong>{lookup('city') || 'Chưa cập nhật'}</strong><span>Khu vực hoạt động chính</span></article><article><strong>{lookup('availability') || 'Chưa cập nhật'}</strong><span>Tình trạng nhận show</span></article><article><strong>{lookup('bookingRate') || 'Chưa cập nhật'}</strong><span>Mức giá tham khảo</span></article></div></article>
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Professional Background</p><h2>Kinh nghiệm làm việc</h2></div></div><p>{lookup('workExperience') || 'Chưa thêm kinh nghiệm làm việc.'}</p></article>
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Artist Story</p><h2>Giới thiệu về nghệ sĩ</h2></div></div><p>{lookup('longBio') || 'Chưa có giới thiệu chi tiết.'}</p></article>
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Listen</p><h2>Nhạc nổi bật có thể phát ngay</h2></div></div><strong>{lookup('trackTitle') || lookup('playlistName') || 'Chưa có track hoặc mixset'}</strong>{musicEmbed ? <div className="artist-media-embed-preview"><iframe src={musicEmbed.src} title={musicEmbed.title} loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /></div> : musicUrl ? <a href={musicUrl} target="_blank" rel="noreferrer">Mở link music đã nhập</a> : <p>Chưa thêm link phát nhạc.</p>}</article>
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Media Showcase</p><h2>Video nổi bật</h2></div></div><strong>{lookup('videoTitle') || 'Chưa có video'}</strong>{videoEmbed ? <div className="artist-media-embed-preview"><iframe src={videoEmbed.src} title={videoEmbed.title} loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /></div> : videoUrl ? <a href={videoUrl} target="_blank" rel="noreferrer">Mở link video đã nhập</a> : <p>Chưa thêm link video.</p>}</article>
+                <article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Editorial</p><h2>Bài viết và spotlight</h2></div></div><strong>{lookup('articleTitle') || 'Chưa có bài spotlight'}</strong><p>{lookup('articleExcerpt') || lookup('editorialNote') || 'Chưa có nội dung editorial.'}</p></article>
+              </div>
+              <aside className="artist-profile-side"><article className="artist-panel"><div className="artist-side-portrait">{portrait ? <img src={portrait} alt="" /> : <span>Chưa có ảnh chân dung</span>}</div><div className="artist-side-details"><strong>{lookup('genres') || genreText}</strong></div></article><article className="artist-panel"><div className="artist-panel-head"><div><p className="section-eyebrow">Booking Essentials</p><h2>Thông tin đối tác</h2></div></div><p>{lookup('bookingNotes') || 'Chưa có ghi chú booking.'}</p><p>{lookup('basicRider') || 'Chưa có rider cơ bản.'}</p></article></aside>
+            </div>
+          </section>
         </article>
         <article className="panel cms-artist-review-action-panel"><p className="section-eyebrow">Duyệt hồ sơ</p><h2>Quyết định</h2><p className="cms-muted">Chỉ public sau khi kiểm tra.</p>{missingFields.length ? <div className="cms-security-panel"><strong>Còn thiếu</strong><ul>{missingFields.map((item) => <li key={item}>{item}</li>)}</ul></div> : <div className="cms-security-panel"><strong>Đủ thông tin cơ bản</strong></div>}<CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
       </section>

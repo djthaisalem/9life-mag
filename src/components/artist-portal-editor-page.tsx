@@ -171,7 +171,9 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const profileValues = forms[profileBasicsId]?.values ?? {}
     const hasCompletedProfileBasics = Boolean(profileValues.artistName?.trim())
 
-    if (section.key !== 'profile' || !hasCompletedProfileBasics) {
+    // Every section contributes to the same public-profile draft. Persist the
+    // complete snapshot whenever the artist saves, not only from the Profile tab.
+    if (!hasCompletedProfileBasics) {
       setSavedTemplates((current) => ({ ...current, [id]: true }))
       setFeedback((current) => ({
         ...current,
@@ -205,7 +207,9 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
       window.localStorage.setItem(ARTIST_PORTAL_PROFILE_KEY, JSON.stringify({ slug: result.slug, status: result.profileStatus }))
       setFeedback((current) => ({
         ...current,
-        [id]: result.profileStatus === 'draft'
+        [id]: section.key !== 'profile'
+          ? 'Đã lưu và đồng bộ bản nháp để Admin có thể xem đầy đủ trong CMS.'
+          : result.profileStatus === 'draft'
           ? 'Đã lưu hồ sơ nháp vào hệ thống. Hoàn thiện câu giới thiệu, giới thiệu ngắn và vai trò chính để gửi Admin duyệt.'
           : result.awarded
             ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
