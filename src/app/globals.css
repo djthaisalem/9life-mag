@@ -16,7 +16,7 @@
 .music-visualizer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 140;
+  z-index: 50;
   display: grid;
   place-items: center;
   padding: clamp(14px, 3vw, 42px);
