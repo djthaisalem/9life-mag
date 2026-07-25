@@ -162,18 +162,30 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
     try {
       const value = imagePreviewFields.has(field.name) ? await cropMusicCover(file) : selectedFiles.map((selectedFile) => selectedFile.name).join(', ')
-      updateFile(id, field.name, value)
+      const nextForms: StoredPortalState = {
+        ...forms,
+        [id]: {
+          values: forms[id]?.values ?? {},
+          files: { ...(forms[id]?.files ?? {}), [field.name]: value },
+        },
+      }
+      setSavedTemplates((current) => ({ ...current, [id]: false }))
+      setForms(nextForms)
+      window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(nextForms))
       setFeedback((current) => ({ ...current, [id]: imagePreviewFields.has(field.name) ? 'Ảnh đã được crop và lưu vào bản nháp.' : `Đã chọn ${selectedFiles.length} file.` }))
+      if (imagePreviewFields.has(field.name) && nextForms[profileBasicsId]?.values.artistName?.trim()) {
+        void save(id, false, nextForms)
+      }
     } catch (error) {
       setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Không thể xử lý file này.' }))
     }
   }
 
-  const save = async (id: string, submitForReview = false) => {
+  const save = async (id: string, submitForReview = false, snapshot = forms) => {
     if (submitForReview) setReviewFeedback('Đang gửi hồ sơ đến Admin...')
-    window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(forms))
+    window.localStorage.setItem(ARTIST_PORTAL_STORAGE_KEY, JSON.stringify(snapshot))
     const profileBasicsId = templateId('profile', 'Mẫu bio cơ bản')
-    const profileValues = forms[profileBasicsId]?.values ?? {}
+    const profileValues = snapshot[profileBasicsId]?.values ?? {}
     const hasCompletedProfileBasics = Boolean(profileValues.artistName?.trim())
 
     // Every section contributes to the same public-profile draft. Persist the
@@ -201,7 +213,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           primaryRole: profileValues.primaryRole,
           bookingRate: profileValues.bookingRate,
           availability: profileValues.availability,
-          profileSnapshot: forms,
+          profileSnapshot: snapshot,
           submitForReview,
         }),
       })
