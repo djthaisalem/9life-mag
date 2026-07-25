@@ -228,10 +228,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   const openPublicProfile = () => {
     const basicsId = templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')
     if (!profileSlug) {
-      setFeedback((current) => ({
-        ...current,
-        [basicsId]: 'Hay luu ho so co ban truoc de tao ho so that va gui duyet.',
-      }))
+      setIsDraftPreviewOpen(true)
       return
     }
     if (profileStatus !== 'published') {
@@ -316,7 +313,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
             <article className="artist-dashboard-panel">
               <div className="artist-dashboard-panel-head">
                 <div><p className="section-eyebrow">Trạng thái</p><h2>{section.key === 'booking' ? 'Booking đã sẵn sàng đến đâu?' : 'Trạng thái nội dung hiện tại'}</h2><p className="artist-editor-panel-note">Các mục này giúp bạn biết phần nào cần hoàn thiện tiếp theo.</p></div>
-                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a><Link href={section.publicHref} className="button-secondary">Xem công khai</Link></div>
+                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button-secondary" onClick={openPublicProfile}>{profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button> : <Link href={section.publicHref} className="button-secondary">Xem công khai</Link>}</div>
               </div>
               <div className="artist-editor-workflow">
                 {section.workflow.map((item) => <article key={item.title} className="artist-editor-workflow-card"><div className="artist-editor-status-row"><strong>{text(item.title)}</strong><span className="artist-editor-status-pill">{text(item.status)}</span></div><p>{text(item.detail)}</p></article>)}

@@ -7,6 +7,8 @@ import { getArtistPrivateContact } from '@/lib/artist-private-contact'
 import { CMS_SESSION_COOKIE, verifyCmsSessionToken } from '@/lib/cms-session'
 import { hasCmsScope } from '@/lib/cms-role-policy'
 import { vietnamLocationNames } from '@/lib/vietnam-locations'
+import { loadPayloadClient } from '@/lib/payload-runtime'
+import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
 
 export default async function CmsArtistDetailPage({
   params,
@@ -16,7 +18,27 @@ export default async function CmsArtistDetailPage({
   const { slug } = await params
   const artist = getCmsArtistBySlug(slug)
 
-  if (!artist) notFound()
+  if (!artist) {
+    const payload = await loadPayloadClient()
+    const result = await payload.find({ collection: 'artists', where: { slug: { equals: slug } }, limit: 1, depth: 0, pagination: false, overrideAccess: true })
+    const realArtist = result.docs[0] as Record<string, unknown> | undefined
+    if (!realArtist) notFound()
+
+    const status = typeof realArtist.profileStatus === 'string' ? realArtist.profileStatus : 'draft'
+    return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${String(realArtist.stageName ?? 'Nghệ sĩ')}`} description="Kiểm tra nội dung hồ sơ trước khi duyệt hiển thị ngoài site.">
+      <section className="cms-split-grid">
+        <article className="panel">
+          <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Artist Review</p><h2>{String(realArtist.stageName ?? 'Nghệ sĩ')}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
+          <div className="cms-overview-stats cms-overview-stats-2"><article className="metric"><strong>{String(realArtist.role ?? 'Chưa chọn')}</strong><span>Vai trò</span></article><article className="metric"><strong>{status}</strong><span>Trạng thái</span></article></div>
+          <div className="field"><label>Headline</label><p>{String(realArtist.seoTitle ?? 'Nghệ sĩ chưa bổ sung headline.')}</p></div>
+          <div className="field"><label>Giới thiệu ngắn</label><p>{String(realArtist.seoDescription ?? 'Nghệ sĩ chưa bổ sung giới thiệu ngắn.')}</p></div>
+          <div className="field"><label>Giá booking</label><p>{String(realArtist.bookingPriceLabel ?? 'Liên hệ để nhận báo giá')}</p></div>
+        </article>
+        <article className="panel"><p className="section-eyebrow">Review action</p><h2>Duyệt sau khi kiểm tra</h2><p className="cms-muted">Chỉ public khi thông tin trên đã đúng. Có thể hủy để nghệ sĩ cập nhật lại.</p><CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
+      </section>
+    </CmsDashboardShell>
+  }
+
   const cookieStore = await cookies()
   const session = await verifyCmsSessionToken(cookieStore.get(CMS_SESSION_COOKIE)?.value)
   const canViewPrivateContact = Boolean(session && hasCmsScope(session.role, 'private_contacts'))

@@ -922,12 +922,10 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
               <div className="global-media-player-meta">
                 <strong>{activeTrack.title}</strong>
                 <span>{activeTrack.artist}</span>
-                <small>
-                  {isAuthenticated ? <>Còn <StarAmount amount={starBalance} /> trong ví</> : 'Track miễn phí phát ngay; nội dung tính sao sẽ yêu cầu đăng nhập.'}
-                </small>
+                <small>{isAuthenticated ? <a href="/tai-khoan/dashboard#star-wallet">Mở Ví Sao</a> : 'Track miễn phí phát ngay; nội dung tính sao sẽ yêu cầu đăng nhập.'}</small>
               </div>
-              <button type="button" className="global-media-player-wallet global-media-player-wallet-button" aria-live="polite" onClick={() => { if (!isAuthenticated) setShowLoginModal(true) }}>
-                {isAuthenticated ? <StarAmount amount={starBalance} /> : 'Đăng nhập'}
+              <button type="button" className="global-media-player-wallet global-media-player-wallet-button" aria-live="polite" onClick={() => { if (isAuthenticated) window.location.assign('/tai-khoan/dashboard#star-wallet'); else setShowLoginModal(true) }}>
+                {isAuthenticated ? 'Mở Ví Sao' : 'Đăng nhập'}
               </button>
             </div>
 
@@ -1048,10 +1046,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 <strong>{activeTrack.title}</strong>
                 <span>{activeTrack.artist}</span>
               </div>
-              <button type="button" className="music-visualizer-play-toggle" onClick={togglePlay}>
-                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
-                {isPlaying ? 'Tạm dừng' : 'Phát nhạc'}
-              </button>
             </div>
           </section>
         </div>

@@ -103,6 +103,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
       const packagesResult = await packagesResponse.json() as { ok?: boolean; packages?: typeof starPackages }
       if (packagesResult.ok && packagesResult.packages?.length) {
         setTopupPlans(packagesResult.packages.map((plan) => ({ ...plan, price: `${plan.amount.toLocaleString('vi-VN')} VND`, note: 'Gói sao được cấu hình từ CMS.' })))
+        setSelectedTopupPackageId((current) => packagesResult.packages?.some((plan) => plan.id === current) ? current : packagesResult.packages?.[0]?.id ?? current)
       }
     })()
   }, [searchParams])
