@@ -159,7 +159,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const analysedAudioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
   const lastPersistedProgressRef = useRef(0)
@@ -175,17 +175,23 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         audioContextRef.current = context
 
         if (analysedAudioRef.current !== audio) {
-          audioSourceRef.current?.disconnect()
-          const analyser = context.createAnalyser()
-          analyser.fftSize = 512
-          analyser.smoothingTimeConstant = 0.78
-          const source = context.createMediaElementSource(audio)
-          source.connect(analyser)
-          // Keep the speaker route separate from the analyser so opening visual mode cannot mute playback.
-          source.connect(context.destination)
-          audioSourceRef.current = source
-          analysedAudioRef.current = audio
-          setAudioAnalyser(analyser)
+          const capturableAudio = audio as HTMLAudioElement & {
+            captureStream?: () => MediaStream
+            mozCaptureStream?: () => MediaStream
+          }
+          const stream = capturableAudio.captureStream?.() ?? capturableAudio.mozCaptureStream?.()
+
+          if (stream) {
+            audioSourceRef.current?.disconnect()
+            const analyser = context.createAnalyser()
+            analyser.fftSize = 512
+            analyser.smoothingTimeConstant = 0.78
+            const source = context.createMediaStreamSource(stream)
+            source.connect(analyser)
+            audioSourceRef.current = source
+            analysedAudioRef.current = audio
+            setAudioAnalyser(analyser)
+          }
         }
 
         void context.resume()
