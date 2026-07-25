@@ -195,6 +195,20 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     window.location.assign(`/nghe-si/${profileSlug}`)
   }
 
+  useEffect(() => {
+    if (section.key !== 'profile') return
+
+    const interceptSampleProfileLink = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target?.closest('a[href="/nghe-si/neon-viper"]')) return
+      event.preventDefault()
+      openPublicProfile()
+    }
+
+    document.addEventListener('click', interceptSampleProfileLink)
+    return () => document.removeEventListener('click', interceptSampleProfileLink)
+  }, [profileSlug, profileStatus, section.key])
+
   const renderTemplate = (template: ArtistPortalTemplate) => {
     const id = templateId(section.key, template.title)
     const values = forms[id]?.values ?? {}
