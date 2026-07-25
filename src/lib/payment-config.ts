@@ -185,9 +185,11 @@ function preview(value: string) {
 }
 
 export async function getPaymentConfigSnapshot(): Promise<PaymentConfigSnapshot> {
+  // CMS saves must win over the process environment left from the first PM2 boot.
+  // Otherwise a valid save appears to work, but a refresh reads the stale runtime value.
   const merged = mergePaymentEnvMaps(
-    mergePaymentEnvMaps(await readEnvFileMap(), await readConfigStoreMap()),
-    readRuntimeMap(),
+    mergePaymentEnvMaps(await readEnvFileMap(), readRuntimeMap()),
+    await readConfigStoreMap(),
   )
 
   return {
@@ -217,8 +219,8 @@ export async function getPaymentConfigSnapshot(): Promise<PaymentConfigSnapshot>
 
 export async function getPaymentGatewayConfig() {
   const merged = mergePaymentEnvMaps(
-    mergePaymentEnvMaps(await readEnvFileMap(), await readConfigStoreMap()),
-    readRuntimeMap(),
+    mergePaymentEnvMaps(await readEnvFileMap(), readRuntimeMap()),
+    await readConfigStoreMap(),
   )
 
   return {
@@ -332,8 +334,8 @@ export async function savePaymentConfig(values: {
 
 export async function getTelegramPaymentConfig() {
   const merged = mergePaymentEnvMaps(
-    mergePaymentEnvMaps(await readEnvFileMap(), await readConfigStoreMap()),
-    readRuntimeMap(),
+    mergePaymentEnvMaps(await readEnvFileMap(), readRuntimeMap()),
+    await readConfigStoreMap(),
   )
 
   return {

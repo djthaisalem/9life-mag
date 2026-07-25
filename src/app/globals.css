@@ -5567,6 +5567,22 @@ button.more-link-unified {
   align-self: start;
 }
 
+.cms-artist-review-layout {
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+}
+
+.cms-artist-review-action-panel {
+  padding: 20px;
+}
+
+.cms-artist-review-action-panel h2 {
+  font-size: 1.35rem;
+}
+
+@media (max-width: 820px) {
+  .cms-artist-review-layout { grid-template-columns: 1fr; }
+}
+
 .cms-artist-review-actions {
   display: flex;
   flex-wrap: wrap;

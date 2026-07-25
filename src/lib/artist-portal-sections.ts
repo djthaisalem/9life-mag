@@ -196,7 +196,7 @@ export const artistPortalSections: ArtistPortalSection[] = [
           { label: 'Định dạng', name: 'albumFormat', type: 'select', options: ['Album', 'EP', 'Mixtape', 'DJ Set'] },
           { label: 'Ngày phát hành dự kiến', name: 'albumReleaseDate', type: 'text', placeholder: 'Ví dụ: 18.07.2026' },
           { label: 'Upload file nhạc cho album', name: 'albumAudioUploads', type: 'file', accept: 'audio/mpeg,audio/wav,audio/mp4,.mp3,.wav,.m4a', multiple: true, helper: 'Có thể chọn nhiều file cùng lúc để lưu vào bản nháp album. File chỉ được xử lý vào kho phát hành sau khi gửi duyệt.' },
-          { label: 'Track trong album', name: 'albumExistingTracks', type: 'trackpicker', options: ['Water Lily Club Remix', 'Rooftop Pulse', 'After Hours Rework', 'Saigon Neon Edit'], helper: 'Thêm hoặc gỡ từng track bằng nút bên phải. Danh sách này sẽ tự lấy từ kho nhạc của nghệ sĩ khi kết nối dữ liệu thật.' },
+          { label: 'Track trong album', name: 'albumExistingTracks', type: 'trackpicker', options: [], helper: 'Thêm hoặc gỡ từng track bằng nút bên phải. Danh sách chỉ hiện nhạc thật do nghệ sĩ đã upload, không dùng dữ liệu mẫu.' },
           { label: 'Ảnh bìa album', name: 'albumCover', type: 'file', accept: 'image/png,image/jpeg,image/webp', maxSizeMb: 10, helper: 'Ảnh sẽ tự crop về khung vuông 1:1. Nếu bỏ trống, hệ thống dùng cover mặc định.' },
           { label: 'Mô tả album', name: 'albumDescription', type: 'textarea', placeholder: 'Giới thiệu ngắn về concept, dòng nhạc và các track sẽ được gắn vào album.' },
         ],
