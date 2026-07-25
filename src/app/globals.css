@@ -12445,8 +12445,105 @@ body:has(.global-media-player-shell) .dashboard-support-assistant {
     display: none;
   }
 
-  .user-dashboard-topup-grid {
+.user-dashboard-topup-grid {
     grid-template-columns: minmax(0, 1fr);
     margin-top: 10px;
+  }
+}
+
+/* Full-screen Three.js visualizer: the cover floats above the live audio scene. */
+.music-visualizer-shell {
+  display: block;
+  min-height: min(820px, calc(100vh - 60px));
+}
+
+.audio-visualizer-3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(20, 74, 96, 0.28), transparent 48%),
+    linear-gradient(135deg, #02070d, #07111a 52%, #0d0908);
+}
+
+.audio-visualizer-3d canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.audio-visualizer-3d-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #afc0cc;
+  font-size: 0.88rem;
+}
+
+.music-visualizer-album-float {
+  position: absolute;
+  top: 50%;
+  left: clamp(26px, 7vw, 120px);
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  width: min(28vw, 340px);
+  min-width: 220px;
+  transform: translateY(-50%);
+}
+
+.music-visualizer-album-float .music-visualizer-record {
+  width: 100%;
+  margin: 0 0 22px;
+}
+
+.music-visualizer-album-float .music-visualizer-track-copy {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.9);
+}
+
+.music-visualizer-album-float .music-visualizer-play-toggle {
+  width: 100%;
+  margin: 20px 0 0;
+}
+
+@media (max-width: 760px) {
+  .music-visualizer-shell {
+    min-height: 100%;
+  }
+
+  .music-visualizer-album-float {
+    top: auto;
+    bottom: 28px;
+    left: 50%;
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    column-gap: 15px;
+    align-items: center;
+    width: min(88vw, 420px);
+    min-width: 0;
+    transform: translateX(-50%);
+  }
+
+  .music-visualizer-album-float .music-visualizer-record {
+    grid-row: 1 / span 2;
+    width: 84px;
+    margin: 0;
+  }
+
+  .music-visualizer-album-float .music-visualizer-track-copy {
+    text-align: left;
+  }
+
+  .music-visualizer-album-float .music-visualizer-track-copy strong {
+    font-size: 1rem;
+  }
+
+  .music-visualizer-album-float .music-visualizer-play-toggle {
+    min-height: 38px;
+    margin: 10px 0 0;
   }
 }

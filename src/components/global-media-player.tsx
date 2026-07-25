@@ -32,6 +32,7 @@ import {
 import { recordDownload, recordListening } from '@/lib/music-history'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
+import { AudioVisualizer3D } from '@/components/audio-visualizer-3d'
 
 const FAVORITE_TRACKS_STORAGE_KEY = 'nine-life-favorite-tracks'
 const PLAYER_RESUME_STORAGE_KEY = 'nine-life-media-player-resume'
@@ -109,12 +110,6 @@ function savePlayerResumeState(value: PlayerResumeState) {
   window.localStorage.setItem(PLAYER_RESUME_STORAGE_KEY, JSON.stringify(value))
 }
 
-const VISUALIZER_MODES = ['spectrum', 'orbit', 'pulse', 'prism'] as const
-
-function getVisualizerSeed(trackId: string) {
-  return [...trackId].reduce((seed, character) => seed + character.charCodeAt(0), 0)
-}
-
 export function useMediaPlayer() {
   const context = useContext(MediaPlayerContext)
 
@@ -160,25 +155,44 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const [pendingReportSourceType, setPendingReportSourceType] = useState<AudioSourceType>('track')
   const [isReportingIssue, setIsReportingIssue] = useState(false)
   const [isVisualizerOpen, setIsVisualizerOpen] = useState(false)
-  const [visualizerCycle, setVisualizerCycle] = useState(0)
+  const [audioAnalyser, setAudioAnalyser] = useState<AnalyserNode | null>(null)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const analysedAudioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
   const lastPersistedProgressRef = useRef(0)
   const autoAdvanceRef = useRef<(index: number, track: AudioTrack) => void>(() => undefined)
   const activeTrack = queue[activeIndex] ?? null
-  const visualizerSeed = activeTrack ? getVisualizerSeed(activeTrack.id) : 0
-  const visualizerMode = VISUALIZER_MODES[(visualizerSeed + visualizerCycle) % VISUALIZER_MODES.length]
 
-  useEffect(() => {
-    if (!isVisualizerOpen) return
+  const openVisualizer = () => {
+    const audio = audioRef.current
+    if (audio && typeof window !== 'undefined') {
+      const AudioContextConstructor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (AudioContextConstructor) {
+        const context = audioContextRef.current ?? new AudioContextConstructor()
+        audioContextRef.current = context
 
-    const timer = window.setInterval(() => {
-      setVisualizerCycle((current) => current + 1)
-    }, 18000)
+        if (analysedAudioRef.current !== audio) {
+          audioSourceRef.current?.disconnect()
+          const analyser = context.createAnalyser()
+          analyser.fftSize = 512
+          analyser.smoothingTimeConstant = 0.78
+          const source = context.createMediaElementSource(audio)
+          source.connect(analyser)
+          analyser.connect(context.destination)
+          audioSourceRef.current = source
+          analysedAudioRef.current = audio
+          setAudioAnalyser(analyser)
+        }
 
-    return () => window.clearInterval(timer)
-  }, [isVisualizerOpen])
+        void context.resume()
+      }
+    }
+
+    setIsVisualizerOpen(true)
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -886,7 +900,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
               <button
                 type="button"
                 className="global-media-player-cover-trigger"
-                onClick={() => setIsVisualizerOpen(true)}
+                onClick={openVisualizer}
                 aria-label={`Mở màn hình nghe nhạc cho ${activeTrack.title}`}
               >
                 {activeTrack.cover ? <img src={activeTrack.cover} alt={activeTrack.title} className="global-media-player-cover" /> : <span className="global-media-player-cover global-media-player-cover-placeholder" />}
@@ -999,14 +1013,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
       {activeTrack && isVisualizerOpen ? (
         <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Màn hình nghe nhạc">
-          <section className={`music-visualizer-shell music-visualizer-${visualizerMode}`}>
+          <section className="music-visualizer-shell">
+            <AudioVisualizer3D analyser={audioAnalyser} isPlaying={isPlaying} />
             <button type="button" className="music-visualizer-close" onClick={() => setIsVisualizerOpen(false)} aria-label="Đóng màn hình nghe nhạc">
               <X size={20} />
               <span>Trở lại website</span>
             </button>
 
-            <div className="music-visualizer-album-panel">
-              <span className="music-visualizer-kicker">9LIFE LIVE SESSION</span>
+            <div className="music-visualizer-album-float">
               <div className={isPlaying ? 'music-visualizer-record music-visualizer-record-playing' : 'music-visualizer-record'}>
                 <div className="music-visualizer-vinyl" aria-hidden="true" />
                 <div className="music-visualizer-cover-frame">
@@ -1021,32 +1035,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                 {isPlaying ? 'Tạm dừng' : 'Phát nhạc'}
               </button>
-            </div>
-
-            <div className="music-visualizer-stage" aria-hidden="true">
-              <div className="music-visualizer-glow music-visualizer-glow-one" />
-              <div className="music-visualizer-glow music-visualizer-glow-two" />
-              <div className="music-visualizer-orbits">
-                <i />
-                <i />
-                <i />
-              </div>
-              <div className="music-visualizer-bars">
-                {Array.from({ length: 56 }, (_, index) => (
-                  <i
-                    key={index}
-                    style={{
-                      height: `${24 + ((visualizerSeed + index * 19) % 70)}%`,
-                      animationDelay: `-${(index % 11) * 0.23}s`,
-                      animationDuration: `${2.4 + ((visualizerSeed + index) % 6) * 0.36}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              <div className="music-visualizer-now-playing">
-                <span>Now playing</span>
-                <strong>{activeTrack.title}</strong>
-              </div>
             </div>
           </section>
         </div>
