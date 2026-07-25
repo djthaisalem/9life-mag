@@ -140,6 +140,9 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
       setProfileSlug(profile.slug ?? '')
       setProfileStatus(profile.status ?? '')
     } catch {}
+    if (section.key === 'profile' && new URLSearchParams(window.location.search).get('preview') === '1') {
+      setIsDraftPreviewOpen(true)
+    }
   }, [])
 
   const updateValue = (id: string, name: string, value: string) => { setSavedTemplates((current) => ({ ...current, [id]: false })); setForms((current) => ({

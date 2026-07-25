@@ -60,7 +60,7 @@ export default async function CmsArtistDetailPage({
     return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${stageName}`} description="Bản xem duyệt hiển thị theo bố cục profile public; các mục thiếu vẫn được giữ lại để Admin nhắc nghệ sĩ bổ sung.">
       <section className="cms-artist-review-layout">
         <article className="panel">
-          <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Bản xem duyệt hồ sơ</p><h2>{stageName}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div>
+          <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Bản xem duyệt hồ sơ</p><h2>{stageName}</h2><p className="cms-muted">{String(realArtist.slug ?? '')}</p></div><div className="cms-inline-actions"><Link href="/tai-khoan/nghe-si/dashboard/profile?preview=1" target="_blank" className="button">Mở preview trực tiếp</Link><Link href="/cms/dashboard/artists?status=pending_review" className="button-secondary">Quay lại danh sách</Link></div></div>
           <section className="artist-profile-page artist-profile-draft-preview cms-artist-review-preview">
             <section className="artist-profile-hero artist-profile-draft-hero-public">
               {cover ? <img className="artist-profile-hero-image" src={cover} alt={`Cover ${stageName}`} /> : null}
