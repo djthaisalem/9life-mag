@@ -6,6 +6,24 @@ function formDataToObject(form: HTMLFormElement) {
   return Object.fromEntries(new FormData(form).entries())
 }
 
+type SubmissionResult = { ok: boolean; message?: string }
+
+async function readSubmissionResult(response: Response, successFallback: string): Promise<SubmissionResult> {
+  const body = await response.text()
+  let result: SubmissionResult | null = null
+
+  try {
+    result = body ? JSON.parse(body) as SubmissionResult : null
+  } catch {
+    result = null
+  }
+
+  if (result) return result
+  if (response.ok) return { ok: true, message: successFallback }
+
+  return { ok: false, message: 'Yêu cầu chưa được xác nhận. Vui lòng thử lại sau ít phút.' }
+}
+
 export function SiteBookingSubmitForm({
   type,
   children,
@@ -27,11 +45,16 @@ export function SiteBookingSubmitForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formDataToObject(event.currentTarget), type }),
       })
-      const result = (await response.json()) as { ok: boolean; message: string }
-      setMessage(result.message)
+      const result = await readSubmissionResult(
+        response,
+        type === 'artist'
+          ? 'Yêu cầu booking nghệ sĩ đã được tiếp nhận. Đội vận hành sẽ liên hệ lại theo thông tin bạn cung cấp.'
+          : 'Yêu cầu đặt bàn đã được tiếp nhận. Outlet sẽ kiểm tra và liên hệ xác nhận sớm nhất.',
+      )
+      setMessage(result.message ?? '')
       if (result.ok) event.currentTarget.reset()
     } catch {
-      setMessage('Không thể kết nối đến hệ thống tiếp nhận. Vui lòng thử lại.')
+      setMessage('Chưa nhận được phản hồi xác nhận. Nếu bạn vừa bấm gửi, yêu cầu có thể đang được hệ thống tiếp nhận; vui lòng không gửi lặp lại ngay.')
     } finally {
       setPending(false)
     }
@@ -81,11 +104,14 @@ export function CopyrightReportSubmitForm({ children }: { children: ReactNode })
           goodwill: 'Ưu tiên rà soát quyền sở hữu và phản hồi qua email.',
         }),
       })
-      const result = (await response.json()) as { ok: boolean; message: string }
-      setMessage(result.message)
+      const result = await readSubmissionResult(
+        response,
+        'Báo cáo bản quyền đã được tiếp nhận. Đội vận hành sẽ rà soát và phản hồi qua thông tin bạn cung cấp.',
+      )
+      setMessage(result.message ?? '')
       if (result.ok) event.currentTarget.reset()
     } catch {
-      setMessage('Không thể kết nối đến hệ thống tiếp nhận. Vui lòng thử lại.')
+      setMessage('Chưa nhận được phản hồi xác nhận. Nếu bạn vừa bấm gửi, báo cáo có thể đang được hệ thống tiếp nhận; vui lòng không gửi lặp lại ngay.')
     } finally {
       setPending(false)
     }
