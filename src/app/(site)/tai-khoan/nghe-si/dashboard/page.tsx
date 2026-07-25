@@ -4,6 +4,7 @@ import { PortalNotificationCenter } from '@/components/portal-notification-cente
 import { DashboardLogoutButton } from '@/components/dashboard-logout-button'
 import { StarAmount } from '@/components/star-amount'
 import { requireArtistPortalAccess } from '@/lib/artist-portal-access'
+import { loadPayloadClient } from '@/lib/payload-runtime'
 
 const onboardingSteps = [
   { number: '01', title: 'Hoàn thiện hồ sơ', description: 'Thêm tên nghệ sĩ, vai trò, ảnh đại diện, ảnh cover và phần giới thiệu ngắn để tạo trang profile chỉn chu.', href: '/tai-khoan/nghe-si/dashboard/profile', action: 'Thiết lập hồ sơ' },
@@ -26,18 +27,27 @@ const workspaceLinks = [
   { title: 'Nội dung biên tập', description: 'Bài viết, spotlight và nội dung truyền thông.', href: '/tai-khoan/nghe-si/dashboard/content' },
 ]
 
-const artistPerformance = [
-  { title: 'Water Lily Club Remix', type: 'Remix', plays: '11.2K', votes: '126', stars: '4,344' },
-  { title: 'Rooftop Pulse', type: 'Nonstop', plays: '6.1K', votes: '74', stars: '2,098' },
-  { title: 'Electric Bloom', type: 'Album', plays: '7.5K', votes: '86', stars: '2,452' },
-]
-
 export default async function ArtistDashboardPage() {
   const account = await requireArtistPortalAccess('artist')
   const identity = account.email || account.phone || 'tài khoản nghệ sĩ'
   const hasPublishedProfile = Boolean(account.artistProfileSlug)
   const profileRewardClaimed = (account.signupStarsEarned ?? 0) >= 300
-  const performance = hasPublishedProfile ? artistPerformance : []
+  let performance: Array<{ title: string; type: string; plays: string; votes: string; stars: string }> = []
+  if (account.artistProfileSlug) {
+    try {
+      const payload = await loadPayloadClient()
+      const tracks = await payload.find({ collection: 'tracks', where: { submittedArtistSlug: { equals: account.artistProfileSlug } }, limit: 20, depth: 0, pagination: false, overrideAccess: true })
+      performance = (tracks.docs as Array<Record<string, unknown>>).map((track) => ({
+        title: String(track.title ?? 'Track chưa đặt tên'),
+        type: String(track.trackType ?? 'track'),
+        plays: String(track.playCount ?? 0),
+        votes: String(track.voteCount ?? 0),
+        stars: String(track.starsSpent ?? 0),
+      }))
+    } catch (error) {
+      console.error('Artist performance query failed', error)
+    }
+  }
 
   return (
     <main className="artist-dashboard-page">

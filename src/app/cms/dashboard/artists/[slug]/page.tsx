@@ -25,6 +25,14 @@ export default async function CmsArtistDetailPage({
     if (!realArtist) notFound()
 
     const status = typeof realArtist.profileStatus === 'string' ? realArtist.profileStatus : 'draft'
+    const missingFields = [
+      !realArtist.seoTitle && 'Câu giới thiệu nổi bật',
+      !realArtist.seoDescription && 'Giới thiệu ngắn',
+      !realArtist.role && 'Vai trò chính',
+      !realArtist.bookingPriceLabel && 'Mức giá hoặc ghi chú booking',
+      !realArtist.serviceArea && 'Khu vực hoạt động',
+      !Array.isArray(realArtist.genres) || realArtist.genres.length === 0 ? 'Phong cách / dòng nhạc' : false,
+    ].filter(Boolean) as string[]
     return <CmsDashboardShell activeKey="artists" title={`Hồ sơ: ${String(realArtist.stageName ?? 'Nghệ sĩ')}`} description="Kiểm tra nội dung hồ sơ trước khi duyệt hiển thị ngoài site.">
       <section className="cms-split-grid">
         <article className="panel">
@@ -32,9 +40,11 @@ export default async function CmsArtistDetailPage({
           <div className="cms-overview-stats cms-overview-stats-2"><article className="metric"><strong>{String(realArtist.role ?? 'Chưa chọn')}</strong><span>Vai trò</span></article><article className="metric"><strong>{status}</strong><span>Trạng thái</span></article></div>
           <div className="field"><label>Headline</label><p>{String(realArtist.seoTitle ?? 'Nghệ sĩ chưa bổ sung headline.')}</p></div>
           <div className="field"><label>Giới thiệu ngắn</label><p>{String(realArtist.seoDescription ?? 'Nghệ sĩ chưa bổ sung giới thiệu ngắn.')}</p></div>
-          <div className="field"><label>Giá booking</label><p>{String(realArtist.bookingPriceLabel ?? 'Liên hệ để nhận báo giá')}</p></div>
+          <div className="field"><label>Giá booking</label><p>{String(realArtist.bookingPriceLabel ?? 'Chưa cập nhật')}</p></div>
+          <div className="field"><label>Khu vực hoạt động</label><p>{String(realArtist.serviceArea ?? 'Chưa cập nhật')}</p></div>
+          <div className="field"><label>Phong cách / dòng nhạc</label><p>{Array.isArray(realArtist.genres) && realArtist.genres.length ? realArtist.genres.map((item) => typeof item === 'object' && item ? String((item as Record<string, unknown>).value ?? '') : String(item)).filter(Boolean).join(', ') : 'Chưa cập nhật'}</p></div>
         </article>
-        <article className="panel"><p className="section-eyebrow">Review action</p><h2>Duyệt sau khi kiểm tra</h2><p className="cms-muted">Chỉ public khi thông tin trên đã đúng. Có thể hủy để nghệ sĩ cập nhật lại.</p><CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
+        <article className="panel"><p className="section-eyebrow">Review action</p><h2>Duyệt sau khi kiểm tra</h2><p className="cms-muted">Chỉ public khi thông tin trên đã đúng. Có thể hủy để nghệ sĩ cập nhật lại.</p>{missingFields.length ? <div className="cms-security-panel"><strong>Các mục nghệ sĩ còn thiếu</strong><ul>{missingFields.map((item) => <li key={item}>{item}</li>)}</ul></div> : <div className="cms-security-panel"><strong>Hồ sơ cơ bản đã đủ để duyệt</strong><p>Admin vẫn nên đọc lại headline, bio và giá booking trước khi public.</p></div>}<CmsArtistReviewActions artistId={String(realArtist.id)} initialStatus={status} /></article>
       </section>
     </CmsDashboardShell>
   }

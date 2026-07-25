@@ -238,6 +238,14 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     window.location.assign(`/nghe-si/${profileSlug}`)
   }
 
+  const previewValue = (fieldName: string) => {
+    for (const state of Object.values(forms)) {
+      const value = state.values[fieldName]
+      if (value?.trim()) return value.trim()
+    }
+    return ''
+  }
+
   useEffect(() => {
     if (section.key !== 'profile') return
 
@@ -279,7 +287,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
   return (
     <>
-      {isDraftPreviewOpen ? <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Artist profile preview"><section className="music-visualizer-shell artist-dashboard-panel"><button type="button" className="music-visualizer-close" onClick={() => setIsDraftPreviewOpen(false)}>Dong</button><p className="section-eyebrow">Ban xem truoc</p><h2>{profileBasics.artistName || 'Ho so nghe si'}</h2><p>{profileBasics.headline}</p><p>{profileBasics.shortBio}</p><p className="artist-editor-save-feedback">Ban xem truoc nay chi hien thi cho tai khoan cua ban. Admin can duyet truoc khi public.</p></section></div> : null}
+      {isDraftPreviewOpen ? <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Bản xem trước hồ sơ nghệ sĩ"><section className="music-visualizer-shell artist-dashboard-panel artist-profile-draft-preview"><button type="button" className="music-visualizer-close" onClick={() => setIsDraftPreviewOpen(false)}>Đóng</button><p className="section-eyebrow">Bản xem trước hồ sơ</p><div className="artist-profile-draft-hero"><div className="artist-profile-draft-avatar">{previewValue('portraitUpload') ? <img src={previewValue('portraitUpload')} alt="" /> : <span>{(profileBasics.artistName || 'N').slice(0, 1)}</span>}</div><div><h2>{profileBasics.artistName || 'Nghệ sĩ chưa đặt tên'}</h2><strong>{profileBasics.headline || 'Chưa có câu giới thiệu nổi bật'}</strong><p>{profileBasics.shortBio || 'Chưa có giới thiệu ngắn. Hãy bổ sung để người xem hiểu phong cách và kinh nghiệm của bạn.'}</p><span className="cms-status-chip">{profileStatus || 'bản nháp'}</span></div></div><div className="artist-dashboard-module-grid"><article className="artist-dashboard-module-card"><strong>Thông tin nghề nghiệp</strong><p>{previewValue('genres') || 'Chưa có phong cách / dòng nhạc'}</p><p>{previewValue('city') || 'Chưa có tỉnh thành hoạt động'}</p></article><article className="artist-dashboard-module-card"><strong>Booking</strong><p>{previewValue('bookingRate') || 'Chưa công khai mức giá booking'}</p><p>{previewValue('availability') || 'Chưa cập nhật tình trạng nhận show'}</p></article><article className="artist-dashboard-module-card"><strong>Kinh nghiệm</strong><p>{previewValue('workExperience') || 'Chưa thêm kinh nghiệm làm việc'}</p></article><article className="artist-dashboard-module-card"><strong>Music / media</strong><p>{previewValue('trackTitle') || previewValue('playlistName') || 'Chưa có nội dung âm nhạc'}</p><p>{previewValue('videoTitle') || 'Chưa có video hoặc media kit'}</p></article></div><article className="artist-dashboard-panel"><p className="section-eyebrow">Giới thiệu chi tiết</p><p>{previewValue('longBio') || 'Phần này sẽ hiện khi bạn bổ sung giới thiệu chi tiết.'}</p></article><p className="artist-editor-save-feedback">Các dòng “chưa có” cũng sẽ là danh sách để bạn và Admin biết cần bổ sung trước khi duyệt công khai.</p></section></div> : null}
     <main className="artist-editor-page">
       {/*
       {isDraftPreviewOpen ? <div className="music-visualizer-overlay" role="dialog" aria-modal="true" aria-label="Xem trước hồ sơ nháp"><section className="music-visualizer-shell artist-dashboard-panel"><button type="button" className="music-visualizer-close" onClick={() => setIsDraftPreviewOpen(false)}>Đóng</button><p className="section-eyebrow">Bản xem trước</p><h2>{forms[templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')]?.values.artistName || 'Hồ sơ nghệ sĩ'}</h2><p>{forms[templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.values.shortBio || '']}</p><p className="artist-editor-save-feedback">Bản này chỉ bạn xem được. Admin cần duyệt trước khi hồ sơ xuất hiện công khai.</p></section></div> : null}
