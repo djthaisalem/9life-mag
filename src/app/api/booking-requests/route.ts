@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sendBookingTelegramNotice } from '@/lib/booking-telegram'
 import { createPublicBookingRequest } from '@/lib/booking-requests'
@@ -111,10 +111,12 @@ export async function POST(request: Request) {
       },
     ]).catch((error) => console.error('Booking CMS notification failed', error))
 
-    const telegram = await sendBookingTelegramNotice(created)
+    after(async () => {
+      const telegram = await sendBookingTelegramNotice(created)
+      if (!telegram.ok) console.warn('Booking Telegram notice was not delivered', telegram)
+    })
     return NextResponse.json({
       ok: true,
-      telegramSent: telegram.ok,
       message:
         payload.type === 'artist'
           ? 'Đã gửi yêu cầu booking nghệ sĩ. Đội vận hành sẽ liên hệ lại theo thông tin bạn cung cấp.'

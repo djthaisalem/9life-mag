@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createContactRequest } from '@/lib/booking-requests'
 import { sendBookingTelegramNotice } from '@/lib/booking-telegram'
@@ -39,11 +39,13 @@ export async function POST(request: Request) {
         href: '/cms/dashboard/booking/contact',
       },
     ]).catch((error) => console.error('Contact CMS notification failed', error))
-    const telegram = await sendBookingTelegramNotice(created)
+    after(async () => {
+      const telegram = await sendBookingTelegramNotice(created)
+      if (!telegram.ok) console.warn('Contact Telegram notice was not delivered', telegram)
+    })
 
     return NextResponse.json({
       ok: true,
-      telegramSent: telegram.ok,
       message: 'Đã tiếp nhận liên hệ. Đội ngũ 9LIFE MAG sẽ phản hồi qua thông tin bạn cung cấp.',
     })
   } catch (error) {

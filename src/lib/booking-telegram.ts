@@ -48,7 +48,7 @@ export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
   try {
     const telegram = await getTelegramPaymentConfig()
     const token = telegram.token
-    const channel = request.reminderConfig.telegramChannel || telegram.channel || cmsTelegramBookingConfig.globalChannel
+    const channel = telegram.channel || request.reminderConfig.telegramChannel || cmsTelegramBookingConfig.globalChannel
     const message = [
     '9LIFE MAG - YÊU CẦU MỚI',
     `Loại: ${request.typeLabel}`,
