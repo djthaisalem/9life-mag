@@ -937,7 +937,7 @@ img {
 
 .artist-dashboard-performance-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.5fr) repeat(4, minmax(82px, 0.55fr));
+  grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(82px, 0.55fr));
   gap: 14px;
   align-items: center;
   padding: 14px 16px;

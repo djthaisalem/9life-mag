@@ -37,7 +37,6 @@ export function AudioShowcasePlayer({
     isFavorite,
     hasDownloaded,
     toggleFavorite,
-    downloadCounts,
   } = useMediaPlayer()
   const [premiumPromptOpen, setPremiumPromptOpen] = useState(false)
 
@@ -160,21 +159,15 @@ export function AudioShowcasePlayer({
                     <Heart size={16} fill={isFavorite(track.id) ? 'currentColor' : 'none'} />
                   </button>
                   {variant === 'remix' || variant === 'track' ? (
-                    <>
-                      <div className="track-stat">
-                        <strong>{(downloadCounts[track.id] ?? track.downloads ?? 0).toLocaleString('en-US')}</strong>
-                        <span className="muted">downloads</span>
-                      </div>
-                      <button
-                        type="button"
-                        className={hasDownloaded(track.id) ? 'mini-button mini-button-icon mini-button-liked' : 'mini-button mini-button-icon'}
-                        onClick={() => openDownloadRequest(track)}
-                        aria-label="Download track"
-                        title="Download track"
-                      >
-                        <Download size={16} />
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className={hasDownloaded(track.id) ? 'mini-button mini-button-icon mini-button-liked' : 'mini-button mini-button-icon'}
+                      onClick={() => openDownloadRequest(track)}
+                      aria-label="Download track"
+                      title="Download track"
+                    >
+                      <Download size={16} />
+                    </button>
                   ) : track.likes ? (
                     <div className="track-stat">
                       <strong>{track.likes}</strong>

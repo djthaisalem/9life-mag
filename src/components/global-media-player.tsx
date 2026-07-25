@@ -960,7 +960,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
               <div className="global-media-player-badges">
                 <span>{queue.length} queue</span>
                 <span>{favoriteTrackIds.length} liked</span>
-                <span>{(downloadCounts[activeTrack.id] ?? activeTrack.downloads ?? 0).toLocaleString('en-US')} downloads</span>
               </div>
             </div>
 

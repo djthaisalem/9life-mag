@@ -27,9 +27,9 @@ const workspaceLinks = [
 ]
 
 const artistPerformance = [
-  { title: 'Water Lily Club Remix', type: 'Remix', plays: '11.2K', downloads: '4,218', votes: '126', stars: '4,344' },
-  { title: 'Rooftop Pulse', type: 'Nonstop', plays: '6.1K', downloads: '—', votes: '74', stars: '2,098' },
-  { title: 'Electric Bloom', type: 'Album', plays: '7.5K', downloads: '1,086', votes: '86', stars: '2,452' },
+  { title: 'Water Lily Club Remix', type: 'Remix', plays: '11.2K', votes: '126', stars: '4,344' },
+  { title: 'Rooftop Pulse', type: 'Nonstop', plays: '6.1K', votes: '74', stars: '2,098' },
+  { title: 'Electric Bloom', type: 'Album', plays: '7.5K', votes: '86', stars: '2,452' },
 ]
 
 export default async function ArtistDashboardPage() {
@@ -89,14 +89,14 @@ export default async function ArtistDashboardPage() {
             </div>
             <div className="artist-dashboard-performance-table" role="table" aria-label="Hiệu suất nhạc đã đăng">
               <div className="artist-dashboard-performance-row artist-dashboard-performance-head" role="row">
-                <span>Nội dung</span><span>Lượt nghe</span><span>Tải xuống</span><span>Vote</span><span>Sao sử dụng</span>
+                <span>Nội dung</span><span>Lượt nghe</span><span>Vote</span><span>Sao sử dụng</span>
               </div>
               {performance.map((item) => (
                 <div key={item.title} className="artist-dashboard-performance-row" role="row">
-                  <strong data-label="Nội dung"><small>{item.type}</small>{item.title}</strong><span data-label="Lượt nghe">{item.plays}</span><span data-label="Tải xuống">{item.downloads}</span><span data-label="Vote">{item.votes}</span><b data-label="Sao sử dụng"><StarAmount amount={item.stars} /></b>
+                  <strong data-label="Nội dung"><small>{item.type}</small>{item.title}</strong><span data-label="Lượt nghe">{item.plays}</span><span data-label="Vote">{item.votes}</span><b data-label="Sao sử dụng"><StarAmount amount={item.stars} /></b>
                 </div>
               ))}
-              {!performance.length ? <div className="artist-dashboard-performance-row" role="row"><strong>Chưa có nội dung phát hành</strong><span>0</span><span>0</span><span>0</span><b>0</b></div> : null}
+              {!performance.length ? <div className="artist-dashboard-performance-row" role="row"><strong>Chưa có nội dung phát hành</strong><span>0</span><span>0</span><b>0</b></div> : null}
             </div>
           </article>
         </div>
