@@ -123,6 +123,7 @@ function ArtistMediaEmbedPreview({ url }: { url: string }) {
 export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps) {
   const [forms, setForms] = useState<StoredPortalState>({})
   const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const [savedTemplates, setSavedTemplates] = useState<Record<string, boolean>>({})
   const [profileSlug, setProfileSlug] = useState('')
   const [profileStatus, setProfileStatus] = useState<'draft' | 'pending_review' | 'published' | ''>('')
   const [isDraftPreviewOpen, setIsDraftPreviewOpen] = useState(false)
@@ -140,15 +141,15 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     } catch {}
   }, [])
 
-  const updateValue = (id: string, name: string, value: string) => setForms((current) => ({
+  const updateValue = (id: string, name: string, value: string) => { setSavedTemplates((current) => ({ ...current, [id]: false })); setForms((current) => ({
     ...current,
     [id]: { values: { ...(current[id]?.values ?? {}), [name]: value }, files: current[id]?.files ?? {} },
-  }))
+  })) }
 
-  const updateFile = (id: string, name: string, value: string) => setForms((current) => ({
+  const updateFile = (id: string, name: string, value: string) => { setSavedTemplates((current) => ({ ...current, [id]: false })); setForms((current) => ({
     ...current,
     [id]: { values: current[id]?.values ?? {}, files: { ...(current[id]?.files ?? {}), [name]: value } },
-  }))
+  })) }
 
   const handleFileChange = async (id: string, field: ArtistPortalField, event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? [])
@@ -171,6 +172,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const hasCompletedProfileBasics = Boolean(profileValues.artistName?.trim())
 
     if (section.key !== 'profile' || !hasCompletedProfileBasics) {
+      setSavedTemplates((current) => ({ ...current, [id]: true }))
       setFeedback((current) => ({
         ...current,
         [id]: section.key === 'profile' && id === profileBasicsId
@@ -198,6 +200,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
       if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setProfileSlug(result.slug ?? '')
       setProfileStatus(result.profileStatus ?? '')
+      setSavedTemplates((current) => ({ ...current, [id]: true }))
       window.localStorage.setItem(ARTIST_PORTAL_PROFILE_KEY, JSON.stringify({ slug: result.slug, status: result.profileStatus }))
       setFeedback((current) => ({
         ...current,
@@ -280,7 +283,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const files = forms[id]?.files ?? {}
 
     return <article key={template.title} className="artist-editor-template-card">
-      <div className="artist-editor-template-head"><div><strong>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.title ?? text(template.title)) : text(template.title)}</strong><p>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.description ?? text(template.description)) : text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => void save(id)}>Lưu thông tin</button></div>
+      <div className="artist-editor-template-head"><div><strong>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.title ?? text(template.title)) : text(template.title)}</strong><p>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.description ?? text(template.description)) : text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => void save(id)}>{savedTemplates[id] ? 'Đã lưu' : 'Lưu thông tin'}</button></div>
       <form className="artist-editor-form-grid" onSubmit={(event) => { event.preventDefault(); void save(id) }}>
         {template.fields.map((field) => <div key={field.name} className={`field${field.type === 'textarea' || field.type === 'trackpicker' || field.type === 'file' ? ' artist-editor-field-wide' : ''}`}>
           <label htmlFor={`${id}-${field.name}`}>{section.key === 'profile' ? (profileFieldCopy[field.name]?.label ?? text(field.label)) : text(field.label)}{field.optional ? <span className="artist-editor-optional-tag">Tùy chọn</span> : null}</label>
@@ -335,7 +338,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
             <article className="artist-dashboard-panel">
               <div className="artist-dashboard-panel-head">
                 <div><p className="section-eyebrow">Trạng thái</p><h2>{section.key === 'booking' ? 'Booking đã sẵn sàng đến đâu?' : 'Trạng thái nội dung hiện tại'}</h2><p className="artist-editor-panel-note">Các mục này giúp bạn biết phần nào cần hoàn thiện tiếp theo.</p></div>
-                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button" onClick={() => void save(profileBasicsId)}>Public profile</button> : null}<button type="button" className="button-secondary" onClick={() => section.key === 'profile' ? openPublicProfile() : setIsDraftPreviewOpen(true)}>{section.key === 'profile' && profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button></div>
+                <div className="artist-editor-panel-actions"><a href="#artist-editor-form" className="button-secondary">Đi tới form</a>{section.key === 'profile' ? <button type="button" className="button" onClick={() => void save(profileBasicsId)}>{profileStatus === 'pending_review' || profileStatus === 'published' ? 'Đã gửi thành công' : 'Public profile'}</button> : null}<button type="button" className="button-secondary" onClick={() => section.key === 'profile' ? openPublicProfile() : setIsDraftPreviewOpen(true)}>{section.key === 'profile' && profileStatus === 'published' ? 'Xem công khai' : 'Xem bản nháp'}</button></div>
               </div>
               {section.key === 'profile' ? <div className="cms-security-panel"><strong>Trước khi gửi duyệt</strong><p>Bạn hãy xem kỹ bản nháp, chỉnh sửa những thông tin cần thiết và thật chỉnh chu trước khi public. Khi gửi, Admin sẽ nhận thông báo CMS và Telegram để kiểm tra.</p>{profileMissing.length ? <p><strong>Còn thiếu:</strong> {profileMissing.join(', ')}.</p> : <p>Hồ sơ đã có đủ các phần cơ bản để gửi Admin duyệt.</p>}</div> : null}
               <div className="artist-editor-workflow">
@@ -353,7 +356,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
 
           <aside className="artist-editor-side">
             {section.key === 'profile' ? <StudentRegistrationSettings /> : null}
-            {section.key === 'profile' ? <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Huong dan dien ho so</p><h2>De Admin duyet nhanh</h2></div></div><div className="artist-dashboard-update-list"><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Ten nghe si:</strong> dung nghe danh muon hien thi tren poster, booking va trang tim kiem.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Headline:</strong> viet mot cau ngan ve vai tro va phong cach, vi du: DJ open format cho club, lounge va su kien thuong hieu.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Bio ngan:</strong> viet 2-3 cau ve kinh nghiem, dong nhac, khu vuc hoat dong va diem manh khi bieu dien.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Vai tro chinh:</strong> chon dung de CMS phan loai va Admin duyet profile chinh xac.</p></div></div></article> : null}
+            {section.key === 'profile' ? <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Hướng dẫn điền hồ sơ</p><h2>Để Admin duyệt nhanh</h2></div></div><div className="artist-dashboard-update-list"><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Tên nghệ sĩ:</strong> dùng nghệ danh muốn hiển thị trên poster, booking và trang tìm kiếm.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Headline:</strong> viết một câu ngắn về vai trò và phong cách.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Bio ngắn:</strong> viết 2-3 câu về kinh nghiệm, dòng nhạc, khu vực hoạt động và điểm mạnh khi biểu diễn.</p></div><div className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p><strong>Vai trò chính:</strong> chọn đúng để CMS phân loại và Admin duyệt profile chính xác.</p></div></div></article> : null}
             <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Bắt đầu</p><h2>Checklist cho lần đăng ký đầu</h2></div></div><div className="artist-dashboard-update-list">{section.starterChecklist.map((item) => <div key={item} className="artist-dashboard-update-item"><span className="account-benefit-dot" /><p>{text(item)}</p></div>)}</div></article>
             <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Điều hướng</p><h2>Quản lý nhanh</h2></div></div><div className="artist-dashboard-quick-links"><Link href="/tai-khoan/nghe-si/dashboard" className="artist-dashboard-quick-link">Về dashboard nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/dashboard/profile" className="artist-dashboard-quick-link">Hồ sơ nghệ sĩ</Link><Link href="/tai-khoan/nghe-si/dashboard/music" className="artist-dashboard-quick-link">Link nhạc và playlist</Link><Link href="/tai-khoan/nghe-si/dashboard/booking" className="artist-dashboard-quick-link">Booking và rider</Link></div></article>
           </aside>

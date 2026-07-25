@@ -5568,7 +5568,7 @@ button.more-link-unified {
 }
 
 .cms-artist-review-layout {
-  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 4fr) minmax(170px, .5fr);
 }
 
 .cms-artist-review-action-panel {
