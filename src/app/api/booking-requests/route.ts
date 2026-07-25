@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sendBookingTelegramNotice } from '@/lib/booking-telegram'
 import { createPublicBookingRequest } from '@/lib/booking-requests'
+import { createPortalNotifications } from '@/lib/portal-notifications'
 import { getTrustedClientIp, guardContactRequestAttempts } from '@/lib/request-guard'
 
 const commonFields = {
@@ -100,6 +101,15 @@ export async function POST(request: Request) {
               { label: 'Ghi chú', value: payload.notes || 'Không có' },
             ],
           })
+
+    await createPortalNotifications([
+      {
+        recipientKey: 'admin',
+        title: `Yêu cầu mới: ${created.typeLabel}`,
+        body: `${created.requester} gửi yêu cầu cho ${created.title}.`,
+        href: created.type === 'artist' ? '/cms/dashboard/booking/artists' : '/cms/dashboard/booking/outlets',
+      },
+    ]).catch((error) => console.error('Booking CMS notification failed', error))
 
     const telegram = await sendBookingTelegramNotice(created)
     return NextResponse.json({

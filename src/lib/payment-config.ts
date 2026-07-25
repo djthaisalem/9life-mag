@@ -331,11 +331,14 @@ export async function savePaymentConfig(values: {
 }
 
 export async function getTelegramPaymentConfig() {
-  const snapshot = await getPaymentConfigSnapshot()
+  const merged = mergePaymentEnvMaps(
+    mergePaymentEnvMaps(await readEnvFileMap(), await readConfigStoreMap()),
+    readRuntimeMap(),
+  )
 
   return {
-    token: process.env.TELEGRAM_BOT_TOKEN || '',
-    channel: snapshot.telegramChannel || cmsTelegramBookingConfig.globalChannel,
+    token: merged.TELEGRAM_BOT_TOKEN.trim(),
+    channel: merged.TELEGRAM_PAYMENT_CHANNEL.trim() || cmsTelegramBookingConfig.globalChannel,
   }
 }
 

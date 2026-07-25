@@ -30,17 +30,26 @@ async function sendTelegramMessage(input: { token: string; channel: string; mess
       cache: 'no-store',
     })
 
-    return { ok: response.ok }
-  } catch {
+    if (response.ok) return { ok: true }
+
+    const detail = await response.text().catch(() => '')
+    console.error('Telegram booking delivery failed', {
+      status: response.status,
+      detail: detail.slice(0, 500),
+    })
+    return { ok: false, reason: 'telegram-rejected' as const }
+  } catch (error) {
+    console.error('Telegram booking delivery failed', error)
     return { ok: false, reason: 'request-failed' as const }
   }
 }
 
 export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
-  const telegram = await getTelegramPaymentConfig()
-  const token = telegram.token
-  const channel = request.reminderConfig.telegramChannel || telegram.channel || cmsTelegramBookingConfig.globalChannel
-  const message = [
+  try {
+    const telegram = await getTelegramPaymentConfig()
+    const token = telegram.token
+    const channel = request.reminderConfig.telegramChannel || telegram.channel || cmsTelegramBookingConfig.globalChannel
+    const message = [
     '9LIFE MAG - YÊU CẦU MỚI',
     `Loại: ${request.typeLabel}`,
     `Nội dung: ${request.title}`,
@@ -48,9 +57,13 @@ export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
     `Đơn vị: ${request.location}`,
     `Thời gian: ${request.schedule}`,
     `Chi tiết: ${request.detail}`,
-  ].join('\n')
+    ].join('\n')
 
-  return sendTelegramMessage({ token, channel, message })
+    return await sendTelegramMessage({ token, channel, message })
+  } catch (error) {
+    console.error('Telegram booking configuration failed', error)
+    return { ok: false, reason: 'configuration-failed' as const }
+  }
 }
 
 function buildReminderMessage(request: BookingRequestRecord, label: string, note: string) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createContactRequest } from '@/lib/booking-requests'
 import { sendBookingTelegramNotice } from '@/lib/booking-telegram'
+import { createPortalNotifications } from '@/lib/portal-notifications'
 import { getTrustedClientIp, guardContactRequestAttempts } from '@/lib/request-guard'
 import { headers } from 'next/headers'
 
@@ -30,6 +31,14 @@ export async function POST(request: Request) {
     }
 
     const created = await createContactRequest(body)
+    await createPortalNotifications([
+      {
+        recipientKey: 'admin',
+        title: `Liên hệ mới: ${created.title}`,
+        body: `${created.requester} đã gửi một yêu cầu cần tiếp nhận.`,
+        href: '/cms/dashboard/booking/contact',
+      },
+    ]).catch((error) => console.error('Contact CMS notification failed', error))
     const telegram = await sendBookingTelegramNotice(created)
 
     return NextResponse.json({
