@@ -7,6 +7,7 @@ import type { CmsSiteAccount } from '@/lib/site-user-session'
 export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) {
   const capability = useCmsCapability('api_security')
   const [user, setUser] = useState(initialUser)
+  const [newPassword, setNewPassword] = useState('')
   const [message, setMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(true)
   const [isPending, startTransition] = useTransition()
@@ -25,6 +26,7 @@ export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) 
           stars: user.stars,
           isPremium: user.isPremium,
           isActive: user.isActive,
+          password: newPassword,
         }),
       })
       const result = (await response.json()) as {
@@ -36,6 +38,7 @@ export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) 
       setIsSuccess(result.ok)
       setMessage(result.message ?? 'Không thể lưu tài khoản.')
       if (result.account) setUser(result.account)
+      if (result.ok) setNewPassword('')
     })
   }
 
@@ -85,6 +88,19 @@ export function CmsUserEditor({ initialUser }: { initialUser: CmsSiteAccount }) 
           <label>Loại tài khoản</label>
           <input value={user.accountType === 'artist' ? 'Artist portal' : 'User'} readOnly />
         </div>
+      </div>
+      <div className="field">
+        <label htmlFor="cmsUserPassword">Mật khẩu mới</label>
+        <input
+          id="cmsUserPassword"
+          type="password"
+          minLength={8}
+          autoComplete="new-password"
+          value={newPassword}
+          onChange={(event) => setNewPassword(event.target.value)}
+          placeholder="Để trống nếu không thay đổi mật khẩu"
+        />
+        <small className="muted">Chỉ Super Admin có thể cấp hoặc thay mật khẩu. Mật khẩu cũ không được hiển thị.</small>
       </div>
       <div className="cms-form-two">
         <label className="cms-checkbox-row">

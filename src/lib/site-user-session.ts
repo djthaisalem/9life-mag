@@ -928,6 +928,7 @@ export async function updateSiteAccountForCms(input: {
   stars: number
   isPremium: boolean
   isActive: boolean
+  password?: string
 }) {
   const fullName = input.fullName.trim()
   const email = input.email?.trim().toLowerCase() || undefined
@@ -942,6 +943,10 @@ export async function updateSiteAccountForCms(input: {
       stars,
       isPremium: input.isPremium,
       isActive: input.isActive,
+      ...(input.password ? {
+        password: input.password,
+        sessionInvalidAfter: new Date().toISOString(),
+      } : {}),
     })
     return account ? getSiteAccountForCms(input.accountId) : null
   }
@@ -952,6 +957,10 @@ export async function updateSiteAccountForCms(input: {
     current.phone = phone
     current.stars = stars
     current.isActive = input.isActive
+    if (input.password) {
+      current.passwordHash = hashPassword(input.password)
+      current.sessionInvalidAfter = new Date().toISOString()
+    }
   })
   return account ? getSiteAccountForCms(input.accountId) : null
 }

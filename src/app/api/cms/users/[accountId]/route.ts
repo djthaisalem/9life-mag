@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { normalizeCmsRole } from '@/lib/cms-role-policy'
 import { updateSiteAccountForCms } from '@/lib/site-user-session'
 
 const updateUserSchema = z.object({
@@ -10,6 +11,7 @@ const updateUserSchema = z.object({
   stars: z.coerce.number().int().min(0).max(1_000_000_000),
   isPremium: z.boolean(),
   isActive: z.boolean(),
+  password: z.string().min(8, 'Mật khẩu mới cần ít nhất 8 ký tự').max(256).optional().or(z.literal('')),
 })
 
 export async function PATCH(
@@ -22,6 +24,12 @@ export async function PATCH(
   try {
     const { accountId } = await context.params
     const input = updateUserSchema.parse(await request.json())
+    if (input.password && normalizeCmsRole(access.session.role) !== 'super_admin') {
+      return NextResponse.json(
+        { ok: false, message: 'Chỉ Super Admin được phép thay đổi mật khẩu user.' },
+        { status: 403 },
+      )
+    }
     const account = await updateSiteAccountForCms({ accountId, ...input })
 
     if (!account) {
