@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
-import { MessageCircle, Search } from 'lucide-react'
+import { CalendarDays, MessageCircle, Search } from 'lucide-react'
 import { navItems } from '@/lib/site-data'
 import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
 
@@ -25,7 +25,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={clsx('nav-link', pathname === item.href && 'active')}
+              className={clsx('nav-link', item.href === '/booking' && 'nav-booking-link', pathname === item.href && 'active')}
             >
               {repairVietnameseText(item.label)}
             </Link>
@@ -37,6 +37,9 @@ export function SiteHeader() {
         </Link>
         <Link href="/lien-he" className="button-secondary header-contact-button" aria-label="Liên hệ">
           <MessageCircle size={16} />
+        </Link>
+        <Link href="/booking" className="button-secondary header-booking-button" aria-label="Booking">
+          <CalendarDays size={16} />
         </Link>
       </div>
     </header>

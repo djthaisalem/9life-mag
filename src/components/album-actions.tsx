@@ -56,7 +56,7 @@ export function AlbumActions({ albumId, title, href, tracks, sourceType, compact
   }
 
   return <div className={compact ? 'album-actions album-actions-compact' : 'album-actions'}>
-    <button type="button" className="tidal-play-chip tidal-play-chip-card" disabled={!tracks.length} onClick={() => playCollection(tracks, 0, sourceType)}><Play size={14} />Nghe hết</button>
+    <button type="button" className="tidal-play-chip tidal-play-chip-card album-play-all" disabled={!tracks.length} onClick={() => playCollection(tracks, 0, sourceType)}><Play size={14} /><span>Nghe hết</span></button>
     <button type="button" className={favorite ? 'album-action-icon album-action-icon-active' : 'album-action-icon'} onClick={toggleFavorite} aria-label="Yêu thích Album" title="Yêu thích Album"><Heart size={16} fill={favorite ? 'currentColor' : 'none'} /></button>
     <button type="button" className="album-action-icon" onClick={() => void share()} aria-label="Chia sẻ Album" title="Chia sẻ Album"><Share2 size={16} /></button>
     {feedback ? <span className="album-action-feedback">{feedback}</span> : null}

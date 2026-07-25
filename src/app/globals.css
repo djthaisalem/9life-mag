@@ -7719,6 +7719,37 @@ button.more-link-unified {
   gap: 14px;
 }
 
+.tidal-mix-cover-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tidal-mix-cover-button img {
+  display: block;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.tidal-mix-cover-button:hover img {
+  transform: scale(1.035);
+  filter: brightness(1.08);
+}
+
+.tidal-mix-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tidal-mix-actions .tidal-play-chip {
+  flex: 1 1 auto;
+}
+
 .tidal-remix-rail {
   display: grid;
   gap: 12px;
@@ -9468,6 +9499,10 @@ button.more-link-unified {
 
 .site-header .header-contact-button svg {
   stroke-width: 2.8;
+}
+
+.header-booking-button {
+  display: none;
 }
 
 .search-page {
@@ -11946,6 +11981,43 @@ body:has(.global-media-player-shell) .dashboard-support-assistant {
 }
 
 @media (max-width: 640px) {
+  .header-row {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+
+  .nav-booking-link {
+    display: none;
+  }
+
+  .site-header .header-booking-button {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0 !important;
+    border: 1px solid rgba(255, 214, 102, 0.62) !important;
+    border-radius: 10px;
+    color: #ffe8a6 !important;
+    background: linear-gradient(145deg, rgba(53, 38, 10, 0.92), rgba(14, 15, 20, 0.96)) !important;
+  }
+
+  .album-play-all {
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .album-play-all span,
+  .tidal-content-list .playlist-action-label {
+    display: none;
+  }
+
+  .tidal-player-dual {
+    grid-template-columns: 1fr;
+  }
+
   .account-mobile-portal-tabs,
   .user-dashboard-topup-mobile-tabs {
     display: grid;

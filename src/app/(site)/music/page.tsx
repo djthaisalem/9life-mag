@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Crown, Play, Plus } from 'lucide-react'
+import { Crown, Heart, Play, Plus, Share2 } from 'lucide-react'
 import { AudioShowcasePlayer } from '@/components/audio-showcase-player'
 import { AlbumActions } from '@/components/album-actions'
 import { useMediaPlayer } from '@/components/global-media-player'
@@ -63,7 +63,7 @@ type PublishedAlbum = {
   collection: PlayCollectionConfig
 }
 
-type GenreTab = 'all' | 'nonstop' | 'remix' | 'afterhours'
+type GenreTab = 'all' | 'track' | 'nonstop' | 'remix'
 type ExpandedMusicList = 'genre' | 'community' | 'remix' | 'albums' | 'charts' | 'nonstop' | null
 
 const featuredArtistRotationKey = 'nine-life-music-artist-rotation-v1'
@@ -82,23 +82,29 @@ const genreTabs: { label: string; value: GenreTab }[] = [
   { label: 'Tất cả', value: 'all' },
   { label: 'Nonstop', value: 'nonstop' },
   { label: 'Remix', value: 'remix' },
-  { label: 'After hours', value: 'afterhours' },
+  { label: 'Track', value: 'track' },
 ]
 
-function getGenreCatalog(tab: GenreTab, nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
+function getGenreCatalog(tab: GenreTab, tracks: readonly AudioTrack[], nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
+  if (tab === 'track') return [...tracks]
   if (tab === 'nonstop') return [...nonstopTracks]
   if (tab === 'remix') return [...remixTracks]
-  if (tab === 'afterhours') return [...nonstopTracks.slice(3), ...remixTracks.slice(2), ...nonstopTracks.slice(0, 3)]
-  return [...nonstopTracks, ...remixTracks]
+  return [...tracks, ...nonstopTracks, ...remixTracks]
 }
 
-function getFairGenreTracks(tab: GenreTab, nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
-  const catalog = getGenreCatalog(tab, nonstopTracks, remixTracks)
+function getFairGenreTracks(tab: GenreTab, tracks: readonly AudioTrack[], nonstopTracks: readonly AudioTrack[], remixTracks: readonly AudioTrack[]) {
+  const catalog = getGenreCatalog(tab, tracks, nonstopTracks, remixTracks)
   return curateMusicCatalog(catalog, `${genreRotationPrefix}:${tab}`)
 }
 
+function getGenreSourceType(tab: GenreTab): AudioSourceType {
+  if (tab === 'track') return 'track'
+  if (tab === 'remix') return 'remix'
+  return 'nonstop'
+}
+
 export default function MusicPage() {
-  const { activeTrack, playCollection, openPlaylistModal } = useMediaPlayer()
+  const { activeTrack, isFavorite, playCollection, openPlaylistModal, shareTrack, toggleFavorite } = useMediaPlayer()
   const [activeHeroSlide, setActiveHeroSlide] = useState(0)
   const [artistSpotlights, setArtistSpotlights] = useState<ArtistSpotlight[]>([])
   const [activeGenreTab, setActiveGenreTab] = useState<GenreTab>('all')
@@ -116,6 +122,10 @@ export default function MusicPage() {
   )
   const publishedRemixTracks = useMemo(
     () => publishedCatalog.filter((track) => track.type === 'remix').map(catalogItemToAudioTrack),
+    [publishedCatalog],
+  )
+  const publishedTracks = useMemo(
+    () => publishedCatalog.filter((track) => track.type === 'track').map(catalogItemToAudioTrack),
     [publishedCatalog],
   )
   const liveNonstopTracks = useMemo(() => [...publishedNonstopTracks, ...tidalNonstopTracks], [publishedNonstopTracks])
@@ -323,8 +333,8 @@ export default function MusicPage() {
   }, [communityMixCandidates, publishedCatalog, publishedUserPlaylists])
 
   useEffect(() => {
-    setGenreTracks(getFairGenreTracks(activeGenreTab, liveNonstopTracks, liveRemixTracks))
-  }, [activeGenreTab, liveNonstopTracks, liveRemixTracks])
+    setGenreTracks(getFairGenreTracks(activeGenreTab, publishedTracks, liveNonstopTracks, liveRemixTracks))
+  }, [activeGenreTab, publishedTracks, liveNonstopTracks, liveRemixTracks])
 
   const currentHeroSlide = tidalHeroSlides[activeHeroSlide] ?? tidalHeroSlides[0]
 
@@ -445,7 +455,7 @@ export default function MusicPage() {
                     </button>
                   ))}
                 </div>
-                <button type="button" className="music-genre-play-all" onClick={() => playCollection(genreTracks, 0, activeGenreTab === 'remix' ? 'remix' : 'nonstop')} disabled={genreTracks.length === 0}>
+                <button type="button" className="music-genre-play-all" onClick={() => playCollection(genreTracks, 0, getGenreSourceType(activeGenreTab))} disabled={genreTracks.length === 0}>
                   <Play size={14} fill="currentColor" /> Nghe tất cả
                 </button>
               </div>
@@ -456,7 +466,7 @@ export default function MusicPage() {
                     <img src={track.cover ?? '/music-legacy/bg/14.jpg'} alt="" />
                     <div><strong className={track.isPremiumDrop ? 'premium-track-title' : undefined}>{track.title}{track.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}</strong><p>{track.artist}</p></div>
                     <small>{track.duration}</small>
-                    <div className="music-genre-row-actions"><button type="button" className="tidal-play-chip tidal-play-chip-inline" onClick={() => playCollection([track], 0, track.id.includes('remix') ? 'remix' : 'nonstop')}><Play size={14} /></button><button type="button" className="music-genre-add" onClick={() => openPlaylistModal(track, track.id.includes('remix') ? 'remix' : 'nonstop')} aria-label={`Thêm ${track.title} vào playlist`}><Plus size={14} /></button></div>
+                    <div className="music-genre-row-actions"><button type="button" className="tidal-play-chip tidal-play-chip-inline" onClick={() => playCollection([track], 0, getGenreSourceType(activeGenreTab))}><Play size={14} /></button><button type="button" className="music-genre-add" onClick={() => openPlaylistModal(track, getGenreSourceType(activeGenreTab))} aria-label={`Thêm ${track.title} vào playlist`}><Plus size={14} /></button></div>
                   </article>
                 ))}
               </div>
@@ -479,19 +489,20 @@ export default function MusicPage() {
                 {communityMixOrder.map((id) => {
                   const item = communityMixCandidates.find((candidate) => candidate.id === id)
                   if (!item) return null
+                  const trackIndex = Math.max(0, item.collection.tracks.findIndex((track) => track.id === item.id))
+                  const primaryTrack = item.collection.tracks[trackIndex]
                   return (
                   <article key={item.id} className="tidal-mix-card">
-                    <img src={item.cover} alt={item.title} />
+                    <button type="button" className="tidal-mix-cover-button" onClick={() => playSet(item.collection, trackIndex)} aria-label={`Phát ${item.title}`}>
+                      <img src={item.cover} alt={item.title} />
+                    </button>
                     <strong className={item.isPremiumDrop ? 'premium-track-title' : undefined}>{item.title}{item.isPremiumDrop ? <Crown className="premium-track-vip-icon" size={15} aria-label="VIP Premium Drop" /> : null}</strong>
                     <span>{item.meta}</span>
-                    <button
-                      type="button"
-                      className="tidal-play-chip tidal-play-chip-card"
-                      onClick={() => playSet(item.collection, Math.max(0, item.collection.tracks.findIndex((track) => track.id === item.id)))}
-                    >
-                      <Play size={14} />
-                      Play
-                    </button>
+                    <div className="tidal-mix-actions">
+                      <button type="button" className="tidal-play-chip tidal-play-chip-card" onClick={() => playSet(item.collection, trackIndex)}><Play size={14} />Play</button>
+                      {primaryTrack ? <button type="button" className={isFavorite(primaryTrack.id) ? 'album-action-icon album-action-icon-active' : 'album-action-icon'} onClick={() => toggleFavorite(primaryTrack)} aria-label="Yêu thích DJ set" title="Yêu thích"><Heart size={16} fill={isFavorite(primaryTrack.id) ? 'currentColor' : 'none'} /></button> : null}
+                      {primaryTrack ? <button type="button" className="album-action-icon" onClick={() => void shareTrack(primaryTrack, item.collection.sourceType)} aria-label="Chia sẻ DJ set" title="Chia sẻ"><Share2 size={16} /></button> : null}
+                    </div>
                   </article>
                   )
                 })}
@@ -670,7 +681,7 @@ export default function MusicPage() {
               <AudioShowcasePlayer
                 title="Nonstop Playlist"
                 subtitle="Nhiều nonstop hơn để user lướt nhanh ngay trên tab music."
-                tracks={liveNonstopTracks}
+                tracks={liveNonstopTracks.slice(0, 10)}
                 density="compact"
               />
             </div>
@@ -688,7 +699,7 @@ export default function MusicPage() {
               <AudioShowcasePlayer
                 title="Top Remix"
                 subtitle="List remix dày hơn để tận dụng chiều ngang tốt hơn."
-                tracks={liveRemixTracks}
+                tracks={liveRemixTracks.slice(0, 10)}
                 variant="remix"
                 density="compact"
               />

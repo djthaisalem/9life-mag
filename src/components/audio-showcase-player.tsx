@@ -139,7 +139,7 @@ export function AudioShowcasePlayer({
                   </button>
                   <button type="button" className="mini-button" onClick={() => openPlaylistModal(track, sourceType)}>
                     <Plus size={16} />
-                    Playlist
+                    <span className="playlist-action-label">Playlist</span>
                   </button>
                   <button
                     type="button"
