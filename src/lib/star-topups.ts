@@ -10,10 +10,10 @@ import { getPaymentGatewayConfig } from '@/lib/payment-config'
 import { addStarsToSiteUser, getSiteAccountById } from '@/lib/site-user-session'
 import {
   paymentProviders,
-  starPackages,
   type PaymentProviderId,
   type StarTopupRequest,
 } from '@/lib/star-payment-shared'
+import { getStarPackages } from '@/lib/star-packages'
 import { sendTelegramPaymentNotice } from '@/lib/telegram'
 import { recordWalletLedgerEntry } from '@/lib/wallet-ledger'
 
@@ -305,7 +305,7 @@ export async function createStarTopupRequest(input: {
           email: siteUser.email ?? siteUser.identity,
         }
       : null
-  const selectedPackage = starPackages.find((item) => item.id === input.packageId)
+  const selectedPackage = (await getStarPackages()).find((item) => item.id === input.packageId)
 
   if (!user || !selectedPackage) {
     throw new Error('invalid-topup-input')

@@ -41,6 +41,7 @@ type CmsStarsPaymentPanelProps = {
     telegramChannel: string
   }
   initialUsers?: CmsSiteAccount[]
+  initialPackages?: StarPackageRow[]
 }
 
 type PaymentConfigForm = CmsStarsPaymentPanelProps['paymentConfig'] & {
@@ -97,15 +98,14 @@ export function CmsStarsPaymentPanel({
   initialSnapshot,
   paymentConfig,
   initialUsers = [],
+  initialPackages,
 }: CmsStarsPaymentPanelProps) {
   const starsCapability = useCmsStarsCapability()
   const [snapshot, setSnapshot] = useState(initialSnapshot)
-  const [packageRows, setPackageRows] = useState<StarPackageRow[]>(
-    starPackages.map((plan) => ({
+  const [packageRows, setPackageRows] = useState<StarPackageRow[]>(initialPackages ?? starPackages.map((plan) => ({
       ...plan,
       benefits: defaultPackageBenefits[plan.id] ?? [],
-    })),
-  )
+    })))
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({})
   const [configState, setConfigState] = useState<PaymentConfigForm>({
     ...paymentConfig,
@@ -190,24 +190,11 @@ export function CmsStarsPaymentPanel({
       return
     }
 
-    if (editorState.id) {
-      setPackageRows((current) =>
-        current.map((item) =>
-          item.id === editorState.id
-            ? {
-                ...item,
-                title,
-                amount,
-                stars,
-                benefits: editorState.benefits,
-              }
-            : item,
-        ),
-      )
-      setIsSuccess(true)
-      setMessage('Đã cập nhật gói sao.')
-    } else {
-      setPackageRows((current) => [
+    const nextRows = editorState.id
+      ? packageRows.map((item) => item.id === editorState.id
+        ? { ...item, title, amount, stars, benefits: editorState.benefits }
+        : item)
+      : [
         {
           id: `custom-${Date.now()}`,
           title,
@@ -215,13 +202,27 @@ export function CmsStarsPaymentPanel({
           stars,
           benefits: editorState.benefits,
         },
-        ...current,
-      ])
-      setIsSuccess(true)
-      setMessage('Đã tạo gói sao mới.')
-    }
+        ...packageRows,
+      ]
 
-    closePackageEditor()
+    startTransition(async () => {
+      const response = await fetch('/api/cms/star-packages', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(starsCapability ? { Authorization: `Bearer ${starsCapability}` } : {}) },
+        body: JSON.stringify({ packages: nextRows }),
+      })
+      const result = await response.json() as { ok?: boolean; packages?: StarPackageRow[]; message?: string }
+      if (!result.ok || !result.packages) {
+        setIsSuccess(false)
+        setMessage(result.message ?? 'Khong the luu goi sao.')
+        return
+      }
+      setPackageRows(result.packages)
+      setIsSuccess(true)
+      setMessage(editorState.id ? 'Da cap nhat goi sao va dong bo den dashboard user.' : 'Da tao goi sao va dong bo den dashboard user.')
+      closePackageEditor()
+    })
   }
 
   const handleReview = (requestId: string, decision: 'approved' | 'rejected') => {

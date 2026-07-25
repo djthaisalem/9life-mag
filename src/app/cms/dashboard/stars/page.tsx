@@ -3,15 +3,17 @@ import { CmsStarsPaymentPanel } from '@/components/cms-stars-payment-panel'
 import { getPaymentConfigSnapshot } from '@/lib/payment-config'
 import { listSiteAccountsForCms } from '@/lib/site-user-session'
 import { getStarTopupSnapshot } from '@/lib/star-topups'
+import { getStarPackages } from '@/lib/star-packages'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CmsStarsPage() {
-  const [initialSnapshot, paymentConfig, memberResult] = await Promise.all([
+  const [initialSnapshot, paymentConfig, memberResult, initialPackages] = await Promise.all([
     getStarTopupSnapshot(),
     getPaymentConfigSnapshot(),
     listSiteAccountsForCms({ page: 1, limit: 20 }),
+    getStarPackages(),
   ])
 
   return (
@@ -24,6 +26,7 @@ export default async function CmsStarsPage() {
         initialSnapshot={initialSnapshot}
         paymentConfig={paymentConfig}
         initialUsers={memberResult.users}
+        initialPackages={initialPackages}
       />
     </CmsDashboardShell>
   )

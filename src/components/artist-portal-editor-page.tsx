@@ -12,8 +12,41 @@ type StoredTemplateState = { values: Record<string, string>; files: Record<strin
 type StoredPortalState = Record<string, StoredTemplateState>
 
 const ARTIST_PORTAL_STORAGE_KEY = 'nine-life-artist-portal-forms-v1'
+const ARTIST_PORTAL_PROFILE_KEY = 'nine-life-artist-portal-profile-v1'
 const DEFAULT_MUSIC_COVER = '/images/default-music-cover.png'
 const musicCoverFields = new Set(['trackCover', 'playlistCover', 'albumCover'])
+
+const profileFieldCopy: Record<string, { label: string; placeholder?: string; helper?: string }> = {
+  artistName: { label: 'Tên nghệ sĩ', placeholder: 'Ví dụ: Luna Flux' },
+  headline: { label: 'Câu giới thiệu nổi bật', placeholder: 'Ví dụ: DJ open format cho club, lounge và sự kiện thương hiệu' },
+  bookingRate: { label: 'Mức giá booking tham khảo', placeholder: 'Ví dụ: 18.000.000 VND / set', helper: 'Có thể để trống nếu muốn đối tác liên hệ để nhận báo giá.' },
+  availability: { label: 'Tình trạng nhận show', placeholder: 'Ví dụ: Đang nhận lịch biểu diễn, ưu tiên cuối tuần' },
+  shortBio: { label: 'Giới thiệu ngắn', placeholder: 'Viết 2-3 câu về kinh nghiệm, phong cách biểu diễn, khu vực hoạt động và điểm mạnh của bạn.' },
+  primaryRole: { label: 'Vai trò chính' },
+  portraitUpload: { label: 'Ảnh chân dung', helper: 'Nên dùng ảnh dọc rõ mặt, tỷ lệ 3:4, tối thiểu 1200 x 1600 px.' },
+  coverUpload: { label: 'Ảnh cover ngang', helper: 'Nên dùng ảnh ngang tỷ lệ 16:9, tối thiểu 1920 x 1080 px.' },
+  gender: { label: 'Giới tính' },
+  region: { label: 'Khu vực hoạt động' },
+  city: { label: 'Tỉnh / thành phố chính' },
+  genres: { label: 'Phong cách / dòng nhạc', placeholder: 'Ví dụ: House, Vinahouse, Open Format, Afro, Remix' },
+  longBio: { label: 'Giới thiệu chi tiết', placeholder: 'Kể câu chuyện nghệ sĩ, định hướng hình ảnh, các dòng nhạc theo đuổi và mục tiêu nghề nghiệp.' },
+  workExperience: { label: 'Kinh nghiệm làm việc', placeholder: 'Mỗi dòng ghi một kinh nghiệm: tên venue hoặc festival, vai trò, thời gian và điểm nổi bật.' },
+  signatureMoments: { label: 'Điểm mạnh sân khấu', placeholder: 'Ví dụ: kiểm soát peak-time, tương tác đám đông, linh hoạt nhiều định dạng nhạc.' },
+  bookingCities: { label: 'Khu vực nhận booking', placeholder: 'Ví dụ: TP.HCM, Hà Nội, Đà Nẵng, Phú Quốc.' },
+  bookingNotes: { label: 'Ghi chú cho đối tác booking', placeholder: 'Ghi các lưu ý về lịch diễn, thời lượng set, di chuyển hoặc yêu cầu đặc biệt.' },
+  basicRider: { label: 'Rider cơ bản', placeholder: 'Ví dụ: CDJ, mixer, booth monitor, microphone, hospitality.' },
+}
+
+const profileTemplateCopy: Record<string, { title: string; description: string }> = {
+  'Mẫu bio cơ bản': {
+    title: 'Thông tin hồ sơ cơ bản',
+    description: 'Điền đủ tên nghệ sĩ, câu giới thiệu, giới thiệu ngắn và vai trò chính để gửi Admin duyệt hồ sơ.',
+  },
+  'Mẫu profile chi tiết': {
+    title: 'Thông tin hồ sơ chi tiết',
+    description: 'Bổ sung thông tin nghề nghiệp, kinh nghiệm và yêu cầu booking để profile của bạn thuyết phục hơn.',
+  },
+}
 
 const bookingSetupTemplate: ArtistPortalTemplate = {
   title: 'Thiết lập nhận Booking',
@@ -97,7 +130,14 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
   const profileBasicsId = templateId('profile', artistPortalSections.find((item) => item.key === 'profile')?.templates[0]?.title ?? '')
   const profileBasics = forms[profileBasicsId]?.values ?? {}
 
-  useEffect(() => setForms(readState()), [])
+  useEffect(() => {
+    setForms(readState())
+    try {
+      const profile = JSON.parse(window.localStorage.getItem(ARTIST_PORTAL_PROFILE_KEY) ?? '{}') as { slug?: string; status?: 'draft' | 'pending_review' | 'published' }
+      setProfileSlug(profile.slug ?? '')
+      setProfileStatus(profile.status ?? '')
+    } catch {}
+  }, [])
 
   const updateValue = (id: string, name: string, value: string) => setForms((current) => ({
     ...current,
@@ -154,16 +194,17 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
         }),
       })
       const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string }
+      if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setProfileSlug(result.slug ?? '')
       setProfileStatus(result.profileStatus ?? '')
-      if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
+      window.localStorage.setItem(ARTIST_PORTAL_PROFILE_KEY, JSON.stringify({ slug: result.slug, status: result.profileStatus }))
       setFeedback((current) => ({
         ...current,
-        [id]: (result.profileStatus === 'draft'
-          ? 'Da luu ho so nhap vao he thong. Hoan thien headline, bio ngan va vai tro chinh de gui Admin duyet.'
-          : result.awarded)
-          ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
-          : 'Hồ sơ đã được cập nhật và đang chờ duyệt. Phần thưởng +300 sao chỉ áp dụng một lần.',
+        [id]: result.profileStatus === 'draft'
+          ? 'Đã lưu hồ sơ nháp vào hệ thống. Hoàn thiện câu giới thiệu, giới thiệu ngắn và vai trò chính để gửi Admin duyệt.'
+          : result.awarded
+            ? `Hồ sơ đã được gửi chờ duyệt và cộng +300 sao. Ví hiện có ${result.stars ?? 0} sao.`
+            : 'Hồ sơ đã được cập nhật và đang chờ duyệt. Phần thưởng +300 sao chỉ áp dụng một lần.',
       }))
     } catch (error) {
       setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Đã lưu bản nháp nhưng chưa thể xác nhận phần thưởng.' }))
@@ -220,18 +261,18 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
     const files = forms[id]?.files ?? {}
 
     return <article key={template.title} className="artist-editor-template-card">
-      <div className="artist-editor-template-head"><div><strong>{text(template.title)}</strong><p>{text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => void save(id)}>Lưu bản nháp</button></div>
+      <div className="artist-editor-template-head"><div><strong>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.title ?? text(template.title)) : text(template.title)}</strong><p>{section.key === 'profile' ? (profileTemplateCopy[template.title]?.description ?? text(template.description)) : text(template.description)}</p></div><button type="button" className="button artist-editor-save-button" onClick={() => void save(id)}>Lưu thông tin</button></div>
       <form className="artist-editor-form-grid" onSubmit={(event) => { event.preventDefault(); void save(id) }}>
         {template.fields.map((field) => <div key={field.name} className={`field${field.type === 'textarea' || field.type === 'trackpicker' || field.type === 'file' ? ' artist-editor-field-wide' : ''}`}>
-          <label htmlFor={`${id}-${field.name}`}>{text(field.label)}{field.optional ? <span className="artist-editor-optional-tag">Tùy chọn</span> : null}</label>
-          {field.type === 'textarea' ? <textarea id={`${id}-${field.name}`} name={field.name} placeholder={text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}
-          {field.type === 'select' ? <select id={`${id}-${field.name}`} name={field.name} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)}><option value="" disabled>Chọn nội dung</option>{field.options?.map((option) => <option key={option} value={option}>{text(option)}</option>)}</select> : null}
+          <label htmlFor={`${id}-${field.name}`}>{section.key === 'profile' ? (profileFieldCopy[field.name]?.label ?? text(field.label)) : text(field.label)}{field.optional ? <span className="artist-editor-optional-tag">Tùy chọn</span> : null}</label>
+          {field.type === 'textarea' ? <textarea id={`${id}-${field.name}`} name={field.name} placeholder={section.key === 'profile' ? (profileFieldCopy[field.name]?.placeholder ?? text(field.placeholder ?? '')) : text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}
+          {field.type === 'select' ? <select id={`${id}-${field.name}`} name={field.name} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)}><option value="" disabled>Chọn thông tin phù hợp</option>{field.options?.map((option) => <option key={option} value={option}>{text(option)}</option>)}</select> : null}
           {field.type === 'trackpicker' ? <div className="artist-album-track-picker"><div className="artist-album-track-picker-head"><span>Kho nhạc của bạn</span><strong>{(values[field.name] ?? '').split(' | ').filter(Boolean).length} track đã chọn</strong></div><div className="artist-album-track-list">{field.options?.map((option, index) => { const isSelected = (values[field.name] ?? '').split(' | ').filter(Boolean).includes(option); return <article key={option} className={isSelected ? 'is-selected' : ''}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{text(option)}</strong><small>{isSelected ? 'Đã thêm vào album' : 'Có trong kho nhạc của nghệ sĩ'}</small></div><button type="button" onClick={() => toggleAlbumTrack(id, field.name, option)} aria-label={`${isSelected ? 'Gỡ' : 'Thêm'} ${option}`}>{isSelected ? <Minus size={16} /> : <Plus size={16} />}</button></article> })}</div></div> : null}
-          {field.type === 'text' ? <input id={`${id}-${field.name}`} name={field.name} placeholder={text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}
+          {field.type === 'text' ? <input id={`${id}-${field.name}`} name={field.name} placeholder={section.key === 'profile' ? (profileFieldCopy[field.name]?.placeholder ?? text(field.placeholder ?? '')) : text(field.placeholder ?? '')} value={values[field.name] ?? ''} onChange={(event) => updateValue(id, field.name, event.target.value)} /> : null}
           {field.type === 'file' ? <div className="artist-editor-upload-card">
             {musicCoverFields.has(field.name) ? <label className="artist-editor-cover-upload" htmlFor={`${id}-${field.name}`}><img src={files[field.name] || DEFAULT_MUSIC_COVER} alt="Xem trước ảnh bìa" /><span><strong>{files[field.name] ? 'Đổi ảnh bìa' : 'Chọn ảnh bìa'}</strong><small>Tự crop vuông 1:1</small></span><input id={`${id}-${field.name}`} name={field.name} type="file" accept={field.accept} onChange={(event) => void handleFileChange(id, field, event)} /></label> : <input id={`${id}-${field.name}`} name={field.name} type="file" accept={field.accept} multiple={field.multiple} onChange={(event) => void handleFileChange(id, field, event)} />}
-            {field.maxSizeMb ? <span className="artist-editor-upload-limit">File hình tối đa {field.maxSizeMb}MB</span> : null}{field.helper ? <span className="artist-editor-upload-size">{text(field.helper)}</span> : null}{musicCoverFields.has(field.name) && !files[field.name] ? <span className="artist-editor-upload-file">Chưa có ảnh riêng: đang dùng cover mặc định của 9life Mag.</span> : null}{files[field.name] && !musicCoverFields.has(field.name) ? <span className="artist-editor-upload-file">Đã chọn: {files[field.name]}</span> : null}</div> : null}
-          {field.type !== 'file' && field.helper ? <span className="artist-editor-field-note">{text(field.helper)}</span> : null}
+            {field.maxSizeMb ? <span className="artist-editor-upload-limit">File hình tối đa {field.maxSizeMb}MB</span> : null}{field.helper ? <span className="artist-editor-upload-size">{section.key === 'profile' ? (profileFieldCopy[field.name]?.helper ?? text(field.helper)) : text(field.helper)}</span> : null}{musicCoverFields.has(field.name) && !files[field.name] ? <span className="artist-editor-upload-file">Chưa có ảnh riêng: đang dùng cover mặc định của 9life Mag.</span> : null}{files[field.name] && !musicCoverFields.has(field.name) ? <span className="artist-editor-upload-file">Đã chọn: {files[field.name]}</span> : null}</div> : null}
+          {field.type !== 'file' && field.helper ? <span className="artist-editor-field-note">{section.key === 'profile' ? (profileFieldCopy[field.name]?.helper ?? text(field.helper)) : text(field.helper)}</span> : null}
           {field.name === 'sourceUrl' || field.name === 'videoUrl' ? <ArtistMediaEmbedPreview url={values[field.name] ?? ''} /> : null}
         </div>)}
       </form>

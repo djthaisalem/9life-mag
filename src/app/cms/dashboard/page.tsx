@@ -51,7 +51,14 @@ export default async function CmsDashboardOverviewPage() {
   const latestArtistBooking = bookingRows.find((item) => item.type === 'artist')
   const latestOutletBooking = bookingRows.find((item) => item.type === 'outlet')
   const musicIssueNotifications = adminNotifications.filter((item) => item.href === '/cms/dashboard/music')
+  const artistReviewNotifications = adminNotifications.filter((item) => item.href === '/cms/dashboard/artists')
   const recentActivity = [
+    ...artistReviewNotifications.slice(0, 3).map((notification) => ({
+      title: notification.title,
+      detail: notification.body,
+      href: notification.href,
+      status: notification.isRead ? 'Đã xem' : 'Cần duyệt',
+    })),
     ...musicIssueNotifications.slice(0, 3).map((notification) => ({
       title: notification.title,
       detail: notification.body,

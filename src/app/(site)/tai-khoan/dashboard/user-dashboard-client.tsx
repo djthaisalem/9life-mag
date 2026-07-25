@@ -76,6 +76,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
   const [selectedTopupProvider, setSelectedTopupProvider] = useState<PaymentProviderId>('bank_qr')
   const [topupMessage, setTopupMessage] = useState('')
   const [topupRequest, setTopupRequest] = useState<StarTopupRequest | null>(null)
+  const [topupPlans, setTopupPlans] = useState(topUpPlans)
   const [isCreatingTopup, setIsCreatingTopup] = useState(false)
   const [referralSummary, setReferralSummary] = useState<ReferralSummary>({ issuedToday: 0, remaining: 10, rewarded: 0, pending: 0, recent: [] })
 
@@ -97,6 +98,11 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
         setPremiumAccessUntil(premium.premiumAccess?.expiresAt ?? '')
         const referrals = await getReferralSummary()
         if (referrals.summary) setReferralSummary(referrals.summary)
+      }
+      const packagesResponse = await fetch('/api/stars/packages', { cache: 'no-store' })
+      const packagesResult = await packagesResponse.json() as { ok?: boolean; packages?: typeof starPackages }
+      if (packagesResult.ok && packagesResult.packages?.length) {
+        setTopupPlans(packagesResult.packages.map((plan) => ({ ...plan, price: `${plan.amount.toLocaleString('vi-VN')} VND`, note: 'Gói sao được cấu hình từ CMS.' })))
       }
     })()
   }, [searchParams])
@@ -524,7 +530,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               </div>
 
               <div className="user-dashboard-topup-mobile-tabs" role="tablist" aria-label="Chọn gói sao">
-                {topUpPlans.map((plan) => (
+                {topupPlans.map((plan) => (
                   <button
                     key={plan.id}
                     type="button"
@@ -539,7 +545,7 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
               </div>
 
               <div className="user-dashboard-topup-grid">
-                {topUpPlans.map((plan) => (
+                {topupPlans.map((plan) => (
                   <article key={plan.title} className={`user-dashboard-topup-card ${selectedTopupPackageId === plan.id ? '' : 'user-dashboard-topup-card-mobile-hidden'}`}>
                     <strong>{plan.title}</strong>
                     <span>{plan.price}</span>
