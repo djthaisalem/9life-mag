@@ -39,6 +39,9 @@ function parseDataImage(value: string) {
 
 export async function storeArtistDraftImages(slug: string, draft: ArtistProfileDraft) {
   const next = JSON.parse(JSON.stringify(draft)) as ArtistProfileDraft
+  const hasImageToStore = Object.values(next).some((template) => ['portraitUpload', 'coverUpload'].some((field) => Boolean(parseDataImage(template.files?.[field] ?? ''))))
+  if (!hasImageToStore) return next
+
   const client = getR2Client()
   const normalizedSlug = safeSlug(slug)
 

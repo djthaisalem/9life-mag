@@ -217,7 +217,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           submitForReview,
         }),
       })
-      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string }
+      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string; draftMediaWarning?: string }
       if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setProfileSlug(result.slug ?? '')
       setProfileStatus(result.profileStatus ?? '')
@@ -241,6 +241,9 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
         setReviewFeedback(result.profileStatus === 'published'
           ? 'Đã gửi bản cập nhật. Admin đã nhận thông báo để theo dõi.'
           : 'Đã gửi duyệt thành công. Admin đã nhận thông báo CMS và Telegram.')
+      }
+      if (result.draftMediaWarning) {
+        setFeedback((current) => ({ ...current, [id]: `Thông tin đã đồng bộ. Riêng ảnh: ${result.draftMediaWarning}` }))
       }
     } catch (error) {
       setFeedback((current) => ({ ...current, [id]: error instanceof Error ? error.message : 'Đã lưu bản nháp nhưng chưa thể xác nhận phần thưởng.' }))

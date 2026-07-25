@@ -83,9 +83,17 @@ export async function POST(request: Request) {
       await payload.create({ collection: 'artists', data, depth: 0, overrideAccess: true })
     }
 
+    let draftMediaWarning = ''
     if (input.profileSnapshot) {
-      const snapshot = await storeArtistDraftImages(slug, input.profileSnapshot as ArtistProfileDraft)
+      const snapshot = input.profileSnapshot as ArtistProfileDraft
+      // Text must never be lost just because an optional media upload fails.
       await saveArtistProfileDraft(slug, snapshot)
+      try {
+        await saveArtistProfileDraft(slug, await storeArtistDraftImages(slug, snapshot))
+      } catch (mediaError) {
+        draftMediaWarning = mediaError instanceof Error ? mediaError.message : 'Không thể đồng bộ ảnh hồ sơ lên R2.'
+        console.error('Artist draft image upload failed', mediaError)
+      }
     }
 
     await setArtistProfileSlug(account.id, slug)
@@ -123,6 +131,7 @@ export async function POST(request: Request) {
       profileStatus,
       awarded: reward.awarded,
       stars: reward.state.stars,
+      draftMediaWarning,
     })
   } catch (error) {
     const message = error instanceof z.ZodError
