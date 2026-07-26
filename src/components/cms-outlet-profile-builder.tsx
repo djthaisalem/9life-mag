@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { useMemo, useState, type ChangeEvent } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { useCmsCapability } from '@/components/cms-capability-provider'
 import { getMediaEmbed } from '@/lib/media-embed'
@@ -96,7 +95,6 @@ function OutletEmbedPreview({ value, label }: { value: string; label: string }) 
 }
 
 export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorInitial }) {
-  const router = useRouter()
   const capability = useCmsCapability('booking')
   const [draft, setDraft] = useState<OutletForm>(() => createForm(initial))
   const [feedback, setFeedback] = useState(initial?.id ? 'Bản nháp này đang được lưu trong CMS.' : 'Chưa lưu bản nháp outlet mới.')
@@ -166,11 +164,12 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
     }
   }
 
-  const handleSave = async () => {
+  const handleSave = async (nextStatus?: OutletStatus) => {
     if ((draft.name ?? '').trim().length < 2) {
       setFeedback('Hãy nhập tên outlet trước khi lưu.')
       return
     }
+    const status = nextStatus ?? draft.status ?? 'draft'
     setSaving(true)
     setFeedback('Đang lưu bản nháp vào CMS...')
     try {
@@ -180,6 +179,7 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
         headers: { 'content-type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({
           ...draft,
+          status,
           coverImage: draft.coverImage ? Number(draft.coverImage.id) : null,
           portraitImage: draft.portraitImage ? Number(draft.portraitImage.id) : null,
           gallery: draft.gallery.map((media) => Number(media.id)),
@@ -187,10 +187,11 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
       })
       const result = await response.json().catch(() => ({})) as { ok?: boolean; message?: string; outlet?: { id: number } }
       if (!response.ok || !result.ok || !result.outlet) throw new Error(result.message || 'Không thể lưu outlet.')
-      setDraft((current) => ({ ...current, id: String(result.outlet!.id) }))
-      setFeedback(`Đã lưu ${statusLabels[draft.status ?? 'draft'].toLowerCase()} vào CMS.`)
-      router.replace(`/cms/dashboard/outlets/new?id=${result.outlet.id}`)
-      router.refresh()
+      setDraft((current) => ({ ...current, id: String(result.outlet!.id), status }))
+      setFeedback(`Đã lưu ${statusLabels[status].toLowerCase()} vào CMS.`)
+      // Keep the working CMS page alive after saving. A full route refresh can
+      // drop a proxy-issued CMS cookie while the draft itself has already saved.
+      window.history.replaceState(null, '', `/cms/dashboard/outlets/new?id=${result.outlet.id}`)
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Không thể lưu outlet.')
     } finally {
@@ -242,13 +243,18 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
         <article className="artist-dashboard-panel">
           <div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Booking Config</p><h2>Cấu hình booking</h2></div></div>
           <div className="artist-editor-form-grid"><div className="field artist-editor-field-wide"><label htmlFor="outletBookingChannel">Channel Telegram riêng</label><input id="outletBookingChannel" value={draft.bookingChannel} placeholder="@booking_new_outlet" onChange={(event) => updateField('bookingChannel', event.target.value)} /></div></div>
-          <div className="cms-inline-actions"><button type="button" className="button" disabled={saving} onClick={() => void handleSave()}>{saving ? 'Đang lưu...' : 'Lưu bản nháp outlet'}</button></div>
+          <div className="cms-inline-actions cms-outlet-review-actions">
+            <button type="button" className="button-secondary" disabled={saving} onClick={() => void handleSave('draft')}>{saving ? 'Đang lưu...' : 'Lưu bản nháp'}</button>
+            <button type="button" className="button" disabled={saving} onClick={() => void handleSave('pending_review')}>Gửi chờ duyệt</button>
+            <button type="button" className="button-secondary" disabled={saving} onClick={() => void handleSave('published')}>Duyệt public</button>
+            <button type="button" className="button-secondary" disabled={saving} onClick={() => void handleSave('cancelled')}>Huỷ hồ sơ</button>
+          </div>
           <p className="artist-editor-save-feedback">{feedback}</p>
         </article>
       </div>
 
       <aside className="artist-editor-side">
-        <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Preview Draft</p><h2>Xem trước profile outlet</h2></div></div><div className="artist-profile-preview-card">{draft.coverImage ? <Image src={draft.coverImage.url} alt={draft.coverImage.alt} width={960} height={540} className="cms-outlet-preview-cover" /> : <div className="artist-profile-preview-cover"><span>{preview.vibe}</span></div>}<div className="artist-profile-preview-body">{draft.portraitImage ? <Image src={draft.portraitImage.url} alt={draft.portraitImage.alt} width={160} height={160} className="cms-outlet-preview-avatar" /> : null}<strong>{preview.name}</strong><div className="tag-row"><span className="pill">{preview.city}</span><span className="pill">{preview.type}</span><span className="pill">{preview.region}</span></div><p className="artist-profile-preview-copy">{preview.summary}</p><div className="artist-profile-preview-list"><span>Giờ hoạt động: {draft.hours || 'Chưa cập nhật'}</span><span>Quy mô bàn: {draft.crowd || 'Chưa cập nhật'}</span><span>Gallery: {draft.gallery.length} ảnh</span><span>Trạng thái: {statusLabels[draft.status ?? 'draft']}</span></div></div></div></article>
+        <article className="artist-dashboard-panel"><div className="artist-dashboard-panel-head"><div><p className="section-eyebrow">Preview Draft</p><h2>Xem trước profile outlet</h2><p className="artist-editor-panel-note">Bản xem trước hiển thị toàn bộ nội dung đã nhập để kiểm tra trước khi duyệt public.</p></div></div><div className="artist-profile-preview-card">{draft.coverImage ? <Image src={draft.coverImage.url} alt={draft.coverImage.alt} width={960} height={540} className="cms-outlet-preview-cover" /> : <div className="artist-profile-preview-cover"><span>{preview.vibe}</span></div>}<div className="artist-profile-preview-body">{draft.portraitImage ? <Image src={draft.portraitImage.url} alt={draft.portraitImage.alt} width={160} height={160} className="cms-outlet-preview-avatar" /> : null}<strong>{preview.name}</strong><div className="tag-row"><span className="pill">{preview.city}</span><span className="pill">{preview.type}</span><span className="pill">{preview.region}</span></div><p className="artist-profile-preview-copy">{preview.summary}</p><div className="artist-profile-preview-list"><span>Giờ hoạt động: {draft.hours || 'Chưa cập nhật'}</span><span>Quy mô bàn: {draft.crowd || 'Chưa cập nhật'}</span><span>Trạng thái: {statusLabels[draft.status ?? 'draft']}</span></div></div></div><div className="cms-outlet-preview-details"><section><h3>Giới thiệu</h3><p>{draft.introduction || 'Chưa có nội dung giới thiệu outlet.'}</p></section><section><h3>Điểm mạnh nightlife</h3><p>{draft.highlights || 'Chưa cập nhật điểm mạnh.'}</p></section><section><h3>Bàn và dịch vụ</h3><p>{draft.tableOptions || 'Chưa cập nhật loại bàn / package.'}</p><p>{draft.serviceNotes || 'Chưa có lưu ý dịch vụ.'}</p></section><section><h3>Music mood</h3><p>{draft.musicStyles || 'Chưa cập nhật dòng nhạc.'}</p></section>{draft.gallery.length ? <section className="cms-outlet-preview-gallery"><h3>Gallery</h3><div>{draft.gallery.map((media) => <Image key={media.id} src={media.url} alt={media.alt} width={180} height={132} />)}</div></section> : null}</div></article>
       </aside>
     </div>
   )

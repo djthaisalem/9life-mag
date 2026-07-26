@@ -8,7 +8,7 @@ function mediaFrom(value: unknown): OutletMedia | null {
   if (!value || typeof value !== 'object') return null
   const media = value as { id?: string | number; url?: string; alt?: string }
   if (!media.id) return null
-  return { id: String(media.id), url: media.url || `/api/public/media/${media.id}`, alt: media.alt || 'Ảnh outlet' }
+  return { id: String(media.id), url: `/api/public/media/${media.id}`, alt: media.alt || 'Ảnh outlet' }
 }
 
 async function getInitial(id?: string): Promise<OutletEditorInitial | undefined> {

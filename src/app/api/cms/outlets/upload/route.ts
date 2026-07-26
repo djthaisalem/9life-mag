@@ -51,7 +51,9 @@ export async function POST(request: Request) {
       ok: true,
       media: {
         id: String(media.id),
-        url: media.url || `/api/public/media/${media.id}`,
+        // Media may be private in R2 or served through a CDN without public CORS.
+        // The site proxy has R2 credentials and is safe for CMS image previews.
+        url: `/api/public/media/${media.id}`,
         alt: media.alt || alt,
       },
     })
