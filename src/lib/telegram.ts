@@ -34,6 +34,7 @@ export async function sendTelegramPaymentNotice(message: string) {
       body: JSON.stringify({
         chat_id: normalizeTelegramChannel(channel),
         text: message,
+        parse_mode: 'HTML',
       }),
       cache: 'no-store',
     })

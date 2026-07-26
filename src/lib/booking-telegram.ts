@@ -18,6 +18,18 @@ function normalizeTelegramChannel(value: string) {
   return publicLink ? `@${publicLink[1]}` : channel
 }
 
+function escapeTelegramHtml(value: string) {
+  return value.replace(/[&<>]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character] ?? character)
+}
+
+function formatTelegramDate() {
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'full',
+    timeStyle: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date())
+}
+
 async function sendTelegramMessage(input: { token: string; channel: string; message: string }) {
   if (!input.token || !input.channel) {
     return { ok: false, reason: 'missing-config' as const }
@@ -32,6 +44,7 @@ async function sendTelegramMessage(input: { token: string; channel: string; mess
       body: JSON.stringify({
         chat_id: normalizeTelegramChannel(input.channel),
         text: input.message,
+        parse_mode: 'HTML',
       }),
       cache: 'no-store',
     })
@@ -62,7 +75,7 @@ export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
     const telegram = await getTelegramPaymentConfig()
     const token = telegram.token
     const channel = telegram.channel || request.reminderConfig.telegramChannel || cmsTelegramBookingConfig.globalChannel
-    const message = [
+    const legacyMessage = [
     '9LIFE MAG - YÊU CẦU MỚI',
     `Loại: ${request.typeLabel}`,
     `Nội dung: ${request.title}`,
@@ -72,6 +85,20 @@ export async function sendBookingTelegramNotice(request: BookingRequestRecord) {
     `Chi tiết: ${request.detail}`,
     ].join('\n')
 
+    void legacyMessage
+    const message = [
+      '🔔 <b>9LIFE MAG | YÊU CẦU MỚI</b>',
+      '',
+      `📌 <b>Loại yêu cầu:</b> ${escapeTelegramHtml(request.typeLabel)}`,
+      `🎯 <b>Nội dung:</b> ${escapeTelegramHtml(request.title)}`,
+      `👤 <b>Người gửi:</b> ${escapeTelegramHtml(request.requester)}`,
+      `📍 <b>Địa điểm:</b> ${escapeTelegramHtml(request.location)}`,
+      `🗓️ <b>Lịch dự kiến:</b> ${escapeTelegramHtml(request.schedule)}`,
+      `📝 <b>Chi tiết:</b> ${escapeTelegramHtml(request.detail)}`,
+      '',
+      `🕒 <b>Tiếp nhận:</b> ${formatTelegramDate()}`,
+      '➡️ Vui lòng mở CMS Booking để kiểm tra và xử lý.',
+    ].join('\n')
     return await sendTelegramMessage({ token, channel, message })
   } catch (error) {
     console.error('Telegram booking configuration failed', error)

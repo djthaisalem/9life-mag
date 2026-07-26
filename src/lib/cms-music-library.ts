@@ -102,8 +102,10 @@ function getDatabaseWhere(tab: CmsMusicTabKey, query: string) {
   }
 
   if (query) {
+    const trackId = /^\d+$/.test(query) ? Number(query) : undefined
     conditions.push({
       or: [
+        ...(trackId ? [{ id: { equals: trackId } }] : []),
         { title: { like: query } },
         { musicCode: { like: query } },
         { submittedArtistSlug: { like: query } },

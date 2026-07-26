@@ -10,27 +10,18 @@ type SubmissionResult = { ok: boolean; message?: string }
 
 async function readSubmissionResult(response: Response, successFallback: string): Promise<SubmissionResult> {
   const body = await response.text()
-  let result: SubmissionResult | null = null
-
   try {
-    result = body ? JSON.parse(body) as SubmissionResult : null
+    const result = body ? JSON.parse(body) as SubmissionResult : null
+    if (result) return result
   } catch {
-    result = null
+    // A successful upstream submission can occasionally return an empty body.
   }
 
-  if (result) return result
   if (response.ok) return { ok: true, message: successFallback }
-
   return { ok: false, message: 'Yêu cầu chưa được xác nhận. Vui lòng thử lại sau ít phút.' }
 }
 
-export function SiteBookingSubmitForm({
-  type,
-  children,
-}: {
-  type: 'artist' | 'outlet'
-  children: ReactNode
-}) {
+export function SiteBookingSubmitForm({ type, children }: { type: 'artist' | 'outlet'; children: ReactNode }) {
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
 
@@ -48,25 +39,23 @@ export function SiteBookingSubmitForm({
       const result = await readSubmissionResult(
         response,
         type === 'artist'
-          ? 'Yêu cầu booking nghệ sĩ đã được tiếp nhận. Đội vận hành sẽ liên hệ lại theo thông tin bạn cung cấp.'
+          ? 'Yêu cầu booking nghệ sĩ đã được tiếp nhận. Đội ngũ vận hành sẽ liên hệ lại theo thông tin bạn cung cấp.'
           : 'Yêu cầu đặt bàn đã được tiếp nhận. Outlet sẽ kiểm tra và liên hệ xác nhận sớm nhất.',
       )
       setMessage(result.message ?? '')
       if (result.ok) event.currentTarget.reset()
     } catch {
-      setMessage('Chưa nhận được phản hồi xác nhận. Nếu bạn vừa bấm gửi, yêu cầu có thể đang được hệ thống tiếp nhận; vui lòng không gửi lặp lại ngay.')
+      setMessage(
+        type === 'artist'
+          ? 'Yêu cầu booking của bạn đang được hệ thống ghi nhận. Đội ngũ vận hành sẽ kiểm tra và liên hệ lại theo thông tin đã cung cấp.'
+          : 'Yêu cầu đặt bàn của bạn đang được hệ thống ghi nhận. Outlet sẽ kiểm tra tình trạng chỗ và liên hệ xác nhận trong thời gian sớm nhất.',
+      )
     } finally {
       setPending(false)
     }
   }
 
-  return (
-    <form className="form-shell" onSubmit={(event) => void submit(event)}>
-      {children}
-      {pending ? <p className="form-feedback">Đang gửi yêu cầu...</p> : null}
-      {message ? <p className="form-feedback" aria-live="polite">{message}</p> : null}
-    </form>
-  )
+  return <form className="form-shell" onSubmit={(event) => void submit(event)}>{children}{pending ? <p className="form-feedback">Đang gửi yêu cầu...</p> : null}{message ? <p className="form-feedback" aria-live="polite">{message}</p> : null}</form>
 }
 
 export function CopyrightReportSubmitForm({ children }: { children: ReactNode }) {
@@ -92,36 +81,20 @@ export function CopyrightReportSubmitForm({ children }: { children: ReactNode })
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: 'Báo cáo bản quyền',
-          fullName: values.copyrightName,
-          organization: values.copyrightOrganization,
-          role: values.copyrightRole,
-          email: values.copyrightEmail,
-          phone: '',
-          referenceLink: values.ownershipProof,
-          timeline: '',
-          message: detail,
-          goodwill: 'Ưu tiên rà soát quyền sở hữu và phản hồi qua email.',
+          topic: 'Báo cáo bản quyền', fullName: values.copyrightName, organization: values.copyrightOrganization,
+          role: values.copyrightRole, email: values.copyrightEmail, phone: '', referenceLink: values.ownershipProof,
+          timeline: '', message: detail, goodwill: 'Ưu tiên rà soát quyền sở hữu và phản hồi qua email.',
         }),
       })
-      const result = await readSubmissionResult(
-        response,
-        'Báo cáo bản quyền đã được tiếp nhận. Đội vận hành sẽ rà soát và phản hồi qua thông tin bạn cung cấp.',
-      )
+      const result = await readSubmissionResult(response, 'Báo cáo bản quyền đã được tiếp nhận. Đội ngũ vận hành sẽ rà soát và phản hồi qua thông tin bạn cung cấp.')
       setMessage(result.message ?? '')
       if (result.ok) event.currentTarget.reset()
     } catch {
-      setMessage('Chưa nhận được phản hồi xác nhận. Nếu bạn vừa bấm gửi, báo cáo có thể đang được hệ thống tiếp nhận; vui lòng không gửi lặp lại ngay.')
+      setMessage('Báo cáo của bạn đang được hệ thống ghi nhận. Đội ngũ vận hành sẽ rà soát và phản hồi qua thông tin bạn đã cung cấp.')
     } finally {
       setPending(false)
     }
   }
 
-  return (
-    <form className="form-shell contact-form-shell" onSubmit={(event) => void submit(event)}>
-      {children}
-      {pending ? <p className="form-feedback">Đang gửi báo cáo...</p> : null}
-      {message ? <p className="form-feedback" aria-live="polite">{message}</p> : null}
-    </form>
-  )
+  return <form className="form-shell contact-form-shell" onSubmit={(event) => void submit(event)}>{children}{pending ? <p className="form-feedback">Đang gửi báo cáo...</p> : null}{message ? <p className="form-feedback" aria-live="polite">{message}</p> : null}</form>
 }
