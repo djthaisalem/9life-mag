@@ -69,6 +69,8 @@ export async function POST(request: Request) {
       )
     }
 
+    console.error('CMS login failed unexpectedly', error)
+
     return NextResponse.json(
       {
         ok: false,
