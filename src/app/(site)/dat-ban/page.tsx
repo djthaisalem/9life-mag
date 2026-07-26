@@ -12,6 +12,14 @@ import { StarAmount } from '@/components/star-amount'
 
 const DEFAULT_VISIBLE = 6
 
+function compactOutletSummary(value: string) {
+  const normalized = value.trim().replace(/\s+/g, ' ')
+  if (normalized.length <= 100) return normalized
+
+  const firstSentence = normalized.match(/^.{1,100}?[.!?](?=\s|$)/)?.[0]
+  return `${(firstSentence || normalized.slice(0, 100)).trimEnd()}...`
+}
+
 function shuffleItems<T>(items: readonly T[]) {
   const next = [...items]
   for (let index = next.length - 1; index > 0; index -= 1) {
@@ -167,7 +175,7 @@ function TableBookingContent() {
                   </div>
                   <h3>{club.name}</h3>
                   <p className="club-featured-location">{club.city}</p>
-                  <p>{club.summary}</p>
+                  <p>{compactOutletSummary(club.summary)}</p>
                   <span className="more-link-unified">Xem profile outlet</span>
                 </div>
               </Link>

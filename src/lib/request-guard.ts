@@ -199,12 +199,22 @@ export async function guardLoginAttempts(identity: string, ip: string) {
   })
 }
 
-export async function guardCmsLoginAttempts(identity: string, ip: string) {
+async function guardCmsLoginAttemptsWithStorage(identity: string, ip: string) {
   return enforceRule('cms-login', [identity, ip], {
     maxAttempts: 5,
     windowMs: 15 * 60 * 1000,
     blockMessage: 'Bạn đã thử đăng nhập CMS quá nhiều lần. Vui lòng chờ 15 phút rồi thử lại.',
   })
+}
+
+export async function guardCmsLoginAttempts(identity: string, ip: string) {
+  try {
+    return await guardCmsLoginAttemptsWithStorage(identity, ip)
+  } catch (error) {
+    // A rate-limit storage outage must not prevent the CMS administrator from recovering the site.
+    console.error('CMS login rate guard unavailable; allowing credential validation', error)
+    return { ok: true as const }
+  }
 }
 
 export async function guardCmsAccessRequestAttempts(email: string, ip: string) {

@@ -18,7 +18,8 @@ type CmsLoginConfig = {
 }
 
 function getSessionSecret() {
-  return getRuntimeSecret('CMS_SESSION_SECRET', 'cms-session')
+  // Payload's production secret is a safe fallback if PM2 missed the CMS-specific value.
+  return process.env.CMS_SESSION_SECRET?.trim() || getRuntimeSecret('PAYLOAD_SECRET', 'cms-session')
 }
 
 function getLoginConfig(): CmsLoginConfig {
