@@ -24,13 +24,20 @@ export type StoredUserProfile = {
   avatarUrl?: string
 }
 
-type AccessApiResponse = {
+export type AccessApiResponse = {
   ok: boolean
   reason?: 'not_authenticated' | 'insufficient_stars' | 'already_claimed' | 'bonus_locked' | 'server_error'
   message?: string
   state: UserAccessState
   profile: StoredUserProfile | null
   userId?: string
+}
+
+export const USER_ACCESS_STATE_EVENT = 'nine-life:user-access-updated'
+
+export function publishUserAccessState(state: UserAccessState) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent<UserAccessState>(USER_ACCESS_STATE_EVENT, { detail: state }))
 }
 
 const emptyState: UserAccessState = {
@@ -141,7 +148,27 @@ export async function spendUserStars(amount: number, purpose: 'general' | 'vote'
     body: JSON.stringify({ amount, purpose }),
   })
 
-  return readJson<AccessApiResponse>(response)
+  const result = await readJson<AccessApiResponse>(response)
+  if (result.ok) publishUserAccessState(result.state)
+  return result
+}
+
+export async function castContentVote(type: 'artist' | 'outlet', slug: string) {
+  const response = await fetch('/api/content-votes', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, slug }),
+  })
+  const result = await readJson<{
+    ok: boolean
+    reason?: 'not_authenticated' | 'insufficient_stars' | 'target_unavailable' | 'server_error'
+    alreadyVoted?: boolean
+    voteCount?: number
+    state?: UserAccessState
+  }>(response)
+  if (result.ok && result.state) publishUserAccessState(result.state)
+  return result
 }
 
 export async function accessTrackWithStars(trackId: string, kind: 'playback' | 'download') {
@@ -154,7 +181,9 @@ export async function accessTrackWithStars(trackId: string, kind: 'playback' | '
     body: JSON.stringify({ trackId, kind }),
   })
 
-  return readJson<AccessApiResponse & { alreadyCharged?: boolean; charged?: boolean }>(response)
+  const result = await readJson<AccessApiResponse & { alreadyCharged?: boolean; charged?: boolean }>(response)
+  if (result.ok) publishUserAccessState(result.state)
+  return result
 }
 
 export async function claimDailyStars() {
@@ -163,7 +192,9 @@ export async function claimDailyStars() {
     credentials: 'same-origin',
   })
 
-  return readJson<AccessApiResponse>(response)
+  const result = await readJson<AccessApiResponse>(response)
+  if (result.ok) publishUserAccessState(result.state)
+  return result
 }
 
 export async function claimBonusStars() {
@@ -172,7 +203,9 @@ export async function claimBonusStars() {
     credentials: 'same-origin',
   })
 
-  return readJson<AccessApiResponse>(response)
+  const result = await readJson<AccessApiResponse>(response)
+  if (result.ok) publishUserAccessState(result.state)
+  return result
 }
 
 export type PremiumAccessResponse = {
@@ -195,7 +228,9 @@ export async function getPremiumAccess() {
     cache: 'no-store',
   })
 
-  return readJson<PremiumAccessResponse>(response)
+  const result = await readJson<PremiumAccessResponse>(response)
+  if (result.ok && result.state) publishUserAccessState(result.state)
+  return result
 }
 
 export async function activatePremiumAccess() {
@@ -204,7 +239,9 @@ export async function activatePremiumAccess() {
     credentials: 'same-origin',
   })
 
-  return readJson<PremiumAccessResponse>(response)
+  const result = await readJson<PremiumAccessResponse>(response)
+  if (result.ok && result.state) publishUserAccessState(result.state)
+  return result
 }
 
 export async function toggleFollowedArtist(slug: string) {

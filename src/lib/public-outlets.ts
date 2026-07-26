@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { ClubOutlet, ClubOutletProfile } from '@/lib/club-booking-data'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { getContentVoteCounts } from '@/lib/content-votes'
 import { normalizeVietnamLocation, vietnamLocations, vietnamRegions, type VietnamRegionId } from '@/lib/vietnam-locations'
 
 type MediaValue = { id?: string | number; alt?: string } | string | number | null | undefined
@@ -79,7 +80,9 @@ export async function listPublishedOutlets() {
     sort: '-updatedAt',
     overrideAccess: true,
   })
-  return result.docs.map((document) => mapOutlet(document as Record<string, unknown>))
+  const mapped = result.docs.map((document) => mapOutlet(document as Record<string, unknown>))
+  const counts = await getContentVoteCounts('outlet', mapped.map((item) => item.outlet.slug))
+  return mapped.map((item) => ({ ...item, outlet: { ...item.outlet, voteCount: counts.get(item.outlet.slug) ?? 0 } }))
 }
 
 export async function getPublishedOutletProfileBySlug(slug: string) {
@@ -91,5 +94,8 @@ export async function getPublishedOutletProfileBySlug(slug: string) {
     limit: 1,
     overrideAccess: true,
   })
-  return result.docs[0] ? mapOutlet(result.docs[0] as Record<string, unknown>) : null
+  if (!result.docs[0]) return null
+  const mapped = mapOutlet(result.docs[0] as Record<string, unknown>)
+  const counts = await getContentVoteCounts('outlet', [mapped.outlet.slug])
+  return { ...mapped, outlet: { ...mapped.outlet, voteCount: counts.get(mapped.outlet.slug) ?? 0 } }
 }

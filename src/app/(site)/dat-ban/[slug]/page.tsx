@@ -60,6 +60,7 @@ export default async function OutletProfilePage({
               bookingHref={`/dat-ban/yeu-cau?outlet=${outlet.slug}`}
               outletName={outlet.name}
               outletSlug={outlet.slug}
+              initialVoteCount={outlet.voteCount}
             />
           </div>
         </div>
@@ -223,7 +224,8 @@ export default async function OutletProfilePage({
               <OutletProfileActions
                 bookingHref={`/dat-ban/yeu-cau?outlet=${outlet.slug}`}
                 outletName={outlet.name}
-                outletSlug={outlet.slug}
+              outletSlug={outlet.slug}
+              initialVoteCount={outlet.voteCount}
               />
             </article>
           </div>

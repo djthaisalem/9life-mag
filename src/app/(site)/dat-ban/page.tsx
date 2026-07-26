@@ -6,38 +6,11 @@ import { useSearchParams } from 'next/navigation'
 import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
 import { type ClubOutlet } from '@/lib/club-booking-data'
 import { vietnamRegions } from '@/lib/vietnam-locations'
-import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
+import { USER_ACCESS_STATE_EVENT, castContentVote, fetchUserAccessState, loginDemoUser, type UserAccessState } from '@/lib/client-user-access'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
 
 const DEFAULT_VISIBLE = 6
-
-const outletVoteSeed: Record<string, number> = {
-  'luxe-district': 4231,
-  'saigon-signal': 3764,
-  'nexa-beach-club': 3410,
-  'velour-27': 2985,
-  'mirage-port': 3142,
-  'rouge-signal': 2870,
-  'district-9-pulse': 3328,
-  'amber-bay': 2744,
-  'halo-rooftop': 4012,
-  'wave-garden': 3526,
-  'afterglow-hue': 2316,
-  'coastline-86': 2448,
-  'marina-gold': 3195,
-  'lotus-afterdark': 3362,
-  'moonset-port': 2654,
-  'skyline-river': 2281,
-  'velvet-room': 3950,
-  'north-pulse': 3875,
-  'skyline-88': 2560,
-  'ivory-noir': 2422,
-  'metro-11': 3611,
-  'polar-beat': 2337,
-  'moon-velvet': 2146,
-  'crown-district': 3264,
-}
 
 function shuffleItems<T>(items: readonly T[]) {
   const next = [...items]
@@ -59,7 +32,7 @@ function TableBookingContent() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingOutletVote, setPendingOutletVote] = useState<string | null>(null)
-  const [outletVotes, setOutletVotes] = useState<Record<string, number>>(outletVoteSeed)
+  const [outletVotes, setOutletVotes] = useState<Record<string, number>>({})
   const [votedOutletSlugs, setVotedOutletSlugs] = useState<string[]>([])
   const [publishedOutlets, setPublishedOutlets] = useState<ClubOutlet[]>([])
 
@@ -72,9 +45,23 @@ function TableBookingContent() {
   }, [])
 
   useEffect(() => {
+    const handleAccessUpdate = (event: Event) => {
+      const state = (event as CustomEvent<UserAccessState>).detail
+      setIsAuthenticated(state.isAuthenticated)
+      setStarBalance(state.stars)
+    }
+    window.addEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+    return () => window.removeEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+  }, [])
+
+  useEffect(() => {
     void fetch('/api/public/outlets', { cache: 'no-store' })
       .then(async (response) => response.ok ? response.json() : { outlets: [] })
-      .then((result: { outlets?: ClubOutlet[] }) => setPublishedOutlets(result.outlets ?? []))
+      .then((result: { outlets?: ClubOutlet[] }) => {
+        const outlets = result.outlets ?? []
+        setPublishedOutlets(outlets)
+        setOutletVotes(Object.fromEntries(outlets.map((outlet) => [outlet.slug, outlet.voteCount ?? 0])))
+      })
       .catch(() => setPublishedOutlets([]))
   }, [])
 
@@ -104,7 +91,7 @@ function TableBookingContent() {
   )
 
   const handleOutletVote = async (slug: string) => {
-    const result = await spendUserStars(1, 'vote')
+    const result = await castContentVote('outlet', slug)
 
     if (!result.ok) {
       if (result.reason === 'not_authenticated') {
@@ -122,8 +109,8 @@ function TableBookingContent() {
       return
     }
 
-    setStarBalance(result.state.stars)
-    setOutletVotes((prev) => ({ ...prev, [slug]: (prev[slug] ?? 0) + 1 }))
+    if (result.state) setStarBalance(result.state.stars)
+    setOutletVotes((prev) => ({ ...prev, [slug]: result.voteCount ?? prev[slug] ?? 0 }))
     setVotedOutletSlugs((current) => (current.includes(slug) ? current : [...current, slug]))
   }
 

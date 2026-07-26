@@ -14,6 +14,7 @@ export type ArtistProfile = {
   availability: string
   rate: string
   followers: string
+  voteCount?: number
   image: string
   cover: string
   bio: string

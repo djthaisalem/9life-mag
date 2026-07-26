@@ -3,38 +3,25 @@
 import Link from 'next/link'
 import { Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
+import { USER_ACCESS_STATE_EVENT, castContentVote, fetchUserAccessState, loginDemoUser, type UserAccessState } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
 
-const artistVoteSeed: Record<string, number> = {
-  'neon-viper': 12847,
-  'luna-flux': 5912,
-  'mc-blaze': 4820,
-  'velvet-queen': 5344,
-  'k-phantom': 6840,
-  'nova-fire': 4988,
-  'echo-violet': 10532,
-  'ghost-frequency': 9104,
-  'sora-vee': 4476,
-  'rex-nova': 4332,
-  'aria-rush': 4728,
-  'kai-motion': 4185,
-}
-
 type ArtistProfileActionsProps = {
   artistName: string
   artistSlug: string
   bookingHref: string
+  initialVoteCount?: number
 }
 
 export function ArtistProfileActions({
   artistName,
   artistSlug,
   bookingHref,
+  initialVoteCount = 0,
 }: ArtistProfileActionsProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
@@ -43,7 +30,7 @@ export function ArtistProfileActions({
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState(false)
-  const [voteCount, setVoteCount] = useState(artistVoteSeed[artistSlug] ?? 0)
+  const [voteCount, setVoteCount] = useState(initialVoteCount)
   const [hasVoted, setHasVoted] = useState(false)
 
   useEffect(() => {
@@ -54,8 +41,14 @@ export function ArtistProfileActions({
     })()
   }, [])
 
+  useEffect(() => {
+    const handleAccessUpdate = (event: Event) => setStarBalance((event as CustomEvent<UserAccessState>).detail.stars)
+    window.addEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+    return () => window.removeEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+  }, [])
+
   const handleVote = async () => {
-    const result = await spendUserStars(1, 'vote')
+    const result = await castContentVote('artist', artistSlug)
 
     if (!result.ok) {
       if (result.reason === 'not_authenticated') {
@@ -73,8 +66,8 @@ export function ArtistProfileActions({
       return
     }
 
-    setStarBalance(result.state.stars)
-    setVoteCount((current) => current + 1)
+    if (result.state) setStarBalance(result.state.stars)
+    setVoteCount(result.voteCount ?? voteCount)
     setHasVoted(true)
   }
 

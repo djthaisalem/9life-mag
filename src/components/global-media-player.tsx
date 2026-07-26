@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { accessTrackWithStars, fetchUserAccessState, loginDemoUser } from '@/lib/client-user-access'
+import { USER_ACCESS_STATE_EVENT, accessTrackWithStars, fetchUserAccessState, loginDemoUser, type UserAccessState } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
@@ -235,6 +235,16 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         }
       }
     })()
+  }, [])
+
+  useEffect(() => {
+    const handleAccessUpdate = (event: Event) => {
+      const state = (event as CustomEvent<UserAccessState>).detail
+      setIsAuthenticated(state.isAuthenticated)
+      setStarBalance(state.stars)
+    }
+    window.addEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+    return () => window.removeEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
   }, [])
 
   useEffect(() => {

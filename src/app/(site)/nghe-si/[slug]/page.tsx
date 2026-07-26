@@ -80,6 +80,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
                 artistName={artist.name}
                 artistSlug={artist.slug}
                 bookingHref={`/booking?artist=${artist.slug}`}
+                initialVoteCount={artist.voteCount}
               />
             </div>
           </div>
@@ -332,6 +333,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
                 artistName={artist.name}
                 artistSlug={artist.slug}
                 bookingHref={`/booking?artist=${artist.slug}`}
+                initialVoteCount={artist.voteCount}
               />
             </article>
           </div>

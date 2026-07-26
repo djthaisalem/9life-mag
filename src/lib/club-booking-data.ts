@@ -11,6 +11,7 @@ export type ClubOutlet = {
   cover: string
   vibe: string
   summary: string
+  voteCount?: number
 }
 
 export type ClubOutletProfile = {

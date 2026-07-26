@@ -26,6 +26,7 @@ import { ShareReferrals } from '@/collections/share-referrals'
 import { StudentApplications } from '@/collections/student-applications'
 import { StudentRegistrationSettings } from '@/collections/student-registration-settings'
 import { OutletProfiles } from '@/collections/outlet-profiles'
+import { ContentVotes } from '@/collections/content-votes'
 import { env } from '@/lib/env'
 
 const storagePlugin = env.R2_ENDPOINT && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY
@@ -77,7 +78,8 @@ export default buildConfig({
     ShareReferrals,
     StudentApplications,
     StudentRegistrationSettings,
-    OutletProfiles
+    OutletProfiles,
+    ContentVotes,
   ],
   db: postgresAdapter({
     pool: {

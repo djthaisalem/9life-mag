@@ -4,6 +4,7 @@ import type { ArtistProfile, ArtistRichContent } from '@/lib/artist-directory-da
 import type { ArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 import { getMediaEmbed } from '@/lib/media-embed'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { getContentVoteCounts } from '@/lib/content-votes'
 
 type ArtistDocument = Record<string, unknown>
 const defaultImage = '/images/default-music-cover.png'
@@ -67,13 +68,18 @@ function mapArtist(document: ArtistDocument): { artist: ArtistProfile; richConte
 export async function listPublishedArtists() {
   const payload = await loadPayloadClient()
   const result = await payload.find({ collection: 'artists', where: { profileStatus: { equals: 'published' } }, depth: 0, limit: 200, sort: '-updatedAt', overrideAccess: true })
-  return result.docs.map((document) => mapArtist(document as ArtistDocument))
+  const mapped = result.docs.map((document) => mapArtist(document as ArtistDocument))
+  const counts = await getContentVoteCounts('artist', mapped.map((item) => item.artist.slug))
+  return mapped.map((item) => ({ ...item, artist: { ...item.artist, voteCount: counts.get(item.artist.slug) ?? 0 } }))
 }
 
 export async function getPublishedArtistProfileBySlug(slug: string) {
   const payload = await loadPayloadClient()
   const result = await payload.find({ collection: 'artists', where: { and: [{ slug: { equals: slug } }, { profileStatus: { equals: 'published' } }] }, depth: 0, limit: 1, overrideAccess: true })
-  return result.docs[0] ? mapArtist(result.docs[0] as ArtistDocument) : null
+  if (!result.docs[0]) return null
+  const mapped = mapArtist(result.docs[0] as ArtistDocument)
+  const counts = await getContentVoteCounts('artist', [mapped.artist.slug])
+  return { ...mapped, artist: { ...mapped.artist, voteCount: counts.get(mapped.artist.slug) ?? 0 } }
 }
 
 export async function getPublishedArtistDraftMedia(artistId: string, field: 'portraitUpload' | 'coverUpload') {

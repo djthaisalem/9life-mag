@@ -3,50 +3,25 @@
 import Link from 'next/link'
 import { Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
+import { USER_ACCESS_STATE_EVENT, castContentVote, fetchUserAccessState, loginDemoUser, type UserAccessState } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import { normalizeSharePath } from '@/lib/url-slug'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
 
-const outletVoteSeed: Record<string, number> = {
-  'luxe-district': 4231,
-  'saigon-signal': 3764,
-  'nexa-beach-club': 3410,
-  'velour-27': 2985,
-  'mirage-port': 3142,
-  'rouge-signal': 2870,
-  'district-9-pulse': 3328,
-  'amber-bay': 2744,
-  'halo-rooftop': 4012,
-  'wave-garden': 3526,
-  'afterglow-hue': 2316,
-  'coastline-86': 2448,
-  'marina-gold': 3195,
-  'lotus-afterdark': 3362,
-  'moonset-port': 2654,
-  'skyline-river': 2281,
-  'velvet-room': 3950,
-  'north-pulse': 3875,
-  'skyline-88': 2560,
-  'ivory-noir': 2422,
-  'metro-11': 3611,
-  'polar-beat': 2337,
-  'moon-velvet': 2146,
-  'crown-district': 3264,
-}
-
 type OutletProfileActionsProps = {
   bookingHref: string
   outletName: string
   outletSlug: string
+  initialVoteCount?: number
 }
 
 export function OutletProfileActions({
   bookingHref,
   outletName,
   outletSlug,
+  initialVoteCount = 0,
 }: OutletProfileActionsProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [starBalance, setStarBalance] = useState(10)
@@ -55,7 +30,7 @@ export function OutletProfileActions({
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState(false)
-  const [voteCount, setVoteCount] = useState(outletVoteSeed[outletSlug] ?? 0)
+  const [voteCount, setVoteCount] = useState(initialVoteCount)
   const [hasVoted, setHasVoted] = useState(false)
 
   useEffect(() => {
@@ -66,8 +41,14 @@ export function OutletProfileActions({
     })()
   }, [])
 
+  useEffect(() => {
+    const handleAccessUpdate = (event: Event) => setStarBalance((event as CustomEvent<UserAccessState>).detail.stars)
+    window.addEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+    return () => window.removeEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+  }, [])
+
   const handleVote = async () => {
-    const result = await spendUserStars(1, 'vote')
+    const result = await castContentVote('outlet', outletSlug)
 
     if (!result.ok) {
       if (result.reason === 'not_authenticated') {
@@ -85,8 +66,8 @@ export function OutletProfileActions({
       return
     }
 
-    setStarBalance(result.state.stars)
-    setVoteCount((current) => current + 1)
+    if (result.state) setStarBalance(result.state.stars)
+    setVoteCount(result.voteCount ?? voteCount)
     setHasVoted(true)
   }
 

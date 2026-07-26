@@ -13,7 +13,7 @@ import {
   parseArtistDirectoryFilters,
   type ArtistDirectoryFilters,
 } from '@/lib/artist-segments'
-import { fetchUserAccessState, spendUserStars, toggleFollowedArtist } from '@/lib/client-user-access'
+import { castContentVote, fetchUserAccessState, toggleFollowedArtist } from '@/lib/client-user-access'
 import { getFairRotation } from '@/lib/music-curation'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 
@@ -119,7 +119,7 @@ function ArtistsPageContent() {
   }
 
   const handleVote = async (slug: string) => {
-    const result = await spendUserStars(1, 'vote')
+    const result = await castContentVote('artist', slug)
 
     if (!result.ok) {
       if (result.reason === 'not_authenticated') {
@@ -137,6 +137,9 @@ function ArtistsPageContent() {
     }
 
     setVotedArtists((current) => (current.includes(slug) ? current : [...current, slug]))
+    if (typeof result.voteCount === 'number') {
+      setPublishedArtists((current) => current.map((artist) => artist.slug === slug ? { ...artist, voteCount: result.voteCount } : artist))
+    }
   }
 
   return (
@@ -279,7 +282,7 @@ function ArtistsPageContent() {
                         title="Vote nghệ sĩ, tốn 1 sao"
                       >
                         <Star size={15} fill={hasVoted ? 'currentColor' : 'none'} />
-                        <span>Vote</span>
+                        <span>Vote {artist.voteCount ?? 0}</span>
                       </button>
                       {isAuthenticated ? (
                         <button

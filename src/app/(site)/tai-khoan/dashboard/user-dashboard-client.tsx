@@ -22,6 +22,7 @@ import {
   claimDailyStars,
   fetchUserAccessState,
   getPremiumAccess,
+  USER_ACCESS_STATE_EVENT,
   type StoredUserProfile,
   type UserAccessState,
 } from '@/lib/client-user-access'
@@ -107,6 +108,12 @@ export function UserDashboardClient({ initialProfile, initialAccessState }: { in
       }
     })()
   }, [searchParams])
+
+  useEffect(() => {
+    const handleAccessUpdate = (event: Event) => setAccessState((event as CustomEvent<UserAccessState>).detail)
+    window.addEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+    return () => window.removeEventListener(USER_ACCESS_STATE_EVENT, handleAccessUpdate)
+  }, [])
 
   useEffect(() => {
     const refreshReferralRewards = async () => {
