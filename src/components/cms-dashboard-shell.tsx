@@ -6,6 +6,7 @@ import { cmsSidebarLinks } from '@/lib/cms-dashboard-data'
 const cmsSidebarLabelMap: Record<(typeof cmsSidebarLinks)[number]['key'], string> = {
   overview: 'Tổng quan', articles: 'Bài viết', users: 'Quản lý user', 'admin-access': 'Phân quyền admin',
   artists: 'Nghệ sĩ', music: 'Music', booking: 'Booking', students: 'Học viên', outlets: 'Outlets', stars: 'Sao / Thanh toán', referrals: 'Referral', api: 'API / Bảo mật',
+  agents: 'Agent',
 }
 
 export function CmsDashboardShell({ activeKey, title, description, children }: {

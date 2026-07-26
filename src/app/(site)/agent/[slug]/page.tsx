@@ -16,14 +16,14 @@ type AgentProfilePageProps = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: AgentProfilePageProps): Promise<Metadata> {
   const { slug } = await params
   const agency = await getStoredArtistAgency(slug)
-  if (!agency) return {}
+  if (!agency || agency.status !== 'published') return {}
   return createShareMetadata({ title: `${agency.name} | ${agency.label}`, description: agency.description, path: `/agent/${agency.slug}`, image: agency.image })
 }
 
 export default async function AgentProfilePage({ params }: AgentProfilePageProps) {
   const { slug } = await params
   const agency = await getStoredArtistAgency(slug)
-  if (!agency) notFound()
+  if (!agency || agency.status !== 'published') notFound()
 
   const assignments = await getArtistAgentAssignments()
   const assignmentMap = Object.fromEntries(assignments.filter((item) => item.artistProfileSlug).map((item) => [item.artistProfileSlug as string, item.artistAgent ?? '']))

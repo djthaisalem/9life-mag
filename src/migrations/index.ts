@@ -5,6 +5,7 @@ import * as migration_20260724_000002_track_download_control from './20260724_00
 import * as migration_20260726_000001_artist_profile_draft from './20260726_000001_artist_profile_draft';
 import * as migration_20260726_000002_outlet_profiles from './20260726_000002_outlet_profiles';
 import * as migration_20260726_000003_fix_outlet_profile_relations from './20260726_000003_fix_outlet_profile_relations';
+import * as migration_20260727_000001_artist_agency_status from './20260727_000001_artist_agency_status';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260726_000003_fix_outlet_profile_relations.up,
     down: migration_20260726_000003_fix_outlet_profile_relations.down,
     name: '20260726_000003_fix_outlet_profile_relations'
+  },
+  {
+    up: migration_20260727_000001_artist_agency_status.up,
+    down: migration_20260727_000001_artist_agency_status.down,
+    name: '20260727_000001_artist_agency_status'
   },
 ];

@@ -8,6 +8,7 @@ import { findSearchItems, type SearchCategory } from '@/lib/search-index'
 import { fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import type { SearchItem } from '@/lib/search-index'
 import type { ArtistProfile } from '@/lib/artist-directory-data'
+import type { ClubOutlet } from '@/lib/club-booking-data'
 
 const tabs: { label: string; value: SearchCategory | 'all' }[] = [
   { label: 'Tất cả', value: 'all' },
@@ -26,7 +27,8 @@ function SearchPageContent() {
   const [input, setInput] = useState(query)
   const [databaseMusicItems, setDatabaseMusicItems] = useState<SearchItem[]>([])
   const [databaseArtistItems, setDatabaseArtistItems] = useState<SearchItem[]>([])
-  const results = useMemo(() => findSearchItems(query, activeTab, [...databaseMusicItems, ...databaseArtistItems]), [query, activeTab, databaseMusicItems, databaseArtistItems])
+  const [databaseOutletItems, setDatabaseOutletItems] = useState<SearchItem[]>([])
+  const results = useMemo(() => findSearchItems(query, activeTab, [...databaseMusicItems, ...databaseArtistItems, ...databaseOutletItems]), [query, activeTab, databaseMusicItems, databaseArtistItems, databaseOutletItems])
 
   useEffect(() => {
     void fetchPublicMusicCatalog().then((tracks) => {
@@ -40,6 +42,21 @@ function SearchPageContent() {
         label: `Music · ${track.type === 'track' ? 'Track' : track.type}`,
       })))
     }).catch(() => setDatabaseMusicItems([]))
+  }, [])
+
+  useEffect(() => {
+    void fetch('/api/public/outlets', { cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : { outlets: [] })
+      .then((result: { outlets?: ClubOutlet[] }) => setDatabaseOutletItems((result.outlets ?? []).map((outlet) => ({
+        id: `outlet:${outlet.slug}`,
+        category: 'outlets',
+        title: outlet.name,
+        description: `${outlet.type} · ${outlet.city} · ${outlet.vibe}`,
+        image: outlet.image || outlet.cover || '/icon.png',
+        href: `/dat-ban/${outlet.slug}`,
+        label: `Outlet · ${outlet.regionLabel}`,
+      }))))
+      .catch(() => setDatabaseOutletItems([]))
   }, [])
 
   useEffect(() => {

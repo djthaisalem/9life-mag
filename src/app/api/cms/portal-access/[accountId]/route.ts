@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireCmsApiAccess } from '@/lib/cms-access'
-import { cmsArtistRows, cmsOutletRows } from '@/lib/cms-dashboard-data'
+import { cmsOutletRows } from '@/lib/cms-dashboard-data'
 import { getSiteAccountById, updatePortalManagementAssignment } from '@/lib/site-user-session'
+import { listStoredArtistAgencies } from '@/lib/artist-agency-store'
 
 const updateSchema = z.object({
   portalRole: z.enum(['manager', 'booking']),
@@ -11,9 +12,10 @@ const updateSchema = z.object({
   managedOutletSlugs: z.array(z.string().min(1)).max(50).default([]),
 })
 
-function choices() {
+async function choices() {
+  const agencies = await listStoredArtistAgencies()
   return {
-    agents: [...new Set(cmsArtistRows.map((artist) => artist.agent))].sort(),
+    agents: agencies.filter((agency) => agency.status === 'published').map((agency) => agency.name).sort(),
     outlets: cmsOutletRows.map((outlet) => ({ slug: outlet.slug, name: outlet.name, city: outlet.city, region: outlet.region })),
   }
 }
@@ -37,7 +39,7 @@ export async function GET(_: Request, context: { params: Promise<{ accountId: st
       managedAgent: account.managedAgent ?? '',
       managedOutletSlugs: account.managedOutletSlugs ?? [],
     },
-    choices: choices(),
+    choices: await choices(),
   })
 }
 
@@ -48,7 +50,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ accou
   try {
     const { accountId } = await context.params
     const input = updateSchema.parse(await request.json())
-    const validAgents = new Set(choices().agents)
+    const validAgents = new Set((await choices()).agents)
     const validOutlets = new Set(cmsOutletRows.map((outlet) => outlet.slug))
 
     if (input.portalRole === 'manager' && !validAgents.has(input.managedAgent ?? '')) {

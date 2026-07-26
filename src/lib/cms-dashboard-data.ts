@@ -9,6 +9,7 @@ export const cmsSidebarLinks = [
   { href: '/cms/dashboard/users', label: 'Quản lý user', key: 'users' },
   { href: '/cms/dashboard/admin-access', label: 'Phân quyền admin', key: 'admin-access' },
   { href: '/cms/dashboard/artists', label: 'Nghệ sĩ', key: 'artists' },
+  { href: '/cms/dashboard/agents', label: 'Agent', key: 'agents' },
   { href: '/cms/dashboard/music', label: 'Music', key: 'music' },
   { href: '/cms/dashboard/booking', label: 'Booking', key: 'booking' },
   { href: '/cms/dashboard/students', label: 'Học viên', key: 'students' },
