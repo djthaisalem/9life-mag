@@ -35,5 +35,6 @@ export function catalogItemToAudioTrack(item: PublicMusicCatalogItem): AudioTrac
     audioUrl: '',
     protectedMedia: true,
     isPremiumDrop: item.isPremiumDrop === true,
+    genre: item.genre,
   }
 }

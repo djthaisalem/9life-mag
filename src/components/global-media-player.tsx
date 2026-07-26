@@ -34,13 +34,15 @@ import { recordDownload, recordListening } from '@/lib/music-history'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
 import { AudioVisualizer3D } from '@/components/audio-visualizer-3d'
+import { getFairRotation } from '@/lib/music-curation'
+import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 
 const FAVORITE_TRACKS_STORAGE_KEY = 'nine-life-favorite-tracks'
 const PLAYER_RESUME_STORAGE_KEY = 'nine-life-media-player-resume'
 
 type PendingPlaybackAction =
   | { type: 'toggle' }
-  | { type: 'track'; index: number; track?: AudioTrack }
+  | { type: 'track'; index: number; track?: AudioTrack; automatic?: boolean; attemptedIds?: string[] }
   | { type: 'step'; direction: -1 | 1 }
 
 type PlayerResumeState = {
@@ -157,6 +159,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const [isReportingIssue, setIsReportingIssue] = useState(false)
   const [isVisualizerOpen, setIsVisualizerOpen] = useState(false)
   const [audioAnalyser, setAudioAnalyser] = useState<AnalyserNode | null>(null)
+  const [playbackNotice, setPlaybackNotice] = useState('')
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -164,7 +167,9 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const analysedAudioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
   const lastPersistedProgressRef = useRef(0)
-  const autoAdvanceRef = useRef<(index: number, track: AudioTrack) => void>(() => undefined)
+  const autoAdvanceRef = useRef<(index: number, track: AudioTrack, attemptedIds?: string[]) => void>(() => undefined)
+  const continueFairPlaybackRef = useRef<() => void>(() => undefined)
+  const queueScopeRef = useRef<'catalog' | 'collection'>('catalog')
   const activeTrack = queue[activeIndex] ?? null
 
   const openVisualizer = () => {
@@ -289,8 +294,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         return
       }
 
-      setIsPlaying(false)
-      setProgress(0)
+      continueFairPlaybackRef.current()
     }
 
     audio.addEventListener('timeupdate', syncTime)
@@ -312,7 +316,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     audio.load()
     setProgress(0)
     setDuration(0)
-  }, [activeIndex, activeTrack?.audioUrl, activeTrack?.id])
+  }, [activeTrack?.audioUrl, activeTrack?.id])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -384,6 +388,68 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     }
   }
 
+  const getFairRelatedTracks = async (seed: AudioTrack, sourceType: AudioSourceType, includeSeed: boolean) => {
+    const catalog = await fetchPublicMusicCatalog()
+    const sameType = catalog.filter((item) => item.type === sourceType)
+    const normalizedGenre = seed.genre?.trim().toLocaleLowerCase('vi-VN')
+    const sameGenre = normalizedGenre
+      ? sameType.filter((item) => item.genre.trim().toLocaleLowerCase('vi-VN') === normalizedGenre)
+      : []
+    const candidates = sameGenre.length > 1 ? sameGenre : sameType
+    const eligible = includeSeed ? candidates : candidates.filter((item) => item.id !== seed.id)
+    const rotationKey = `nine-life-player-fair-${sourceType}-${normalizedGenre || 'all'}`
+    const orderedIds = getFairRotation(rotationKey, eligible.map((item) => item.id), eligible.length)
+    const byId = new Map(eligible.map((item) => [item.id, item]))
+    return orderedIds
+      .map((id) => byId.get(id))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .map(catalogItemToAudioTrack)
+  }
+
+  const hydrateSingleTrackQueue = async (seed: AudioTrack, sourceType: AudioSourceType) => {
+    try {
+      const related = await getFairRelatedTracks(seed, sourceType, false)
+      if (!related.length) return
+      setQueue((current) => {
+        if (current.length !== 1 || current[0]?.id !== seed.id) return current
+        return [current[0], ...related]
+      })
+    } catch (error) {
+      console.error('Could not hydrate fair playback queue', error)
+    }
+  }
+
+  const continueAfterUnavailable = async (
+    action: Extract<PendingPlaybackAction, { type: 'track' }>,
+    track: AudioTrack,
+    message: string,
+  ) => {
+    setPlaybackNotice(message)
+    let workingQueue = queue
+    if (workingQueue.length <= 1) {
+      try {
+        const related = await getFairRelatedTracks(track, activeSourceType, false)
+        workingQueue = [track, ...related]
+        setQueue(workingQueue)
+      } catch {
+        workingQueue = queue
+      }
+    }
+
+    const attempted = new Set([...(action.attemptedIds ?? []), track.id])
+    const currentIndex = Math.max(0, workingQueue.findIndex((item) => item.id === track.id))
+    for (let offset = 1; offset <= workingQueue.length; offset += 1) {
+      const nextIndex = (currentIndex + offset) % workingQueue.length
+      const nextTrack = workingQueue[nextIndex]
+      if (nextTrack && !attempted.has(nextTrack.id)) {
+        window.setTimeout(() => autoAdvanceRef.current(nextIndex, nextTrack, [...attempted]), 0)
+        return
+      }
+    }
+
+    setIsPlaying(false)
+  }
+
   const playNow = async (action: PendingPlaybackAction) => {
     let targetTrack =
       action.type === 'toggle'
@@ -394,9 +460,43 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
     if (!targetTrack) return
 
+    if (action.type === 'toggle') {
+      const audio = audioRef.current
+      if (!audio || !activeTrack) return
+
+      try {
+        await audio.play()
+        setIsPlaying(true)
+      } catch {
+        if (!activeTrack.protectedMedia) {
+          setPlaybackNotice('Không thể tiếp tục phát track này. Vui lòng thử chuyển bài.')
+          return
+        }
+        const resumeAt = audio.currentTime
+        const refreshed = await requestProtectedMedia(activeTrack, 'preview')
+        if (!refreshed.ok || !refreshed.url) {
+          setPlaybackNotice(refreshed.message ?? 'Quyền phát track đã hết hạn và chưa thể làm mới.')
+          return
+        }
+        resumePositionRef.current = { trackId: activeTrack.id, progress: resumeAt }
+        setQueue((current) => current.map((track) => track.id === activeTrack.id ? { ...track, audioUrl: refreshed.url! } : track))
+        setIsPlaying(true)
+      }
+      return
+    }
+
     if (targetTrack.protectedMedia) {
       const protectedResult = await requestProtectedMedia(targetTrack, 'preview')
       if (!protectedResult.ok || !protectedResult.url) {
+        if (action.type === 'track' && action.automatic) {
+          const reason = protectedResult.status === 402
+            ? 'Ví sao không đủ. Player đang tự tìm bài miễn phí tiếp theo.'
+            : protectedResult.status === 403
+              ? 'Đã bỏ qua một nội dung Premium và chuyển sang bài phù hợp tiếp theo.'
+              : 'Track hiện không phát được. Player đang chuyển sang bài tiếp theo.'
+          await continueAfterUnavailable(action, targetTrack, reason)
+          return
+        }
         if (protectedResult.status === 401) {
           setPendingPlaybackAction(action)
           setShowLoginModal(true)
@@ -419,6 +519,16 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       const result = await accessTrackWithStars(targetTrack.id, 'playback')
 
       if (!result.ok) {
+        if (action.type === 'track' && action.automatic && (result.reason === 'insufficient_stars' || result.reason === 'not_authenticated')) {
+          await continueAfterUnavailable(
+            action,
+            targetTrack,
+            result.reason === 'insufficient_stars'
+              ? 'Ví sao không đủ. Player đang tự tìm bài miễn phí tiếp theo.'
+              : 'Đã bỏ qua nội dung cần đăng nhập và chuyển sang bài miễn phí.',
+          )
+          return
+        }
         if (result.reason === 'not_authenticated') {
           setPendingPlaybackAction(action)
           setShowLoginModal(true)
@@ -442,15 +552,6 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
       setStarBalance(result.state.stars)
     }
 
-    if (action.type === 'toggle') {
-      const audio = audioRef.current
-      if (!audio || !activeTrack) return
-
-      await audio.play()
-      setIsPlaying(true)
-      return
-    }
-
     if (action.type === 'track') {
       setActiveIndex(action.index)
       setIsPlaying(true)
@@ -462,12 +563,60 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     setIsPlaying(true)
   }
 
-  autoAdvanceRef.current = (index, track) => {
-    void playNow({ type: 'track', index, track })
+  autoAdvanceRef.current = (index, track, attemptedIds) => {
+    void playNow({ type: 'track', index, track, automatic: true, attemptedIds })
+  }
+
+  continueFairPlaybackRef.current = () => {
+    if (!activeTrack) {
+      setIsPlaying(false)
+      return
+    }
+    if (queueScopeRef.current === 'collection') {
+      if (!isShuffled || queue.length <= 1) {
+        setIsPlaying(false)
+        setProgress(0)
+        return
+      }
+      const ids = getFairRotation(
+        `nine-life-player-collection-${activeSourceType}`,
+        queue.map((track) => track.id),
+        queue.length,
+      )
+      const byId = new Map(queue.map((track) => [track.id, track]))
+      const nextCycle = ids.map((id) => byId.get(id)).filter((track): track is AudioTrack => Boolean(track))
+      setQueue(nextCycle)
+      setActiveIndex(0)
+      setIsPlaying(false)
+      window.setTimeout(() => autoAdvanceRef.current(0, nextCycle[0]), 0)
+      return
+    }
+    void getFairRelatedTracks(activeTrack, activeSourceType, true)
+      .then((nextCycle) => {
+        if (!nextCycle.length) {
+          setIsPlaying(false)
+          setProgress(0)
+          return
+        }
+        setQueue(nextCycle)
+        setActiveIndex(0)
+        setIsPlaying(false)
+        window.setTimeout(() => autoAdvanceRef.current(0, nextCycle[0]), 0)
+      })
+      .catch(() => {
+        setIsPlaying(false)
+        setProgress(0)
+      })
   }
 
   const playCollection = (tracks: readonly AudioTrack[], startIndex: number, sourceType: AudioSourceType) => {
-    const normalizedTracks = isShuffled ? [...tracks].sort(() => Math.random() - 0.5) : [...tracks]
+    const shuffledIds = isShuffled
+      ? getFairRotation(`nine-life-player-collection-${sourceType}`, tracks.map((track) => track.id), tracks.length)
+      : []
+    const trackById = new Map(tracks.map((track) => [track.id, track]))
+    const normalizedTracks = isShuffled
+      ? shuffledIds.map((id) => trackById.get(id)).filter((track): track is AudioTrack => Boolean(track))
+      : [...tracks]
     const targetTrack = tracks[startIndex]
     const normalizedIndex = Math.max(
       0,
@@ -477,15 +626,18 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     setQueue(normalizedTracks)
     setActiveIndex(normalizedIndex)
     setActiveSourceType(sourceType)
+    queueScopeRef.current = tracks.length > 1 ? 'collection' : 'catalog'
     setIsDismissed(false)
     setIsPlaying(false)
     window.setTimeout(() => {
       void playNow({ type: 'track', index: normalizedIndex, track: targetTrack })
     }, 0)
+    if (tracks.length === 1 && targetTrack) void hydrateSingleTrackQueue(targetTrack, sourceType)
   }
 
   const addTrackToQueue = (track: AudioTrack, sourceType: AudioSourceType) => {
     setIsDismissed(false)
+    queueScopeRef.current = 'collection'
     setQueue((current) => {
       const exists = current.some((item) => item.id === track.id)
       const next = exists ? current : [...current, track]
@@ -497,9 +649,41 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     })
   }
 
-  const stepTrack = (direction: -1 | 1) => {
-    if (!queue.length) return
-    void playNow({ type: 'step', direction })
+  const stepTrack = async (direction: -1 | 1) => {
+    if (!queue.length || !activeTrack) return
+    let workingQueue = queue
+    let workingIndex = activeIndex
+    if (workingQueue.length <= 1) {
+      const related = await getFairRelatedTracks(activeTrack, activeSourceType, false).catch(() => [])
+      workingQueue = [activeTrack, ...related]
+      workingIndex = 0
+      setQueue(workingQueue)
+      setActiveIndex(0)
+    }
+    if (workingQueue.length <= 1) return
+    const nextIndex = (workingIndex + direction + workingQueue.length) % workingQueue.length
+    const nextTrack = workingQueue[nextIndex]
+    if (nextTrack) void playNow({ type: 'track', index: nextIndex, track: nextTrack, automatic: true })
+  }
+
+  const toggleShuffle = async () => {
+    const nextState = !isShuffled
+    setIsShuffled(nextState)
+    if (!nextState || !activeTrack) return
+
+    let candidates = queue.filter((track) => track.id !== activeTrack.id)
+    if (!candidates.length) {
+      candidates = await getFairRelatedTracks(activeTrack, activeSourceType, false).catch(() => [])
+    }
+    const ids = getFairRotation(
+      `nine-life-player-shuffle-${activeSourceType}-${activeTrack.genre?.trim().toLocaleLowerCase('vi-VN') || 'all'}`,
+      candidates.map((track) => track.id),
+      candidates.length,
+    )
+    const byId = new Map(candidates.map((track) => [track.id, track]))
+    const shuffled = ids.map((id) => byId.get(id)).filter((track): track is AudioTrack => Boolean(track))
+    setQueue([activeTrack, ...shuffled])
+    setActiveIndex(0)
   }
 
   const togglePlay = async () => {
@@ -863,6 +1047,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
       {activeTrack && !isDismissed ? (
         <div className="global-media-player-shell">
+          {playbackNotice ? (
+            <div className="global-media-player-notice" role="status" aria-live="polite">
+              <span>{playbackNotice}</span>
+              <button type="button" onClick={() => setPlaybackNotice('')} aria-label="Đóng thông báo">
+                <X size={15} />
+              </button>
+            </div>
+          ) : null}
           <button type="button" className="global-media-player-dismiss" onClick={dismissPlayer} aria-label="Tắt media player">
             <X size={18} />
           </button>
@@ -934,7 +1126,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 <button
                   type="button"
                   className={isShuffled ? 'player-icon-button player-icon-button-active' : 'player-icon-button'}
-                  onClick={() => setIsShuffled((current) => !current)}
+                  onClick={() => void toggleShuffle()}
                 >
                   <Shuffle size={16} />
                 </button>

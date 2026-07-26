@@ -5432,6 +5432,35 @@ button.more-link-unified {
   pointer-events: none;
 }
 
+.global-media-player-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto 8px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(255, 206, 82, 0.42);
+  border-radius: 14px;
+  color: #fff3c2;
+  background: rgba(26, 21, 10, 0.96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
+  pointer-events: auto;
+}
+
+.global-media-player-notice button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
 .global-media-player-dismiss {
   position: absolute;
   left: 20px;
