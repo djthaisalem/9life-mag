@@ -7,6 +7,8 @@ import {
   cmsOutletBookingRows,
   cmsTelegramBookingConfig,
 } from '@/lib/cms-dashboard-data'
+import { env } from '@/lib/env'
+import { loadPayloadClient } from '@/lib/payload-runtime'
 
 export type BookingStatus =
   | 'Mới'
@@ -60,6 +62,9 @@ export type BookingRequestRecord = {
 type BookingStoreShape = {
   requests: BookingRequestRecord[]
 }
+
+const PAYLOAD_NOTE_PREFIX = '__9life_booking__:'
+type PayloadBookingStatus = 'new' | 'qualified' | 'negotiating' | 'won' | 'lost'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const STORE_PATH = path.join(DATA_DIR, 'cms-booking-requests.json')
@@ -200,7 +205,110 @@ async function saveStore(store: BookingStoreShape) {
   await fs.writeFile(STORE_PATH, JSON.stringify(store, null, 2), 'utf8')
 }
 
+function toPayloadStatus(status: BookingStatus): PayloadBookingStatus {
+  if (status === 'Đã xác nhận' || status === 'Đã cọc' || status === 'Hoàn tất') return 'won'
+  if (status === 'Huỷ') return 'lost'
+  if (status === 'Đang báo giá' || status === 'Chờ chốt') return 'negotiating'
+  return 'new'
+}
+
+function fromPayloadStatus(status: unknown): BookingStatus {
+  if (status === 'won') return 'Đã xác nhận'
+  if (status === 'lost') return 'Huỷ'
+  if (status === 'qualified' || status === 'negotiating') return 'Đang báo giá'
+  return 'Mới'
+}
+
+function toPayloadDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+}
+
+function toPayloadBudget(value: string) {
+  const parsed = Number(value.replace(/[^0-9.-]/g, ''))
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function serializePayloadNotes(request: BookingRequestRecord) {
+  return `${PAYLOAD_NOTE_PREFIX}${JSON.stringify(request)}`
+}
+
+function readPayloadRecord(row: Record<string, unknown>): BookingRequestRecord {
+  const notes = String(row.notes ?? '')
+  if (notes.startsWith(PAYLOAD_NOTE_PREFIX)) {
+    try {
+      const parsed = JSON.parse(notes.slice(PAYLOAD_NOTE_PREFIX.length)) as BookingRequestRecord
+      return {
+        ...parsed,
+        id: String(row.id),
+        status: parsed.status ?? fromPayloadStatus(row.status),
+      }
+    } catch {
+      // Fall through to a usable legacy representation instead of hiding a booking.
+    }
+  }
+
+  return {
+    id: String(row.id),
+    type: 'artist',
+    typeLabel: 'Booking nghệ sĩ',
+    title: String(row.eventName ?? 'Yêu cầu booking'),
+    requester: String(row.contactName ?? ''),
+    location: String(row.location ?? ''),
+    schedule: typeof row.eventDate === 'string' ? row.eventDate.slice(0, 10) : '',
+    detail: notes || 'Chưa có mô tả thêm.',
+    status: fromPayloadStatus(row.status),
+    href: '/cms/dashboard/booking/artists',
+    submittedFields: [],
+    internalNotes: [],
+    reminderConfig: {
+      telegramChannel: cmsTelegramBookingConfig.globalChannel,
+      profileChannel: '', reminderAt: '', soundcheckAt: '', checkinAt: '', followUpAt: '', assistantNote: '',
+    },
+    reminderDispatch: {},
+  }
+}
+
+async function getPayloadBookings() {
+  const payload = await loadPayloadClient()
+  const result = await payload.find({
+    collection: 'booking-requests',
+    sort: '-createdAt',
+    limit: 500,
+    depth: 0,
+    pagination: false,
+  })
+  return (result.docs as Array<Record<string, unknown>>).map(readPayloadRecord)
+}
+
+async function savePayloadBooking(request: BookingRequestRecord, options?: { existingId?: string }) {
+  const payload = await loadPayloadClient()
+  const data = {
+    eventName: request.title || 'Yêu cầu booking',
+    contactName: request.requester || 'Khách hàng',
+    // The legacy Payload schema requires an email. Public booking forms currently collect phone only.
+    contactEmail: `booking-${request.id.replace(/[^a-z0-9]/gi, '').slice(-24)}@9lifemag.local`,
+    phone: request.submittedFields.find((field) => /điện thoại|phone|zalo/i.test(field.label))?.value ?? '',
+    eventDate: toPayloadDate(request.schedule),
+    location: request.location,
+    budget: toPayloadBudget(request.detail),
+    status: toPayloadStatus(request.status),
+    notes: serializePayloadNotes(request),
+  }
+
+  if (options?.existingId) {
+    await payload.update({ collection: 'booking-requests', id: options.existingId, data })
+    return
+  }
+
+  const created = await payload.create({ collection: 'booking-requests', data }) as unknown as { id: string | number }
+  request.id = String(created.id)
+}
+
 export async function getBookingRequestsSnapshot() {
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    return getPayloadBookings()
+  }
   const store = await ensureStore()
   return [...store.requests].sort((a, b) => b.schedule.localeCompare(a.schedule))
 }
@@ -217,7 +325,6 @@ export async function createContactRequest(input: {
   message: string
   goodwill: string
 }) {
-  const store = await ensureStore()
   const submittedAt = new Date().toISOString().slice(0, 16).replace('T', ' ')
   const request: BookingRequestRecord = {
     id: `contact-${Date.now()}`,
@@ -255,8 +362,13 @@ export async function createContactRequest(input: {
     reminderDispatch: {},
   }
 
-  store.requests.push(request)
-  await saveStore(store)
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    await savePayloadBooking(request)
+  } else {
+    const store = await ensureStore()
+    store.requests.push(request)
+    await saveStore(store)
+  }
   return request
 }
 
@@ -270,7 +382,6 @@ export async function createPublicBookingRequest(input: {
   href: string
   submittedFields: BookingField[]
 }) {
-  const store = await ensureStore()
   const request: BookingRequestRecord = {
     id: `${input.type}-${Date.now()}`,
     type: input.type,
@@ -299,8 +410,13 @@ export async function createPublicBookingRequest(input: {
     reminderDispatch: {},
   }
 
-  store.requests.push(request)
-  await saveStore(store)
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    await savePayloadBooking(request)
+  } else {
+    const store = await ensureStore()
+    store.requests.push(request)
+    await saveStore(store)
+  }
   return request
 }
 
@@ -308,6 +424,15 @@ export async function updateBookingStatus(input: {
   requestId: string
   status: BookingStatus
 }) {
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    const requests = await getPayloadBookings()
+    const request = requests.find((item) => item.id === input.requestId)
+    if (!request) throw new Error('booking-request-not-found')
+    request.status = input.status
+    await savePayloadBooking(request, { existingId: input.requestId })
+    return getPayloadBookings()
+  }
+
   const store = await ensureStore()
   const request = store.requests.find((item) => item.id === input.requestId)
 
@@ -324,6 +449,20 @@ export async function updateBookingReminderConfig(input: {
   requestId: string
   reminderConfig: BookingReminderConfig
 }) {
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    const requests = await getPayloadBookings()
+    const request = requests.find((item) => item.id === input.requestId)
+    if (!request) throw new Error('booking-request-not-found')
+    request.reminderConfig = {
+      ...input.reminderConfig,
+      telegramChannel: input.reminderConfig.telegramChannel.trim(),
+      profileChannel: input.reminderConfig.profileChannel.trim(),
+    }
+    request.reminderDispatch = {}
+    await savePayloadBooking(request, { existingId: input.requestId })
+    return getPayloadBookings()
+  }
+
   const store = await ensureStore()
   const request = store.requests.find((item) => item.id === input.requestId)
 
@@ -346,6 +485,15 @@ export async function markBookingReminderSent(input: {
   key: keyof BookingReminderDispatch
   timestamp: string
 }) {
+  if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
+    const requests = await getPayloadBookings()
+    const request = requests.find((item) => item.id === input.requestId)
+    if (!request) throw new Error('booking-request-not-found')
+    request.reminderDispatch[input.key] = input.timestamp
+    await savePayloadBooking(request, { existingId: input.requestId })
+    return request
+  }
+
   const store = await ensureStore()
   const request = store.requests.find((item) => item.id === input.requestId)
 
