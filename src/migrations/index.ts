@@ -3,6 +3,7 @@ import * as migration_20260723_000001_user_playlist_sharing from './20260723_000
 import * as migration_20260724_000001_referral_visit_counts from './20260724_000001_referral_visit_counts';
 import * as migration_20260724_000002_track_download_control from './20260724_000002_track_download_control';
 import * as migration_20260726_000001_artist_profile_draft from './20260726_000001_artist_profile_draft';
+import * as migration_20260726_000002_outlet_profiles from './20260726_000002_outlet_profiles';
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260726_000001_artist_profile_draft.up,
     down: migration_20260726_000001_artist_profile_draft.down,
     name: '20260726_000001_artist_profile_draft'
+  },
+  {
+    up: migration_20260726_000002_outlet_profiles.up,
+    down: migration_20260726_000002_outlet_profiles.down,
+    name: '20260726_000002_outlet_profiles'
   },
 ];
