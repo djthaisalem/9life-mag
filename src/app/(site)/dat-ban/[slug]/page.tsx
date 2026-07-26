@@ -4,14 +4,13 @@ import { notFound } from 'next/navigation'
 import { Clock3, GlassWater, MapPin, Music4, Sparkles, Star, Users2 } from 'lucide-react'
 import { OutletProfileActions } from '@/components/outlet-profile-actions'
 import { ContentDiscovery } from '@/components/content-discovery'
-import { clubOutlets, getOutletBySlug, getOutletProfile } from '@/lib/club-booking-data'
-import { getPublishedOutletProfileBySlug } from '@/lib/public-outlets'
+import { getPublishedOutletProfileBySlug, listPublishedOutlets } from '@/lib/public-outlets'
 import { createShareMetadata } from '@/lib/seo'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const published = await getPublishedOutletProfileBySlug(slug)
-  const outlet = published?.outlet ?? getOutletBySlug(slug)
+  const outlet = published?.outlet
   if (!outlet) return {}
   return createShareMetadata({ title: `${outlet.name} | Nightlife Outlet`, description: outlet.summary, path: `/dat-ban/${outlet.slug}`, image: outlet.cover })
 }
@@ -23,14 +22,14 @@ export default async function OutletProfilePage({
 }) {
   const { slug } = await params
   const published = await getPublishedOutletProfileBySlug(slug)
-  const outlet = published?.outlet ?? getOutletBySlug(slug)
+  const outlet = published?.outlet
 
   if (!outlet) {
     notFound()
   }
 
-  const profile = published?.profile ?? getOutletProfile(outlet)
-  const relatedOutlets = clubOutlets.filter((item) => item.slug !== outlet.slug).slice(0, 3)
+  const profile = published.profile
+  const relatedOutlets = (await listPublishedOutlets()).map((item) => item.outlet).filter((item) => item.slug !== outlet.slug).slice(0, 3)
 
   return (
     <>

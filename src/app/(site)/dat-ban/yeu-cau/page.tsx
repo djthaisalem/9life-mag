@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PageHero } from '@/components/page-hero'
 import { SiteBookingSubmitForm } from '@/components/site-public-submit-form'
-import { clubOutlets } from '@/lib/club-booking-data'
+import { listPublishedOutlets } from '@/lib/public-outlets'
 
 const tableBookingFlow = [
   {
@@ -28,7 +28,8 @@ export default async function TableRequestPage({
   searchParams: Promise<{ outlet?: string }>
 }) {
   const { outlet: outletSlug } = await searchParams
-  const selectedOutlet = clubOutlets.find((item) => item.slug === outletSlug)
+  const outlets = (await listPublishedOutlets()).map((item) => item.outlet)
+  const selectedOutlet = outlets.find((item) => item.slug === outletSlug)
 
   return (
     <main>
@@ -55,13 +56,14 @@ export default async function TableRequestPage({
                 <label htmlFor="outlet">Outlet mong muốn</label>
                 <select id="outlet" name="outlet" required>
                   {selectedOutlet ? <option>{selectedOutlet.name}</option> : <option value="">Chọn outlet / night club</option>}
-                  {clubOutlets
+                  {outlets
                     .filter((item) => item.slug !== selectedOutlet?.slug)
                     .map((outlet) => (
                       <option key={outlet.slug}>{outlet.name}</option>
                     ))}
                 </select>
                 <input type="hidden" name="outletSlug" value={selectedOutlet?.slug ?? ''} />
+                {!outlets.length ? <p className="muted">Chưa có Outlet nào được duyệt public để nhận đặt bàn.</p> : null}
               </div>
               <div className="field">
                 <label htmlFor="bookingDate">Ngày đi</label>

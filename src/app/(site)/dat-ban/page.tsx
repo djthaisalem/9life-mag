@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
-import { regionalOutlets, type ClubOutlet } from '@/lib/club-booking-data'
+import { type ClubOutlet } from '@/lib/club-booking-data'
+import { vietnamRegions } from '@/lib/vietnam-locations'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
@@ -77,9 +78,9 @@ function TableBookingContent() {
       .catch(() => setPublishedOutlets([]))
   }, [])
 
-  const mergedRegions = useMemo(() => regionalOutlets.map((region) => ({
+  const mergedRegions = useMemo(() => vietnamRegions.map((region) => ({
     ...region,
-    outlets: [...publishedOutlets.filter((outlet) => outlet.regionId === region.id), ...region.outlets],
+    outlets: publishedOutlets.filter((outlet) => outlet.regionId === region.id),
   })), [publishedOutlets])
 
   const featuredClubs = useMemo(() =>
@@ -200,6 +201,8 @@ function TableBookingContent() {
               </Link>
             ))}
           </div>
+
+          {!publishedOutlets.length ? <p className="muted">Chưa có Outlet nào được duyệt public. Danh sách sẽ tự xuất hiện khi CMS duyệt dữ liệu thật.</p> : null}
 
         </div>
       </section>

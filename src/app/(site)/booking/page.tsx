@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PageHero } from '@/components/page-hero'
 import { SiteBookingSubmitForm } from '@/components/site-public-submit-form'
-import { artistProfiles } from '@/lib/artist-directory-data'
+import { listPublishedArtists } from '@/lib/public-artists'
 
 const pipeline = [
   {
@@ -28,7 +28,8 @@ export default async function BookingPage({
   searchParams: Promise<{ artist?: string }>
 }) {
   const { artist: artistSlug } = await searchParams
-  const selectedArtist = artistProfiles.find((item) => item.slug === artistSlug)
+  const artists = (await listPublishedArtists()).map((item) => item.artist)
+  const selectedArtist = artists.find((item) => item.slug === artistSlug)
   const isArtistLocked = Boolean(selectedArtist)
 
   return (
@@ -66,11 +67,12 @@ export default async function BookingPage({
                 ) : (
                   <select id="artist" name="artist" required>
                     <option value="">Chọn nghệ sĩ quan tâm</option>
-                    {artistProfiles.slice(0, 20).map((artist) => (
+                    {artists.map((artist) => (
                       <option key={artist.slug}>{artist.name}</option>
                     ))}
                   </select>
                 )}
+                {!artists.length ? <p className="muted">Chưa có nghệ sĩ nào được duyệt public để nhận booking.</p> : null}
               </div>
               <div className="field">
                 <label htmlFor="showDate">Ngày biểu diễn dự kiến</label>
