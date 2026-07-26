@@ -5,7 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CalendarCheck2, Eye, Heart, Mic2, Radio, Sparkles, Star, Users2 } from 'lucide-react'
 import { ArtistDirectoryArticleSlider } from '@/components/artist-directory-article-slider'
-import { artistProfiles } from '@/lib/artist-directory-data'
+import { artistProfiles, type ArtistProfile } from '@/lib/artist-directory-data'
 import {
   buildArtistDirectoryHref,
   defaultArtistDirectoryFilters,
@@ -50,6 +50,7 @@ function ArtistsPageContent() {
   const [accessPrompt, setAccessPrompt] = useState<'vote' | 'follow' | null>(null)
   const [showTopupModal, setShowTopupModal] = useState(false)
   const [artistOrder, setArtistOrder] = useState<string[]>([])
+  const [publishedArtists, setPublishedArtists] = useState<ArtistProfile[]>([])
 
   useEffect(() => {
     void (async () => {
@@ -60,12 +61,25 @@ function ArtistsPageContent() {
   }, [])
 
   useEffect(() => {
+    void fetch('/api/public/artists', { cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : { artists: [] })
+      .then((result: { artists?: ArtistProfile[] }) => setPublishedArtists(result.artists ?? []))
+      .catch(() => setPublishedArtists([]))
+  }, [])
+
+  useEffect(() => {
     setActiveFilters(parseArtistDirectoryFilters(searchParams))
   }, [searchParams])
 
+  const availableArtists = useMemo(() => {
+    const bySlug = new Map(artistProfiles.map((artist) => [artist.slug, artist]))
+    publishedArtists.forEach((artist) => bySlug.set(artist.slug, artist))
+    return [...bySlug.values()]
+  }, [publishedArtists])
+
   const visibleArtists = useMemo(
-    () => filterArtistsByDirectoryFilters(artistProfiles, activeFilters),
-    [activeFilters],
+    () => filterArtistsByDirectoryFilters(availableArtists, activeFilters),
+    [availableArtists, activeFilters],
   )
 
   const visibleArtistSlugs = visibleArtists.map((artist) => artist.slug).join('|')
@@ -91,7 +105,7 @@ function ArtistsPageContent() {
     const artistBySlug = new Map(visibleArtists.map((artist) => [artist.slug, artist]))
     return artistOrder
       .map((slug) => artistBySlug.get(slug))
-      .filter((artist): artist is (typeof artistProfiles)[number] => Boolean(artist))
+      .filter((artist): artist is ArtistProfile => Boolean(artist))
   }, [artistOrder, visibleArtists])
 
   const handleFollow = async (slug: string) => {

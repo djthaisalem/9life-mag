@@ -25,6 +25,7 @@ import { ArtistGalleryLightbox } from '@/components/artist-gallery-lightbox'
 import { getArtistAgentAssignments } from '@/lib/site-user-session'
 import { createShareMetadata } from '@/lib/seo'
 import { getStudentRegistrationEnabled } from '@/lib/student-registration-settings'
+import { getPublishedArtistProfileBySlug } from '@/lib/public-artists'
 
 type ArtistProfilePageProps = {
   params: Promise<{
@@ -34,21 +35,23 @@ type ArtistProfilePageProps = {
 
 export async function generateMetadata({ params }: ArtistProfilePageProps): Promise<Metadata> {
   const { slug } = await params
-  const artist = getArtistBySlug(slug)
+  const published = await getPublishedArtistProfileBySlug(slug)
+  const artist = published?.artist ?? getArtistBySlug(slug)
   if (!artist) return {}
   return createShareMetadata({ title: `${artist.name} | ${artist.role}`, description: artist.bio, path: `/nghe-si/${artist.slug}`, image: artist.cover })
 }
 
 export default async function ArtistProfilePage({ params }: ArtistProfilePageProps) {
   const { slug } = await params
-  const artist = getArtistBySlug(slug)
+  const published = await getPublishedArtistProfileBySlug(slug)
+  const artist = published?.artist ?? getArtistBySlug(slug)
 
   if (!artist) {
     notFound()
   }
 
   const relatedArtists = artistProfiles.filter((item) => item.slug !== artist.slug).slice(0, 3)
-  const richContent = getArtistRichContent(artist)
+  const richContent = published?.richContent ?? getArtistRichContent(artist)
   const assignments = await getArtistAgentAssignments()
   const assignedAgent = assignments.find((item) => item.artistProfileSlug === artist.slug)?.artistAgent
   const agentName = getArtistAgentName(artist.slug, assignedAgent)

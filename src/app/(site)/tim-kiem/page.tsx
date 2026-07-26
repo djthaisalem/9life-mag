@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { findSearchItems, type SearchCategory } from '@/lib/search-index'
 import { fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import type { SearchItem } from '@/lib/search-index'
+import type { ArtistProfile } from '@/lib/artist-directory-data'
 
 const tabs: { label: string; value: SearchCategory | 'all' }[] = [
   { label: 'Tất cả', value: 'all' },
@@ -24,7 +25,8 @@ function SearchPageContent() {
   const activeTab = tabs.some((tab) => tab.value === requestedTab) ? requestedTab as SearchCategory | 'all' : 'all'
   const [input, setInput] = useState(query)
   const [databaseMusicItems, setDatabaseMusicItems] = useState<SearchItem[]>([])
-  const results = useMemo(() => findSearchItems(query, activeTab, databaseMusicItems), [query, activeTab, databaseMusicItems])
+  const [databaseArtistItems, setDatabaseArtistItems] = useState<SearchItem[]>([])
+  const results = useMemo(() => findSearchItems(query, activeTab, [...databaseMusicItems, ...databaseArtistItems]), [query, activeTab, databaseMusicItems, databaseArtistItems])
 
   useEffect(() => {
     void fetchPublicMusicCatalog().then((tracks) => {
@@ -38,6 +40,21 @@ function SearchPageContent() {
         label: `Music · ${track.type === 'track' ? 'Track' : track.type}`,
       })))
     }).catch(() => setDatabaseMusicItems([]))
+  }, [])
+
+  useEffect(() => {
+    void fetch('/api/public/artists', { cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : { artists: [] })
+      .then((result: { artists?: ArtistProfile[] }) => setDatabaseArtistItems((result.artists ?? []).map((artist) => ({
+        id: `artist:${artist.slug}`,
+        category: 'artists',
+        title: artist.name,
+        description: `${artist.role} · ${artist.genres} · ${artist.location}`,
+        image: artist.image,
+        href: `/nghe-si/${artist.slug}`,
+        label: 'Nghệ sĩ',
+      }))))
+      .catch(() => setDatabaseArtistItems([]))
   }, [])
 
   const updateSearch = (nextQuery: string, nextTab = activeTab) => {

@@ -59,6 +59,7 @@ function normalizeSearchText(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[đĐ]/g, (character) => character === 'đ' ? 'd' : 'D')
+    .replace(/\u0111|\u0110/g, 'd')
     .toLowerCase()
 }
 
