@@ -25,7 +25,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ artis
     const artist = await payload.update({
       collection: 'artists',
       id: artistId,
-      data: { profileStatus: input.profileStatus },
+      data: {
+        profileStatus: input.profileStatus,
+        ...(input.profileStatus === 'archived' ? { profileDraft: null } : {}),
+      },
       depth: 0,
       overrideAccess: true,
     })

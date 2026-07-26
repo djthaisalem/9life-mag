@@ -77,23 +77,29 @@ export async function POST(request: Request) {
       profileStatus,
     }
 
-    if (current) {
-      await payload.update({ collection: 'artists', id: String(current.id), data, depth: 0, overrideAccess: true })
-    } else {
-      await payload.create({ collection: 'artists', data, depth: 0, overrideAccess: true })
-    }
+    const artistRecord = current
+      ? await payload.update({ collection: 'artists', id: String(current.id), data, depth: 0, overrideAccess: true })
+      : await payload.create({ collection: 'artists', data, depth: 0, overrideAccess: true })
 
     let draftMediaWarning = ''
-    if (input.profileSnapshot) {
-      const snapshot = input.profileSnapshot as ArtistProfileDraft
+    let profileDraft = input.profileSnapshot as ArtistProfileDraft | undefined
+    if (profileDraft) {
       // Text must never be lost just because an optional media upload fails.
-      await saveArtistProfileDraft(slug, snapshot)
+      await saveArtistProfileDraft(slug, profileDraft)
       try {
-        await saveArtistProfileDraft(slug, await storeArtistDraftImages(slug, snapshot))
+        profileDraft = await storeArtistDraftImages(slug, profileDraft)
+        await saveArtistProfileDraft(slug, profileDraft)
       } catch (mediaError) {
         draftMediaWarning = mediaError instanceof Error ? mediaError.message : 'Không thể đồng bộ ảnh hồ sơ lên R2.'
         console.error('Artist draft image upload failed', mediaError)
       }
+      await payload.update({
+        collection: 'artists',
+        id: String(artistRecord.id),
+        data: { profileDraft },
+        depth: 0,
+        overrideAccess: true,
+      })
     }
 
     await setArtistProfileSlug(account.id, slug)
@@ -102,9 +108,13 @@ export async function POST(request: Request) {
       : { ok: true, awarded: false, state: { stars: account.stars } }
     if (!reward.ok) throw new Error('Không thể hoàn tất phần thưởng hồ sơ.')
 
-    if (input.submitForReview && isReadyForReview) try {
+    let cmsNotified = false
+    let telegramNotified = false
+    let telegramReason = ''
+    if (input.submitForReview && isReadyForReview) {
       const isPublishedUpdate = current?.profileStatus === 'published'
-      await createPortalNotifications([
+      try {
+        await createPortalNotifications([
         {
           recipientKey: 'admin',
           title: isPublishedUpdate ? 'Nghệ sĩ vừa cập nhật hồ sơ' : 'Hồ sơ nghệ sĩ chờ duyệt',
@@ -113,16 +123,25 @@ export async function POST(request: Request) {
             : `${input.artistName} vừa gửi hồ sơ để duyệt. Vui lòng kiểm tra trước khi public ngoài site.`,
           href: '/cms/dashboard/artists',
         },
-      ])
-      const telegram = await sendTelegramOperationsNotice([
+        ])
+        cmsNotified = true
+      } catch (notificationError) {
+        console.error('Could not create artist profile review notification', notificationError)
+      }
+      try {
+        const telegram = await sendTelegramOperationsNotice([
         isPublishedUpdate ? '9LIFE MAG - HO SO NGHE SI CAP NHAT' : '9LIFE MAG - HO SO NGHE SI CHO DUYET',
         `Nghe si: ${input.artistName}`,
         `Vai tro: ${input.primaryRole}`,
         isPublishedUpdate ? 'Vui long kiem tra ban cap nhat trong CMS / Quan ly Nghe si.' : 'Vui long kiem tra va duyet trong CMS / Quan ly Nghe si.',
-      ].join('\n'))
-      if (!telegram.ok) console.error('Artist profile review Telegram notice was not delivered', telegram)
-    } catch (notificationError) {
-      console.error('Could not create artist profile review notification', notificationError)
+        ].join('\n'))
+        telegramNotified = telegram.ok
+        telegramReason = telegram.ok ? '' : (telegram.reason ?? 'Telegram notification was not delivered')
+        if (!telegram.ok) console.error('Artist profile review Telegram notice was not delivered', telegram)
+      } catch (notificationError) {
+        telegramReason = notificationError instanceof Error ? notificationError.message : 'Telegram notification failed'
+        console.error('Could not send artist profile review Telegram notification', notificationError)
+      }
     }
 
     return NextResponse.json({
@@ -132,6 +151,9 @@ export async function POST(request: Request) {
       awarded: reward.awarded,
       stars: reward.state.stars,
       draftMediaWarning,
+      cmsNotified,
+      telegramNotified,
+      telegramReason,
     })
   } catch (error) {
     const message = error instanceof z.ZodError

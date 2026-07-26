@@ -217,7 +217,7 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
           submitForReview,
         }),
       })
-      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string; draftMediaWarning?: string }
+      const result = await response.json() as { ok?: boolean; awarded?: boolean; stars?: number; slug?: string; profileStatus?: 'draft' | 'pending_review' | 'published'; message?: string; draftMediaWarning?: string; cmsNotified?: boolean; telegramNotified?: boolean; telegramReason?: string }
       if (!result.ok) throw new Error(result.message || 'Chưa thể xác nhận hồ sơ.')
       setProfileSlug(result.slug ?? '')
       setProfileStatus(result.profileStatus ?? '')
@@ -241,6 +241,13 @@ export function ArtistPortalEditorPage({ section }: ArtistPortalEditorPageProps)
         setReviewFeedback(result.profileStatus === 'published'
           ? 'Đã gửi bản cập nhật. Admin đã nhận thông báo để theo dõi.'
           : 'Đã gửi duyệt thành công. Admin đã nhận thông báo CMS và Telegram.')
+      }
+      if (submitForReview && (!result.cmsNotified || !result.telegramNotified)) {
+        const channels = [
+          result.cmsNotified ? 'CMS đã nhận' : 'CMS chưa nhận được thông báo',
+          result.telegramNotified ? 'Telegram đã nhận' : `Telegram chưa gửi được${result.telegramReason ? `: ${result.telegramReason}` : ''}`,
+        ].join('. ')
+        setReviewFeedback(`Hồ sơ đã được lưu và chuyển sang chờ duyệt. ${channels}.`)
       }
       if (result.draftMediaWarning) {
         setFeedback((current) => ({ ...current, [id]: `Thông tin đã đồng bộ. Riêng ảnh: ${result.draftMediaWarning}` }))

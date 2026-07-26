@@ -9,7 +9,7 @@ import { hasCmsScope } from '@/lib/cms-role-policy'
 import { vietnamLocationNames } from '@/lib/vietnam-locations'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { CmsArtistReviewActions } from '@/components/cms-artist-review-actions'
-import { getArtistProfileDraft } from '@/lib/artist-profile-draft-store'
+import { getArtistProfileDraft, type ArtistProfileDraft } from '@/lib/artist-profile-draft-store'
 import { getMediaEmbed } from '@/lib/media-embed'
 import { getPrivateObjectUrl } from '@/lib/r2-media-access'
 
@@ -50,7 +50,10 @@ export default async function CmsArtistDetailPage({
     const headline = String(realArtist.seoTitle ?? 'Nghệ sĩ chưa bổ sung câu giới thiệu nổi bật.')
     const biography = String(realArtist.seoDescription ?? 'Nghệ sĩ chưa bổ sung giới thiệu ngắn.')
     const genreText = Array.isArray(realArtist.genres) && realArtist.genres.length ? realArtist.genres.map((item) => typeof item === 'object' && item ? String((item as Record<string, unknown>).value ?? '') : String(item)).filter(Boolean).join(', ') : 'Chưa cập nhật'
-    const draft = await getArtistProfileDraft(String(realArtist.slug ?? ''))
+    const storedDraft = realArtist.profileDraft
+    const draft = storedDraft && typeof storedDraft === 'object' && !Array.isArray(storedDraft)
+      ? storedDraft as ArtistProfileDraft
+      : await getArtistProfileDraft(String(realArtist.slug ?? ''))
     const lookup = (name: string) => Object.values(draft).map((item) => item.values?.[name] ?? item.files?.[name] ?? '').find(Boolean) ?? ''
     const portraitValue = lookup('portraitUpload')
     const coverValue = lookup('coverUpload')

@@ -96,6 +96,13 @@ export const Artists: CollectionConfig = {
       type: 'richText',
     },
     {
+      name: 'profileDraft',
+      type: 'json',
+      admin: {
+        hidden: true,
+      },
+    },
+    {
       name: 'socialLinks',
       type: 'array',
       fields: [
