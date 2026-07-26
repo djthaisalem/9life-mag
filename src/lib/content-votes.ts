@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { randomUUID } from 'crypto'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { spendStarsForUser } from '@/lib/site-user-session'
 
@@ -78,26 +79,7 @@ export async function castContentVote(input: { userId: string; target: VoteTarge
     }
 
     const payload = await loadPayloadClient()
-    const existing = await payload.find({
-      collection: 'content-votes',
-      where: {
-        and: [
-          { targetType: { equals: input.target.type } },
-          { targetSlug: { equals: input.target.slug } },
-          { siteUserId: { equals: input.userId } },
-        ],
-      },
-      limit: 1,
-      depth: 0,
-      overrideAccess: true,
-    })
-
-    if (existing.docs.length) {
-      const counts = await getContentVoteCounts(input.target.type, [input.target.slug])
-      return { ok: true as const, alreadyVoted: true, voteCount: counts.get(input.target.slug) ?? 0 }
-    }
-
-    // Reserve the unique user/target vote first so repeat clicks cannot charge twice.
+    // Create first so a storage error never takes a star without recording its vote.
     const vote = await payload.create({
       collection: 'content-votes',
       data: {
@@ -112,7 +94,7 @@ export async function castContentVote(input: { userId: string; target: VoteTarge
     })
 
     const charge = await spendStarsForUser(input.userId, 1, 'spend_vote', {
-      reference: `content-vote:${input.target.type}:${input.target.slug}:${input.userId}`,
+      reference: `content-vote:${input.target.type}:${input.target.slug}:${input.userId}:${randomUUID()}`,
       note: `Vote for ${input.target.type} ${input.target.slug}`,
     })
     if (!charge.ok) {
@@ -121,6 +103,6 @@ export async function castContentVote(input: { userId: string; target: VoteTarge
     }
 
     const counts = await getContentVoteCounts(input.target.type, [input.target.slug])
-    return { ok: true as const, alreadyVoted: false, voteCount: counts.get(input.target.slug) ?? 0, state: charge.state }
+    return { ok: true as const, voteCount: counts.get(input.target.slug) ?? 0, state: charge.state }
   })
 }

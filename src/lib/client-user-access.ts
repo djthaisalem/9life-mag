@@ -163,7 +163,6 @@ export async function castContentVote(type: 'artist' | 'outlet', slug: string) {
   const result = await readJson<{
     ok: boolean
     reason?: 'not_authenticated' | 'insufficient_stars' | 'target_unavailable' | 'server_error'
-    alreadyVoted?: boolean
     voteCount?: number
     state?: UserAccessState
   }>(response)
