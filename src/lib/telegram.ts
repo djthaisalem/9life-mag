@@ -2,6 +2,22 @@ import 'server-only'
 
 import { getTelegramPaymentConfig } from '@/lib/payment-config'
 
+function normalizeTelegramChannel(value: string) {
+  const channel = value.trim()
+  const publicLink = channel.match(/^https?:\/\/(?:www\.)?t\.me\/([a-z0-9_]+)\/?$/i)
+  return publicLink ? `@${publicLink[1]}` : channel
+}
+
+async function getTelegramRejection(response: Response) {
+  const detail = await response.text().catch(() => '')
+  try {
+    const parsed = JSON.parse(detail) as { description?: string }
+    return parsed.description?.slice(0, 240) || `HTTP ${response.status}`
+  } catch {
+    return detail.slice(0, 240) || `HTTP ${response.status}`
+  }
+}
+
 export async function sendTelegramPaymentNotice(message: string) {
   try {
     const { token, channel } = await getTelegramPaymentConfig()
@@ -16,7 +32,7 @@ export async function sendTelegramPaymentNotice(message: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: channel,
+        chat_id: normalizeTelegramChannel(channel),
         text: message,
       }),
       cache: 'no-store',
@@ -24,12 +40,12 @@ export async function sendTelegramPaymentNotice(message: string) {
 
     if (response.ok) return { ok: true }
 
-    const detail = await response.text().catch(() => '')
+    const detail = await getTelegramRejection(response)
     console.error('Telegram operations delivery failed', {
       status: response.status,
-      detail: detail.slice(0, 500),
+      detail,
     })
-    return { ok: false, reason: 'telegram-rejected' as const }
+    return { ok: false, reason: `Telegram từ chối (${response.status}): ${detail}` }
   } catch (error) {
     console.error('Telegram operations delivery failed', error)
     return { ok: false, reason: 'request-failed' as const }

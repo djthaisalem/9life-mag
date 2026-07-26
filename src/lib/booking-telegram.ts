@@ -12,6 +12,12 @@ function uniqueChannels(channels: string[]) {
   return [...new Set(channels.map((item) => item.trim()).filter(Boolean))]
 }
 
+function normalizeTelegramChannel(value: string) {
+  const channel = value.trim()
+  const publicLink = channel.match(/^https?:\/\/(?:www\.)?t\.me\/([a-z0-9_]+)\/?$/i)
+  return publicLink ? `@${publicLink[1]}` : channel
+}
+
 async function sendTelegramMessage(input: { token: string; channel: string; message: string }) {
   if (!input.token || !input.channel) {
     return { ok: false, reason: 'missing-config' as const }
@@ -24,7 +30,7 @@ async function sendTelegramMessage(input: { token: string; channel: string; mess
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: input.channel,
+        chat_id: normalizeTelegramChannel(input.channel),
         text: input.message,
       }),
       cache: 'no-store',
@@ -32,12 +38,19 @@ async function sendTelegramMessage(input: { token: string; channel: string; mess
 
     if (response.ok) return { ok: true }
 
-    const detail = await response.text().catch(() => '')
+    const responseBody = await response.text().catch(() => '')
+    let detail = responseBody.slice(0, 240) || `HTTP ${response.status}`
+    try {
+      const parsed = JSON.parse(responseBody) as { description?: string }
+      detail = parsed.description?.slice(0, 240) || detail
+    } catch {
+      // Keep the plain response body when Telegram does not return JSON.
+    }
     console.error('Telegram booking delivery failed', {
       status: response.status,
-      detail: detail.slice(0, 500),
+      detail,
     })
-    return { ok: false, reason: 'telegram-rejected' as const }
+    return { ok: false, reason: `Telegram từ chối (${response.status}): ${detail}` }
   } catch (error) {
     console.error('Telegram booking delivery failed', error)
     return { ok: false, reason: 'request-failed' as const }
