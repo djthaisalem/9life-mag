@@ -1,8 +1,8 @@
 import { ContentDiscoveryClient, type DiscoveryGroup, type DiscoveryItem } from '@/components/content-discovery-client'
-import { getArtistBySlug, getPublicArtistProfiles } from '@/lib/artist-directory-data'
-import { clubOutlets, getOutletBySlug } from '@/lib/club-booking-data'
 import { loadPayloadClient } from '@/lib/payload-runtime'
-import { repairVietnameseText, repairVietnameseValue } from '@/lib/repair-vietnamese-text'
+import { listPublishedArtists } from '@/lib/public-artists'
+import { listPublishedOutlets } from '@/lib/public-outlets'
+import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
 import { getPublishedUserPlaylists } from '@/lib/shared-user-playlists'
 
 type DiscoveryKind = 'artist' | 'music' | 'outlet' | 'article' | 'playlist'
@@ -68,7 +68,7 @@ function trackItem(track: TrackDocument, label = trackLabel(track.trackType)): D
 export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
   try {
     const payload = await loadPayloadClient()
-    const [tracksResult, postsResult, userPlaylists] = await Promise.all([
+    const [tracksResult, postsResult, userPlaylists, publishedArtists, publishedOutlets] = await Promise.all([
       payload.find({
         collection: 'tracks',
         where: {
@@ -95,6 +95,8 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
         overrideAccess: true,
       }),
       getPublishedUserPlaylists(100),
+      listPublishedArtists(),
+      listPublishedOutlets(),
     ])
 
     const tracks = tracksResult.docs as TrackDocument[]
@@ -139,10 +141,11 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
 
     const profileItems: DiscoveryItem[] = []
     if (current?.kind === 'outlet' && current.id) {
-      const currentOutlet = repairVietnameseValue(getOutletBySlug(current.id))
+      const currentOutlet = publishedOutlets.find((item) => item.outlet.slug === current.id)?.outlet
       const location = normalizeLocation(currentOutlet?.city)
       if (location) {
-        getPublicArtistProfiles()
+        publishedArtists
+          .map((item) => item.artist)
           .filter((artist) => normalizeLocation(artist.location) === location)
           .forEach((artist) => profileItems.push({
             id: `artist-${artist.slug}`,
@@ -156,10 +159,11 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
     }
 
     if (current?.kind === 'artist' && current.id) {
-      const currentArtist = getArtistBySlug(current.id)
+      const currentArtist = publishedArtists.find((item) => item.artist.slug === current.id)?.artist
       const location = normalizeLocation(currentArtist?.location)
       if (location) {
-        repairVietnameseValue(clubOutlets)
+        publishedOutlets
+          .map((item) => item.outlet)
           .filter((outlet) => normalizeLocation(outlet.city) === location)
           .forEach((outlet) => profileItems.push({
             id: `outlet-${outlet.slug}`,

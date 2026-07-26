@@ -3,6 +3,9 @@ import { PageHero } from '@/components/page-hero'
 import { SiteBookingSubmitForm } from '@/components/site-public-submit-form'
 import { listPublishedOutlets } from '@/lib/public-outlets'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const tableBookingFlow = [
   {
     title: 'Chọn outlet',
