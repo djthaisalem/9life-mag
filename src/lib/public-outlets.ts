@@ -23,6 +23,17 @@ function lines(value: unknown, fallback: string[]) {
   return result.length ? result : fallback
 }
 
+function faqPairs(value: unknown) {
+  const values = lines(value, [])
+  const pairs: Array<{ question: string; answer: string }> = []
+  for (let index = 0; index < values.length; index += 2) {
+    const question = values[index]
+    const answer = values[index + 1]
+    if (question) pairs.push({ question, answer: answer || 'Outlet đang cập nhật câu trả lời.' })
+  }
+  return pairs
+}
+
 function mapOutlet(document: Record<string, unknown>) {
   const region = outletRegion(String(document.city ?? ''), String(document.region ?? ''))
   const outlet: ClubOutlet = {
@@ -47,7 +58,7 @@ function mapOutlet(document: Record<string, unknown>) {
     musicStyles: lines(document.musicStyles, ['Đang cập nhật music mood.']),
     serviceNotes: lines(document.serviceNotes, ['Đang cập nhật lưu ý dịch vụ.']),
     gallery: gallery.map((media) => ({ image: mediaUrl(media as MediaValue), caption: (media as { alt?: string })?.alt || outlet.name })),
-    faq: lines(document.faq, []).map((item) => ({ question: item, answer: 'Outlet sẽ cập nhật thông tin chi tiết khi cần.' })),
+    faq: faqPairs(document.faq),
     stats: [
       { label: 'Khu vực', value: outlet.city },
       { label: 'Giờ hoạt động', value: outlet.hours },
