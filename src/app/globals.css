@@ -475,6 +475,18 @@
   .content-discovery { padding-bottom: 48px; }
   .content-discovery-head { align-items: start; flex-direction: column; gap: 8px; }
   .content-discovery-grid { grid-template-columns: 1fr; }
+
+  #ranking .ranking-podium-first {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  #ranking .ranking-podium-first .ranking-podium-content,
+  #ranking .ranking-board .ranking-podium-first .ranking-podium-content {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
 }
 
 * {
