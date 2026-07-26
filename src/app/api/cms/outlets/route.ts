@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 const outletSchema = z.object({
@@ -41,7 +42,12 @@ function toSlug(value: string) {
 }
 
 export async function POST(request: Request) {
-  const access = await requireCmsApiAccess('booking')
+  const authorization = request.headers.get('authorization')
+  const capability = verifyCmsCapabilityToken(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null,
+    'booking',
+  )
+  const access = capability ? { ok: true as const, session: capability } : await requireCmsApiAccess('booking')
   if (!access.ok) return access.response
 
   try {

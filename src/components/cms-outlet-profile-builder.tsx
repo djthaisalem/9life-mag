@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { useCmsCapability } from '@/components/cms-capability-provider'
 import { getMediaEmbed } from '@/lib/media-embed'
 import { getVietnamRegionLabel, vietnamLocationNames } from '@/lib/vietnam-locations'
 
@@ -96,6 +97,7 @@ function OutletEmbedPreview({ value, label }: { value: string; label: string }) 
 
 export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorInitial }) {
   const router = useRouter()
+  const capability = useCmsCapability('booking')
   const [draft, setDraft] = useState<OutletForm>(() => createForm(initial))
   const [feedback, setFeedback] = useState(initial?.id ? 'Bản nháp này đang được lưu trong CMS.' : 'Chưa lưu bản nháp outlet mới.')
   const [saving, setSaving] = useState(false)
@@ -119,7 +121,12 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
     const formData = new FormData()
     formData.set('file', file)
     formData.set('alt', alt)
-    const response = await fetch('/api/cms/outlets/upload', { method: 'POST', body: formData, credentials: 'same-origin' })
+    const response = await fetch('/api/cms/outlets/upload', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+      headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
+    })
     const result = await response.json().catch(() => ({})) as { ok?: boolean; message?: string; media?: OutletMedia }
     if (!response.ok || !result.ok || !result.media) throw new Error(result.message || 'Không thể upload ảnh lúc này.')
     return result.media
@@ -169,8 +176,8 @@ export function CmsOutletProfileBuilder({ initial }: { initial?: OutletEditorIni
     try {
       const response = await fetch('/api/cms/outlets', {
         method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
+        credentials: 'include',
+        headers: { 'content-type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
         body: JSON.stringify({
           ...draft,
           coverImage: draft.coverImage ? Number(draft.coverImage.id) : null,
