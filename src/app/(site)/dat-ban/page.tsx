@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Clock3, MapPin, Star, Users2 } from 'lucide-react'
-import { regionalOutlets } from '@/lib/club-booking-data'
+import { regionalOutlets, type ClubOutlet } from '@/lib/club-booking-data'
 import { fetchUserAccessState, loginDemoUser, spendUserStars } from '@/lib/client-user-access'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 import { StarAmount } from '@/components/star-amount'
@@ -60,11 +60,7 @@ function TableBookingContent() {
   const [pendingOutletVote, setPendingOutletVote] = useState<string | null>(null)
   const [outletVotes, setOutletVotes] = useState<Record<string, number>>(outletVoteSeed)
   const [votedOutletSlugs, setVotedOutletSlugs] = useState<string[]>([])
-  const [featuredClubs] = useState(() =>
-    regionalOutlets
-      .map((region) => shuffleItems(region.outlets)[0])
-      .filter((club): club is (typeof regionalOutlets)[number]['outlets'][number] => Boolean(club))
-  )
+  const [publishedOutlets, setPublishedOutlets] = useState<ClubOutlet[]>([])
 
   useEffect(() => {
     void (async () => {
@@ -74,9 +70,27 @@ function TableBookingContent() {
     })()
   }, [])
 
+  useEffect(() => {
+    void fetch('/api/public/outlets', { cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : { outlets: [] })
+      .then((result: { outlets?: ClubOutlet[] }) => setPublishedOutlets(result.outlets ?? []))
+      .catch(() => setPublishedOutlets([]))
+  }, [])
+
+  const mergedRegions = useMemo(() => regionalOutlets.map((region) => ({
+    ...region,
+    outlets: [...publishedOutlets.filter((outlet) => outlet.regionId === region.id), ...region.outlets],
+  })), [publishedOutlets])
+
+  const featuredClubs = useMemo(() =>
+    mergedRegions
+      .map((region) => shuffleItems(region.outlets)[0])
+      .filter((club): club is ClubOutlet => Boolean(club)),
+  [mergedRegions])
+
   const randomizedRegions = useMemo(
     () =>
-      regionalOutlets
+      mergedRegions
         .filter((region) => !activeRegion || region.id === activeRegion)
         .map((region) => {
           return {
@@ -85,7 +99,7 @@ function TableBookingContent() {
           }
         })
         .filter((region) => region.outlets.length > 0),
-    [activeRegion]
+    [activeRegion, mergedRegions]
   )
 
   const handleOutletVote = async (slug: string) => {
@@ -176,7 +190,7 @@ function TableBookingContent() {
             <Link href="/dat-ban" className={activeRegion ? 'artist-filter-chip' : 'artist-filter-chip artist-filter-chip-active'}>
               Tất cả
             </Link>
-            {regionalOutlets.map((region) => (
+            {mergedRegions.map((region) => (
               <Link
                 key={region.id}
                 href={`/dat-ban?region=${encodeURIComponent(region.id)}`}
