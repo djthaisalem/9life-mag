@@ -14,7 +14,7 @@ const updateSchema = z.object({
 function choices() {
   return {
     agents: [...new Set(cmsArtistRows.map((artist) => artist.agent))].sort(),
-    outlets: cmsOutletRows.map((outlet) => ({ slug: outlet.slug, name: outlet.name, city: outlet.city })),
+    outlets: cmsOutletRows.map((outlet) => ({ slug: outlet.slug, name: outlet.name, city: outlet.city, region: outlet.region })),
   }
 }
 
