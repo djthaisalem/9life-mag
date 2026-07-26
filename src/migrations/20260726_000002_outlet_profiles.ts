@@ -37,27 +37,29 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
       CONSTRAINT "outlet_profiles_slug_unique" UNIQUE("slug")
     );
-    CREATE TABLE IF NOT EXISTS "outlet_profiles_gallery" (
-      "_order" integer NOT NULL,
-      "_parent_id" integer NOT NULL,
-      "id" varchar PRIMARY KEY NOT NULL,
+    CREATE TABLE IF NOT EXISTS "outlet_profiles_rels" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "order" integer,
+      "parent_id" integer NOT NULL,
+      "path" varchar NOT NULL,
       "media_id" integer
     );
     ALTER TABLE "outlet_profiles" ADD CONSTRAINT "outlet_profiles_cover_image_id_media_id_fk" FOREIGN KEY ("cover_image_id") REFERENCES "media"("id") ON DELETE set null ON UPDATE no action;
     ALTER TABLE "outlet_profiles" ADD CONSTRAINT "outlet_profiles_portrait_image_id_media_id_fk" FOREIGN KEY ("portrait_image_id") REFERENCES "media"("id") ON DELETE set null ON UPDATE no action;
-    ALTER TABLE "outlet_profiles_gallery" ADD CONSTRAINT "outlet_profiles_gallery_parent_id_outlet_profiles_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "outlet_profiles"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "outlet_profiles_gallery" ADD CONSTRAINT "outlet_profiles_gallery_media_id_media_id_fk" FOREIGN KEY ("media_id") REFERENCES "media"("id") ON DELETE set null ON UPDATE no action;
+    ALTER TABLE "outlet_profiles_rels" ADD CONSTRAINT "outlet_profiles_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "outlet_profiles"("id") ON DELETE cascade ON UPDATE no action;
+    ALTER TABLE "outlet_profiles_rels" ADD CONSTRAINT "outlet_profiles_rels_media_fk" FOREIGN KEY ("media_id") REFERENCES "media"("id") ON DELETE set null ON UPDATE no action;
     CREATE INDEX IF NOT EXISTS "outlet_profiles_cover_image_idx" ON "outlet_profiles" USING btree ("cover_image_id");
     CREATE INDEX IF NOT EXISTS "outlet_profiles_portrait_image_idx" ON "outlet_profiles" USING btree ("portrait_image_id");
-    CREATE INDEX IF NOT EXISTS "outlet_profiles_gallery_order_idx" ON "outlet_profiles_gallery" USING btree ("_order");
-    CREATE INDEX IF NOT EXISTS "outlet_profiles_gallery_parent_id_idx" ON "outlet_profiles_gallery" USING btree ("_parent_id");
-    CREATE INDEX IF NOT EXISTS "outlet_profiles_gallery_media_id_idx" ON "outlet_profiles_gallery" USING btree ("media_id");
+    CREATE INDEX IF NOT EXISTS "outlet_profiles_rels_order_idx" ON "outlet_profiles_rels" USING btree ("order");
+    CREATE INDEX IF NOT EXISTS "outlet_profiles_rels_parent_idx" ON "outlet_profiles_rels" USING btree ("parent_id");
+    CREATE INDEX IF NOT EXISTS "outlet_profiles_rels_path_idx" ON "outlet_profiles_rels" USING btree ("path");
+    CREATE INDEX IF NOT EXISTS "outlet_profiles_rels_media_id_idx" ON "outlet_profiles_rels" USING btree ("media_id");
   `)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-    DROP TABLE IF EXISTS "outlet_profiles_gallery";
+    DROP TABLE IF EXISTS "outlet_profiles_rels";
     DROP TABLE IF EXISTS "outlet_profiles";
     DROP TYPE IF EXISTS "enum_outlet_profiles_status";
   `)
