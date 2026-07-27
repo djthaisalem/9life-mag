@@ -4,6 +4,8 @@ import { GetObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { env } from '@/lib/env'
 
+export const PLAYBACK_URL_TTL_SECONDS = 5 * 60
+
 function getClient() {
   if (!env.R2_ENDPOINT || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) return null
   return new S3Client({
@@ -18,7 +20,7 @@ export async function getPreviewPlaybackUrl(key: string) {
   if (!key.startsWith('music/preview/') && !key.startsWith('music/master/')) throw new Error('invalid_playback_key')
   // Preview URLs must remain private when playback can consume stars.
   // A public CDN URL can be copied and reused without passing access checks.
-  return getPrivateObjectUrl(key, 60 * 30)
+  return getPrivateObjectUrl(key, PLAYBACK_URL_TTL_SECONDS)
 }
 
 function buildAttachmentDisposition(filename: string) {

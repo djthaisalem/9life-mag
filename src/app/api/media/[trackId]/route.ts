@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { loadPayloadClient } from '@/lib/payload-runtime'
-import { assertPrivateObjectReadable, getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
+import { PLAYBACK_URL_TTL_SECONDS, assertPrivateObjectReadable, getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
 import { getRecentPremiumAccess } from '@/lib/wallet-ledger'
 
@@ -59,7 +59,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
         if (!result.ok) return NextResponse.json({ ok: false, message: `Bạn cần ${playbackCost} sao để nghe track này.` }, { status: 402 })
         remainingStars = result.state.stars
       }
-      return NextResponse.json({ ok: true, kind, url: playbackUrl, stars: remainingStars, expiresInSeconds: 60 * 30 })
+      return NextResponse.json({ ok: true, kind, url: playbackUrl, stars: remainingStars, expiresInSeconds: PLAYBACK_URL_TTL_SECONDS })
     }
 
     const cookieStore = await cookies()

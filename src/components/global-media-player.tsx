@@ -53,6 +53,12 @@ type PlayerResumeState = {
   savedAt: number
 }
 
+type PlaybackLease = {
+  trackId: string
+  url: string
+  expiresAt: number
+}
+
 type MediaPlayerContextValue = {
   activeTrack: AudioTrack | null
   activeSourceType: AudioSourceType
@@ -168,6 +174,11 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const analysedAudioRef = useRef<HTMLAudioElement | null>(null)
   const resumePositionRef = useRef<{ trackId: string; progress: number } | null>(null)
+  const playbackPositionRef = useRef(0)
+  const playbackLeaseRef = useRef<PlaybackLease | null>(null)
+  const isRenewingPlaybackRef = useRef(false)
+  const isRecoveringPlaybackRef = useRef(false)
+  const recoverPlaybackRef = useRef<() => void>(() => undefined)
   const lastPersistedProgressRef = useRef(0)
   const autoAdvanceRef = useRef<(index: number, track: AudioTrack, attemptedIds?: string[]) => void>(() => undefined)
   const continueFairPlaybackRef = useRef<() => void>(() => undefined)
@@ -280,12 +291,16 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     const audio = audioRef.current
     if (!audio) return
 
-    const syncTime = () => setProgress(audio.currentTime)
+    const syncTime = () => {
+      playbackPositionRef.current = audio.currentTime
+      setProgress(audio.currentTime)
+    }
     const syncDuration = () => {
       setDuration(audio.duration || 0)
       const resumePosition = resumePositionRef.current
       if (resumePosition?.trackId === activeTrack?.id && resumePosition.progress > 0) {
         audio.currentTime = Math.min(resumePosition.progress, Math.max((audio.duration || resumePosition.progress) - 1, 0))
+        playbackPositionRef.current = audio.currentTime
         setProgress(audio.currentTime)
         resumePositionRef.current = null
       }
@@ -308,15 +323,20 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
       continueFairPlaybackRef.current()
     }
+    const onError = () => {
+      if (activeTrack.protectedMedia && activeTrack.audioUrl) recoverPlaybackRef.current()
+    }
 
     audio.addEventListener('timeupdate', syncTime)
     audio.addEventListener('loadedmetadata', syncDuration)
     audio.addEventListener('ended', onEnded)
+    audio.addEventListener('error', onError)
 
     return () => {
       audio.removeEventListener('timeupdate', syncTime)
       audio.removeEventListener('loadedmetadata', syncDuration)
       audio.removeEventListener('ended', onEnded)
+      audio.removeEventListener('error', onError)
     }
   }, [activeIndex, activeTrack, isRepeatOn, queue])
 
@@ -401,13 +421,14 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         body: JSON.stringify({ kind }),
       })
       const result = response.headers.get('content-type')?.includes('application/json')
-        ? await response.json() as { ok?: boolean; url?: string; message?: string; stars?: number }
+        ? await response.json() as { ok?: boolean; url?: string; message?: string; stars?: number; expiresInSeconds?: number }
         : {}
       return {
         ok: response.ok && result.ok === true && Boolean(result.url),
         url: result.url,
         message: result.message,
         stars: result.stars,
+        expiresInSeconds: result.expiresInSeconds,
         status: response.status,
       }
     } catch {
@@ -417,6 +438,81 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         status: 0,
       }
     }
+  }
+
+  const rememberPlaybackLease = (
+    track: AudioTrack,
+    result: { url?: string; expiresInSeconds?: number },
+  ) => {
+    if (!result.url) return
+    playbackLeaseRef.current = {
+      trackId: track.id,
+      url: result.url,
+      expiresAt: Date.now() + Math.max(60, result.expiresInSeconds ?? 300) * 1000,
+    }
+  }
+
+  useEffect(() => {
+    if (!isPlaying || !activeTrack?.protectedMedia) return
+
+    let cancelled = false
+    const renewPlaybackLease = async () => {
+      const lease = playbackLeaseRef.current
+      if (lease?.trackId === activeTrack.id && lease.expiresAt - Date.now() > 90_000) return
+      if (isRenewingPlaybackRef.current) return
+
+      isRenewingPlaybackRef.current = true
+      try {
+        const refreshed = await requestProtectedMedia(activeTrack, 'preview')
+        if (!cancelled && refreshed.ok && refreshed.url) rememberPlaybackLease(activeTrack, refreshed)
+      } finally {
+        isRenewingPlaybackRef.current = false
+      }
+    }
+
+    void renewPlaybackLease()
+    const timer = window.setInterval(() => void renewPlaybackLease(), 30_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [activeTrack?.id, activeTrack?.protectedMedia, isPlaying])
+
+  recoverPlaybackRef.current = () => {
+    if (!activeTrack?.protectedMedia || isRecoveringPlaybackRef.current) return
+
+    void (async () => {
+      isRecoveringPlaybackRef.current = true
+      try {
+        const resumeAt = playbackPositionRef.current
+        const cachedLease = playbackLeaseRef.current
+        let refreshedUrl =
+          cachedLease?.trackId === activeTrack.id &&
+          cachedLease.expiresAt - Date.now() > 15_000 &&
+          cachedLease.url !== activeTrack.audioUrl
+            ? cachedLease.url
+            : ''
+
+        if (!refreshedUrl) {
+          const refreshed = await requestProtectedMedia(activeTrack, 'preview')
+          if (!refreshed.ok || !refreshed.url) {
+            setPlaybackNotice(refreshed.message ?? 'Quyá»n phÃ¡t track Ä‘Ã£ háº¿t háº¡n vÃ  chÆ°a thá»ƒ lÃ m má»›i.')
+            setIsPlaying(false)
+            return
+          }
+          rememberPlaybackLease(activeTrack, refreshed)
+          refreshedUrl = refreshed.url
+        }
+
+        resumePositionRef.current = { trackId: activeTrack.id, progress: resumeAt }
+        setQueue((current) =>
+          current.map((track) => track.id === activeTrack.id ? { ...track, audioUrl: refreshedUrl } : track),
+        )
+        setIsPlaying(true)
+      } finally {
+        isRecoveringPlaybackRef.current = false
+      }
+    })()
   }
 
   const getFairRelatedTracks = async (seed: AudioTrack, sourceType: AudioSourceType, includeSeed: boolean) => {
@@ -509,6 +605,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
           setPlaybackNotice(refreshed.message ?? 'Quyền phát track đã hết hạn và chưa thể làm mới.')
           return
         }
+        rememberPlaybackLease(activeTrack, refreshed)
         resumePositionRef.current = { trackId: activeTrack.id, progress: resumeAt }
         setQueue((current) => current.map((track) => track.id === activeTrack.id ? { ...track, audioUrl: refreshed.url! } : track))
         setIsPlaying(true)
@@ -540,6 +637,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
         window.alert(protectedResult.message ?? 'Không thể cấp quyền phát track này.')
         return
       }
+      rememberPlaybackLease(targetTrack, protectedResult)
       targetTrack = { ...targetTrack, audioUrl: protectedResult.url }
       setQueue((current) => current.map((track) => track.id === targetTrack.id ? targetTrack : track))
       if (typeof protectedResult.stars === 'number') {
@@ -734,6 +832,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     const audio = audioRef.current
     if (!audio) return
     audio.currentTime = value
+    playbackPositionRef.current = value
     setProgress(value)
     if (activeTrack) {
       savePlayerResumeState({
