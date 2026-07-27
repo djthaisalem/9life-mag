@@ -81,10 +81,20 @@ export function stripArticleSeoMetadata(html: string) {
     .flat()
     .map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('|')
+  const paragraphContent = '(?:(?!<\\/p>)[\\s\\S])*?'
+  const metadataParagraph = new RegExp(
+    `<p\\b[^>]*>${paragraphContent}(?:\\*{1,2}\\s*)?(?:${labelPattern})(?:\\s*\\*{1,2})?\\s*:(?:\\s*<\\/?(?:strong|b)[^>]*>|\\s*\\*{1,2})*${paragraphContent}<\\/p>`,
+    'gi',
+  )
+  const metadataHeading = new RegExp(
+    `<p\\b[^>]*>${paragraphContent}THÔNG TIN CẤU TRÚC SEO METADATA${paragraphContent}<\\/p>`,
+    'gi',
+  )
 
   return html
     .replace(/<aside\b(?=[^>]*\bcms-article-seo-note\b)[^>]*>[\s\S]*?<\/aside>/gi, '')
-    .replace(new RegExp(`<p\\b[^>]*>\\s*(?:<[^>]+>\\s*)*(?:${labelPattern})\\s*:[\\s\\S]*?<\\/p>`, 'gi'), '')
+    .replace(metadataHeading, '')
+    .replace(metadataParagraph, '')
     .trim()
 }
 
