@@ -274,6 +274,19 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
     canonicalUrl: '',
   })
 
+  const updateImageForm = (field: 'url' | 'caption' | 'alt', value: string) =>
+    setImageForm((current) => ({ ...current, [field]: value }))
+  const updateGalleryForm = (field: 'urls' | 'caption', value: string) =>
+    setGalleryForm((current) => ({ ...current, [field]: value }))
+  const updateVideoForm = (field: keyof VideoFormState, value: string) =>
+    setVideoForm((current) => ({ ...current, [field]: value }))
+  const updateEmbedForm = (field: keyof EmbedFormState, value: string) =>
+    setEmbedForm((current) => ({ ...current, [field]: value }))
+  const updateCtaForm = (field: keyof CtaFormState, value: string) =>
+    setCtaForm((current) => ({ ...current, [field]: value }))
+  const updateSeoForm = (field: keyof SeoFormState, value: string) =>
+    setSeoForm((current) => ({ ...current, [field]: value }))
+
   const closeModal = () => setActiveModal(null)
 
   const openModal = (tool: ModalTool) => {
@@ -512,12 +525,10 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(event) =>
-                      setImageForm((current) => ({
-                        ...current,
-                        files: Array.from(event.currentTarget.files ?? []),
-                      }))
-                    }
+                    onChange={(event) => {
+                      const files = Array.from(event.currentTarget.files ?? [])
+                      setImageForm((current) => ({ ...current, files }))
+                    }}
                   />
                 </div>
                 <div className="field">
@@ -526,7 +537,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsImageUrl"
                     value={imageForm.url}
                     placeholder="https://domain.com/cover.jpg"
-                    onChange={(event) => setImageForm((current) => ({ ...current, url: event.currentTarget.value }))}
+                    onChange={(event) => updateImageForm('url', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -535,7 +546,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsImageAlt"
                     value={imageForm.alt}
                     placeholder="Mô tả ảnh để SEO và accessibility"
-                    onChange={(event) => setImageForm((current) => ({ ...current, alt: event.currentTarget.value }))}
+                    onChange={(event) => updateImageForm('alt', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -544,7 +555,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsImageCaption"
                     value={imageForm.caption}
                     placeholder="Chú thích ảnh"
-                    onChange={(event) => setImageForm((current) => ({ ...current, caption: event.currentTarget.value }))}
+                    onChange={(event) => updateImageForm('caption', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
@@ -564,12 +575,10 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(event) =>
-                      setGalleryForm((current) => ({
-                        ...current,
-                        files: Array.from(event.currentTarget.files ?? []),
-                      }))
-                    }
+                    onChange={(event) => {
+                      const files = Array.from(event.currentTarget.files ?? [])
+                      setGalleryForm((current) => ({ ...current, files }))
+                    }}
                   />
                 </div>
                 <div className="field">
@@ -578,7 +587,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsGalleryUrls"
                     value={galleryForm.urls}
                     placeholder="Mỗi dòng một link ảnh hoặc phân tách bằng dấu phẩy"
-                    onChange={(event) => setGalleryForm((current) => ({ ...current, urls: event.currentTarget.value }))}
+                    onChange={(event) => updateGalleryForm('urls', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -587,7 +596,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsGalleryCaption"
                     value={galleryForm.caption}
                     placeholder="Ví dụ: Album đêm khai trương"
-                    onChange={(event) => setGalleryForm((current) => ({ ...current, caption: event.currentTarget.value }))}
+                    onChange={(event) => updateGalleryForm('caption', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
@@ -606,7 +615,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsVideoTitle"
                     value={videoForm.title}
                     placeholder="Aftermovie / interview / live set..."
-                    onChange={(event) => setVideoForm((current) => ({ ...current, title: event.currentTarget.value }))}
+                    onChange={(event) => updateVideoForm('title', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -615,7 +624,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsVideoUrl"
                     value={videoForm.url}
                     placeholder="https://youtube.com/watch?v=..."
-                    onChange={(event) => setVideoForm((current) => ({ ...current, url: event.currentTarget.value }))}
+                    onChange={(event) => updateVideoForm('url', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -624,7 +633,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsVideoIframe"
                     value={videoForm.iframe}
                     placeholder="<iframe ...></iframe>"
-                    onChange={(event) => setVideoForm((current) => ({ ...current, iframe: event.currentTarget.value }))}
+                    onChange={(event) => updateVideoForm('iframe', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -633,7 +642,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsVideoNote"
                     value={videoForm.note}
                     placeholder="Ví dụ: Set được ghi hình tại Hà Nội"
-                    onChange={(event) => setVideoForm((current) => ({ ...current, note: event.currentTarget.value }))}
+                    onChange={(event) => updateVideoForm('note', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
@@ -659,7 +668,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsEmbedTitle"
                     value={embedForm.title}
                     placeholder="SoundCloud player / Spotify playlist / Facebook post..."
-                    onChange={(event) => setEmbedForm((current) => ({ ...current, title: event.currentTarget.value }))}
+                    onChange={(event) => updateEmbedForm('title', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -668,7 +677,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsEmbedSource"
                     value={embedForm.source}
                     placeholder="SoundCloud / Spotify / Facebook / Khác"
-                    onChange={(event) => setEmbedForm((current) => ({ ...current, source: event.currentTarget.value }))}
+                    onChange={(event) => updateEmbedForm('source', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -679,7 +688,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     value={embedForm.url}
                     placeholder="https://soundcloud.com/..."
                     onPaste={pasteEmbedUrl}
-                    onChange={(event) => setEmbedForm((current) => ({ ...current, url: event.currentTarget.value }))}
+                    onChange={(event) => updateEmbedForm('url', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -688,7 +697,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsEmbedIframe"
                     value={embedForm.iframe}
                     placeholder="<iframe ...></iframe>"
-                    onChange={(event) => setEmbedForm((current) => ({ ...current, iframe: event.currentTarget.value }))}
+                    onChange={(event) => updateEmbedForm('iframe', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
@@ -707,7 +716,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsCtaLabel"
                     value={ctaForm.label}
                     placeholder="Đặt bàn ngay / Xem profile / Nghe full set"
-                    onChange={(event) => setCtaForm((current) => ({ ...current, label: event.currentTarget.value }))}
+                    onChange={(event) => updateCtaForm('label', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -716,7 +725,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsCtaHref"
                     value={ctaForm.href}
                     placeholder="/dat-ban hoặc https://..."
-                    onChange={(event) => setCtaForm((current) => ({ ...current, href: event.currentTarget.value }))}
+                    onChange={(event) => updateCtaForm('href', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -725,9 +734,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsCtaText"
                     value={ctaForm.supportingText}
                     placeholder="Ví dụ: Ưu tiên booking cuối tuần"
-                    onChange={(event) =>
-                      setCtaForm((current) => ({ ...current, supportingText: event.currentTarget.value }))
-                    }
+                    onChange={(event) => updateCtaForm('supportingText', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
@@ -746,7 +753,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsSeoTitle"
                     value={seoForm.metaTitle}
                     placeholder="Tiêu đề SEO muốn hiển thị trên Google"
-                    onChange={(event) => setSeoForm((current) => ({ ...current, metaTitle: event.currentTarget.value }))}
+                    onChange={(event) => updateSeoForm('metaTitle', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -755,9 +762,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsSeoDescription"
                     value={seoForm.metaDescription}
                     placeholder="Mô tả ngắn để search engine và social preview đọc"
-                    onChange={(event) =>
-                      setSeoForm((current) => ({ ...current, metaDescription: event.currentTarget.value }))
-                    }
+                    onChange={(event) => updateSeoForm('metaDescription', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -766,9 +771,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsSeoKeyword"
                     value={seoForm.focusKeyword}
                     placeholder="Ví dụ: DJ nữ Việt Nam, nightlife Hà Nội..."
-                    onChange={(event) =>
-                      setSeoForm((current) => ({ ...current, focusKeyword: event.currentTarget.value }))
-                    }
+                    onChange={(event) => updateSeoForm('focusKeyword', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -777,9 +780,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     id="cmsSeoCanonical"
                     value={seoForm.canonicalUrl}
                     placeholder="https://9lifemag.com/tin-tuc/..."
-                    onChange={(event) =>
-                      setSeoForm((current) => ({ ...current, canonicalUrl: event.currentTarget.value }))
-                    }
+                    onChange={(event) => updateSeoForm('canonicalUrl', event.currentTarget.value)}
                   />
                 </div>
                 <div className="cms-inline-actions">
