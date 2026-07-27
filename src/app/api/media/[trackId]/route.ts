@@ -31,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
   try {
     const { kind } = mediaRequestSchema.parse(await request.json())
     const payload = await loadPayloadClient()
-    const track = await payload.findByID({ collection: 'tracks', id: trackId, depth: 0 }) as TrackDocument
+    const track = await payload.findByID({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true }) as TrackDocument
     if (track.visibility !== 'public' || track.isPublic !== true || track.accessLevel === 'internal') {
       return NextResponse.json({ ok: false, message: 'Nội dung này hiện không khả dụng.' }, { status: 404 })
     }
@@ -89,7 +89,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: 'Yêu cầu media không hợp lệ.' }, { status: 400 })
     }
-    console.error('Media access failed', error)
+    console.error('Media access failed', { trackId, error })
     return NextResponse.json({ ok: false, message: 'Tệp nhạc này đang gặp sự cố trên kho lưu trữ. Vui lòng thử lại hoặc báo cáo để đội vận hành kiểm tra.' }, { status: 502 })
   }
 }

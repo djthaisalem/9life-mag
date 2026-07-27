@@ -19,7 +19,10 @@ export async function POST(request: Request) {
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ ok: false, reason: 'invalid_request' }, { status: 400 })
-    console.error('Content vote failed', error)
+    console.error('Content vote failed', {
+      userId: authenticated.session.userId,
+      error,
+    })
     return NextResponse.json({ ok: false, reason: 'server_error' }, { status: 500 })
   }
 }
