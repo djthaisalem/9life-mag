@@ -14,7 +14,7 @@ const articleSchema = z.object({
   topic: z.string().trim().max(120).default(''),
   placement: z.string().trim().max(160).default('Feed tin tức'),
   excerpt: z.string().trim().max(800).default(''),
-  html: z.string().trim().max(300_000).default(''),
+  html: z.string().trim().default(''),
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
   galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
   status: z.enum(['draft', 'scheduled', 'published']).default('draft'),
