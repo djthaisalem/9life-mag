@@ -249,7 +249,7 @@ function buildSeoMarkup({ metaTitle, metaDescription, focusKeyword, canonicalUrl
   `
 }
 
-function ToolbarPlugin() {
+function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
   const [editor] = useLexicalComposerContext()
   const [activeModal, setActiveModal] = useState<ModalTool | null>(null)
   const [imageForm, setImageForm] = useState<ImageFormState>({ url: '', caption: '', alt: '', files: [] })
@@ -327,7 +327,7 @@ function ToolbarPlugin() {
         openModal('seo')
         return
       case 'Preview':
-        insertBlock(editor, '[Preview note] Kiểm tra headline, media và CTA')
+        onPreview?.()
         return
       default:
         return
@@ -787,9 +787,11 @@ function HtmlSyncPlugin({
 export function CmsArticleLexicalEditor({
   html,
   onHtmlChange,
+  onPreview,
 }: {
   html: string
   onHtmlChange: (html: string) => void
+  onPreview?: () => void
 }) {
   const initialConfig = useMemo(
     () => ({
@@ -806,7 +808,7 @@ export function CmsArticleLexicalEditor({
   return (
     <div className="cms-editor-shell cms-editor-shell-wide">
       <LexicalComposer initialConfig={initialConfig}>
-        <ToolbarPlugin />
+        <ToolbarPlugin onPreview={onPreview} />
         <div className="cms-editor-body cms-editor-body-wide cms-editor-body-rich">
           <RichTextPlugin
             contentEditable={<ContentEditable id="postBody" className="cms-article-rich-editor" />}
