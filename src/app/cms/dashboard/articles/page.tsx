@@ -105,6 +105,8 @@ export default function CmsArticlesPage() {
         setPostSlug(editArticle.slug)
         setPostExcerpt(editArticle.summary)
         setPostCategory(editArticle.category)
+        // Editing a seeded article turns that slug into a real published CMS article.
+        setPostStatus('published')
       }
     }
 
