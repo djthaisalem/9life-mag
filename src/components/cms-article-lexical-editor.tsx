@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
-import { $setBlocksType } from '@lexical/selection'
+import { $patchStyleText, $setBlocksType } from '@lexical/selection'
+import {
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+  ListItemNode,
+  ListNode,
+} from '@lexical/list'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
+import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { $createHeadingNode, $createQuoteNode, HeadingNode, QuoteNode } from '@lexical/rich-text'
@@ -17,12 +24,15 @@ import {
   $getRoot,
   $getSelection,
   $isRangeSelection,
+  FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
+  INDENT_CONTENT_COMMAND,
+  OUTDENT_CONTENT_COMMAND,
   type LexicalEditor,
 } from 'lexical'
 import { getMediaEmbed } from '@/lib/media-embed'
 
-const tools = ['B', 'I', 'U', 'Aa', 'H2', 'H3', 'Quote', 'Image', 'Gallery', 'Video', 'Embed', 'CTA', 'SEO', 'Preview'] as const
+const tools = ['Image', 'Gallery', 'Video', 'Embed', 'CTA', 'SEO', 'Preview'] as const
 
 type ModalTool = 'image' | 'gallery' | 'video' | 'embed' | 'cta' | 'seo'
 
@@ -270,44 +280,31 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
     setActiveModal(tool)
   }
 
+  const patchSelectedText = (styles: Record<string, string | null>) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) $patchStyleText(selection, styles)
+    })
+  }
+
+  const applyBlockType = (blockType: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if (!$isRangeSelection(selection)) return
+      if (blockType === 'h2' || blockType === 'h3') {
+        $setBlocksType(selection, () => $createHeadingNode(blockType))
+        return
+      }
+      if (blockType === 'quote') {
+        $setBlocksType(selection, () => $createQuoteNode())
+        return
+      }
+      $setBlocksType(selection, () => $createParagraphNode())
+    })
+  }
+
   const applyTool = (tool: (typeof tools)[number]) => {
     switch (tool) {
-      case 'B':
-        editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')
-        return
-      case 'I':
-        editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')
-        return
-      case 'U':
-        editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')
-        return
-      case 'H2':
-        editor.update(() => {
-          const selection = $getSelection()
-          if ($isRangeSelection(selection)) {
-            $setBlocksType(selection, () => $createHeadingNode('h2'))
-          }
-        })
-        return
-      case 'H3':
-        editor.update(() => {
-          const selection = $getSelection()
-          if ($isRangeSelection(selection)) {
-            $setBlocksType(selection, () => $createHeadingNode('h3'))
-          }
-        })
-        return
-      case 'Quote':
-        editor.update(() => {
-          const selection = $getSelection()
-          if ($isRangeSelection(selection)) {
-            $setBlocksType(selection, () => $createQuoteNode())
-          }
-        })
-        return
-      case 'Aa':
-        insertBlock(editor, 'Đoạn chữ nhấn mạnh')
-        return
       case 'Image':
         openModal('image')
         return
@@ -413,6 +410,47 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
 
   return (
     <>
+      <div className="cms-editor-word-toolbar" aria-label="Công cụ định dạng bài viết">
+        <select aria-label="Kiểu đoạn văn" defaultValue="" onChange={(event) => { applyBlockType(event.currentTarget.value); event.currentTarget.value = '' }}>
+          <option value="" disabled>Đoạn văn</option>
+          <option value="paragraph">Văn bản thường</option>
+          <option value="h2">Tiêu đề H2</option>
+          <option value="h3">Tiêu đề H3</option>
+          <option value="quote">Trích dẫn</option>
+        </select>
+        <select aria-label="Phông chữ" defaultValue="" onChange={(event) => { patchSelectedText({ 'font-family': event.currentTarget.value }); event.currentTarget.value = '' }}>
+          <option value="" disabled>Phông chữ</option>
+          <option value="Aptos, sans-serif">Aptos</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Courier New', monospace">Courier New</option>
+        </select>
+        <select aria-label="Cỡ chữ" defaultValue="" onChange={(event) => { patchSelectedText({ 'font-size': event.currentTarget.value }); event.currentTarget.value = '' }}>
+          <option value="" disabled>Cỡ chữ</option>
+          {[12, 14, 16, 18, 20, 24, 28, 32, 40].map((size) => <option key={size} value={`${size}px`}>{size}</option>)}
+        </select>
+        <span className="cms-editor-word-group">
+          <button type="button" title="In đậm" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold') }}><b>B</b></button>
+          <button type="button" title="In nghiêng" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic') }}><i>I</i></button>
+          <button type="button" title="Gạch chân" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline') }}><u>U</u></button>
+          <button type="button" title="Gạch ngang" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough') }}><s>S</s></button>
+          <button type="button" title="Chỉ số dưới" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript') }}>X₂</button>
+          <button type="button" title="Chỉ số trên" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'superscript') }}>X²</button>
+        </span>
+        <label className="cms-editor-color-control" title="Màu chữ">A<input type="color" defaultValue="#f4f5ff" onChange={(event) => patchSelectedText({ color: event.currentTarget.value })} /></label>
+        <label className="cms-editor-color-control cms-editor-highlight-control" title="Màu nền chữ">A<input type="color" defaultValue="#ffdf66" onChange={(event) => patchSelectedText({ 'background-color': event.currentTarget.value })} /></label>
+        <span className="cms-editor-word-group">
+          <button type="button" title="Danh sách dấu đầu dòng" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined) }}>• List</button>
+          <button type="button" title="Danh sách đánh số" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined) }}>1. List</button>
+        </span>
+        <span className="cms-editor-word-group">
+          <button type="button" title="Căn trái" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left') }}>≡</button>
+          <button type="button" title="Căn giữa" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center') }}>≣</button>
+          <button type="button" title="Căn phải" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right') }}>≡</button>
+          <button type="button" title="Căn đều" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify') }}>☰</button>
+          <button type="button" title="Giảm thụt lề" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined) }}>←</button>
+          <button type="button" title="Tăng thụt lề" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined) }}>→</button>
+        </span>
+      </div>
       <div className="cms-editor-toolbar">
         {tools.map((tool) => (
           <button
@@ -799,7 +837,7 @@ export function CmsArticleLexicalEditor({
       onError(error: Error) {
         throw error
       },
-      nodes: [HeadingNode, QuoteNode],
+      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode],
       theme: {},
     }),
     [],
@@ -816,6 +854,7 @@ export function CmsArticleLexicalEditor({
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
+          <ListPlugin />
           <HtmlSyncPlugin html={html} onHtmlChange={onHtmlChange} />
         </div>
       </LexicalComposer>
