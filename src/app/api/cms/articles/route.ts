@@ -13,6 +13,7 @@ const articleSchema = z.object({
   html: z.string().trim().max(300_000).default(''),
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
   galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
+  status: z.enum(['draft', 'scheduled', 'published']).default('draft'),
 })
 
 export async function GET(request: Request) {
@@ -73,7 +74,8 @@ export async function POST(request: Request) {
       content,
       coverImage: input.coverImageId ? Number(input.coverImageId) : undefined,
       gallery: input.galleryImageIds.map(Number),
-      status: 'draft' as const,
+      status: input.status,
+      publishedAt: input.status === 'published' ? new Date().toISOString() : undefined,
       seoTitle: input.title,
       seoDescription: input.excerpt || undefined,
     }

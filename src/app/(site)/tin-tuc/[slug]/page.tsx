@@ -4,9 +4,13 @@ import { notFound } from 'next/navigation'
 import { createShareMetadata } from '@/lib/seo'
 import { ArticleShareButton } from '@/components/article-share-button'
 import { ContentDiscovery } from '@/components/content-discovery'
+import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-content'
 import { getSupplementArticleDetail, newsCatalogSupplement } from '@/lib/news-catalog-supplement'
+import { loadPayloadClient } from '@/lib/payload-runtime'
 
-type Article = { category: string; date: string; title: string; summary: string; image: string; body: string[] }
+export const revalidate = 0
+
+type Article = { category: string; date: string; title: string; summary: string; image: string; body: string[]; html?: string }
 
 const articleMap: Record<string, Article> = {
   'dem-nhac-edm-quoc-te-tai-tp-hcm': { category: 'Sự kiện', date: '10 Tháng 7, 2026', title: 'Đêm nhạc EDM quốc tế thu hút 10.000 khán giả tại TP.HCM', summary: 'Sự kiện âm nhạc điện tử lớn nhất mùa hè quy tụ các DJ hàng đầu và một sân khấu giàu năng lượng.', image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=860&fit=crop', body: ['Đêm diễn đánh dấu một bước tiến mới của những sự kiện âm nhạc điện tử quy mô lớn tại Việt Nam, với hệ thống visual đồng bộ cùng line-up quốc tế.', 'Bên cạnh trải nghiệm sân khấu, các hoạt động cộng đồng và khu vực sáng tạo giúp khán giả kết nối với nghệ sĩ theo một cách gần gũi hơn.', 'Khi kết nối CMS, nội dung, ảnh cover, metadata SEO và bài liên quan sẽ được phân phối tự động theo slug bài viết.'] },
@@ -33,30 +37,71 @@ const feedArticleDetails: Record<string, Article> = {
   'social-snippet-truoc-sau-show': { category: 'Backstage', date: '25 Tháng 6, 2026', title: 'Social snippet trước và sau show đang quyết định hiệu quả truyền thông', summary: 'Nội dung ngắn, đúng thời điểm giúp cảm xúc của đêm diễn tiếp tục lan tỏa trên social.', image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=1400&h=860&fit=crop', body: ['Trước show, snippet giúp khán giả hình dung không khí và lý do để tham gia. Sau show, chúng giữ lại khoảnh khắc và tạo cầu nối cho đêm diễn tiếp theo.', 'Đội nội dung nên chuẩn bị trước danh sách cảnh quay, thông điệp và định dạng ưu tiên để không bỏ lỡ các điểm bùng nổ trong chương trình.', 'Khi kết hợp với aftermovie và playlist, những đoạn nội dung ngắn trở thành một phần của chiến lược xây cộng đồng dài hạn.'] },
 }
 
-function getArticle(slug: string): Article | undefined {
+function getStaticArticle(slug: string): Article | undefined {
   const storedArticle = articleMap[slug] ?? feedArticleDetails[slug]
   if (storedArticle) return storedArticle
   const catalogArticle = newsCatalogSupplement.find((item) => item.slug === slug)
   return catalogArticle ? getSupplementArticleDetail(catalogArticle) : undefined
 }
 
+const fallbackArticleImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=860&fit=crop'
+
+function formatArticleDate(value?: string) {
+  const date = value ? new Date(value) : new Date()
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' }).format(date)
+}
+
+async function getPublishedCmsArticle(slug: string): Promise<Article | undefined> {
+  try {
+    const payload = await loadPayloadClient()
+    const result = await payload.find({
+      collection: 'posts',
+      where: { and: [{ slug: { equals: slug } }, { status: { equals: 'published' } }] },
+      limit: 1,
+      depth: 1,
+      overrideAccess: true,
+    })
+    const post = result.docs[0]
+    if (!post) return undefined
+
+    const cover = getCmsMediaReference(post.coverImage)
+    return {
+      category: 'Tin tức',
+      date: formatArticleDate(post.publishedAt ?? post.updatedAt),
+      title: post.title,
+      summary: post.excerpt ?? '',
+      image: cover?.url ?? fallbackArticleImage,
+      body: [],
+      html: getCmsArticleHtml(post.content),
+    }
+  } catch (error) {
+    console.error('Published CMS article lookup failed', { slug, error })
+    return undefined
+  }
+}
+
+async function getArticle(slug: string) {
+  return (await getPublishedCmsArticle(slug)) ?? getStaticArticle(slug)
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const article = getArticle(slug)
+  const article = await getArticle(slug)
   if (!article) return {}
   return createShareMetadata({ title: article.title, description: article.summary, path: `/tin-tuc/${slug}`, image: article.image, type: 'article' })
 }
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const article = getArticle(slug)
+  const article = await getArticle(slug)
   if (!article) notFound()
   const articles = [...Object.entries({ ...articleMap, ...feedArticleDetails }).map(([entrySlug, entry]) => ({ slug: entrySlug, ...entry })), ...newsCatalogSupplement.map(getSupplementArticleDetail)]
   const related = articles.filter((entry) => entry.slug !== slug && entry.category === article.category).concat(articles.filter((entry) => entry.slug !== slug && entry.category !== article.category)).slice(0, 3)
   const latest = articles.filter((entry) => entry.slug !== slug).slice(0, 4)
   const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: article.title, description: article.summary, image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: `${process.env.NEXT_PUBLIC_SITE_URL}/tin-tuc/${slug}`, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
   return <><main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} /><section className="section"><div className="container article-layout"><div className="tag-row"><span className="pill">{article.category}</span><span className="pill">{article.date}</span></div><h1 className="page-title article-title">{article.title}</h1><p className="page-intro article-summary">{article.summary}</p><ArticleShareButton slug={slug} title={article.title} /><img className="article-hero-image" src={article.image} alt="" />
-    <div className="article-body-shell">{article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}</div>
+    {article.html ? <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: article.html }} /> : <div className="article-body-shell">{article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}</div>}
     <section className="article-continue-section"><div className="article-section-head"><div><p className="section-eyebrow">Continue Reading</p><h2>Đọc tiếp cùng chủ đề</h2></div><Link href="/tin-tuc" className="view-more-link">Xem tất cả tin</Link></div><div className="article-related-grid">{related.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`} className="article-related-card"><img src={entry.image} alt="" /><div><span>{entry.category} • {entry.date}</span><strong>{entry.title}</strong><p>{entry.summary}</p></div></Link>)}</div></section>
     <section className="article-latest-section"><div><p className="section-eyebrow">Latest Feed</p><h2>Không bỏ lỡ những bài mới</h2></div><div className="article-latest-list">{latest.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`}><span>{entry.category}</span><strong>{entry.title}</strong><small>{entry.date}</small></Link>)}</div></section>
     <div className="article-actions"><Link href="/tin-tuc" className="button-secondary">Khám phá thêm tin tức</Link><Link href="/" className="button-secondary">Về trang chủ</Link></div></div></section></main><ContentDiscovery current={{ kind: 'article', id: slug }} /></>

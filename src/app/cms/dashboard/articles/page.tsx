@@ -40,6 +40,7 @@ export default function CmsArticlesPage() {
   const [postSlug, setPostSlug] = useState('')
   const [postExcerpt, setPostExcerpt] = useState('')
   const [postCategory, setPostCategory] = useState(articleCategories[0])
+  const [postStatus, setPostStatus] = useState<'draft' | 'scheduled' | 'published'>('draft')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -75,6 +76,7 @@ export default function CmsArticlesPage() {
             slug: string
             excerpt: string
             html: string
+            status?: 'draft' | 'scheduled' | 'published'
             coverImage: { id: string; url: string; alt: string } | null
             gallery: Array<{ id: string; url: string; alt: string }>
           }
@@ -84,6 +86,7 @@ export default function CmsArticlesPage() {
         setPostTitle(result.post.title)
         setPostSlug(result.post.slug)
         setPostExcerpt(result.post.excerpt)
+        setPostStatus(result.post.status === 'published' || result.post.status === 'scheduled' ? result.post.status : 'draft')
         setArticleHtml(result.post.html || initialArticleHtml)
         setCoverImage(result.post.coverImage
           ? { id: result.post.coverImage.id, preview: result.post.coverImage.url, alt: result.post.coverImage.alt }
@@ -162,6 +165,7 @@ export default function CmsArticlesPage() {
           html: articleHtml,
           coverImageId: uploadedCover?.id,
           galleryImageIds: uploadedGallery.map((image) => image.id).filter((id): id is string => Boolean(id)),
+          status: postStatus,
         }),
       })
       const raw = await response.text()
@@ -206,7 +210,7 @@ export default function CmsArticlesPage() {
     <article className="panel cms-article-editor-panel">
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Editorial Desk</p><h2>Editor bài đăng</h2></div><div className="cms-inline-actions"><button type="button" className={editorMode === 'rich' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('rich')}>Soạn bài</button><button type="button" className={editorMode === 'html' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('html')}>Edit HTML</button><button type="button" className="button" onClick={() => setIsPreviewOpen(true)}>Xem preview</button></div></div>
       <div className="form-shell cms-embedded-form">
-        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries">{seriesList.map((series) => <option key={series.title}>{series.title}</option>)}<option>Không gắn chuyên đề</option></select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus"><option>Nháp</option><option>Chờ media</option><option>Chờ duyệt</option><option>Xuất bản</option><option>Lên lịch</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
+        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries">{seriesList.map((series) => <option key={series.title}>{series.title}</option>)}<option>Không gắn chuyên đề</option></select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Lên lịch</option><option value="published">Xuất bản</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
