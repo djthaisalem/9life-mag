@@ -49,6 +49,7 @@ function ArtistsPageContent() {
   const [votedArtists, setVotedArtists] = useState<string[]>([])
   const [accessPrompt, setAccessPrompt] = useState<'vote' | 'follow' | null>(null)
   const [showTopupModal, setShowTopupModal] = useState(false)
+  const [votingArtistSlug, setVotingArtistSlug] = useState<string | null>(null)
   const [artistOrder, setArtistOrder] = useState<string[]>([])
   const [publishedArtists, setPublishedArtists] = useState<ArtistProfile[]>([])
 
@@ -119,26 +120,31 @@ function ArtistsPageContent() {
   }
 
   const handleVote = async (slug: string) => {
-    const result = await castContentVote('artist', slug)
+    if (votingArtistSlug) return
+    setVotingArtistSlug(slug)
+    try {
+      const result = await castContentVote('artist', slug)
+      if (!result.ok) {
+        if (result.reason === 'not_authenticated') {
+          setAccessPrompt('vote')
+          return
+        }
 
-    if (!result.ok) {
-      if (result.reason === 'not_authenticated') {
-        setAccessPrompt('vote')
+        if (result.reason === 'insufficient_stars') {
+          setShowTopupModal(true)
+          return
+        }
+
+        window.alert('Hệ thống chưa thể xác nhận vote lúc này. Số sao chỉ bị trừ khi vote được ghi nhận thành công.')
         return
       }
 
-      if (result.reason === 'insufficient_stars') {
-        setShowTopupModal(true)
-        return
+      setVotedArtists((current) => (current.includes(slug) ? current : [...current, slug]))
+      if (typeof result.voteCount === 'number') {
+        setPublishedArtists((current) => current.map((artist) => artist.slug === slug ? { ...artist, voteCount: result.voteCount } : artist))
       }
-
-      window.alert('Bạn không đủ sao để vote nghệ sĩ. Hãy nạp thêm sao trong tài khoản.')
-      return
-    }
-
-    setVotedArtists((current) => (current.includes(slug) ? current : [...current, slug]))
-    if (typeof result.voteCount === 'number') {
-      setPublishedArtists((current) => current.map((artist) => artist.slug === slug ? { ...artist, voteCount: result.voteCount } : artist))
+    } finally {
+      setVotingArtistSlug(null)
     }
   }
 
@@ -278,11 +284,12 @@ function ArtistsPageContent() {
                         type="button"
                         className={hasVoted ? 'mini-button artist-directory-vote-button artist-directory-vote-button-active' : 'mini-button artist-directory-vote-button'}
                         onClick={() => void handleVote(artist.slug)}
+                        disabled={votingArtistSlug === artist.slug}
                         aria-label={`Vote cho ${artist.name}`}
                         title="Vote nghệ sĩ, tốn 1 sao"
                       >
                         <Star size={15} fill={hasVoted ? 'currentColor' : 'none'} />
-                        <span>Vote {artist.voteCount ?? 0}</span>
+                        <span>{votingArtistSlug === artist.slug ? 'Đang vote...' : `Vote ${artist.voteCount ?? 0}`}</span>
                       </button>
                       {isAuthenticated ? (
                         <button

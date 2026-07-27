@@ -166,7 +166,7 @@ export async function castContentVote(type: 'artist' | 'outlet', slug: string) {
     voteCount?: number
     state?: UserAccessState
   }>(response)
-  if (result.ok && result.state) publishUserAccessState(result.state)
+  if (result.state) publishUserAccessState(result.state)
   return result
 }
 

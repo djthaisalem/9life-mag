@@ -40,6 +40,7 @@ function TableBookingContent() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingOutletVote, setPendingOutletVote] = useState<string | null>(null)
+  const [votingOutletSlug, setVotingOutletSlug] = useState<string | null>(null)
   const [outletVotes, setOutletVotes] = useState<Record<string, number>>({})
   const [votedOutletSlugs, setVotedOutletSlugs] = useState<string[]>([])
   const [publishedOutlets, setPublishedOutlets] = useState<ClubOutlet[]>([])
@@ -99,27 +100,33 @@ function TableBookingContent() {
   )
 
   const handleOutletVote = async (slug: string) => {
-    const result = await castContentVote('outlet', slug)
+    if (votingOutletSlug) return
+    setVotingOutletSlug(slug)
+    try {
+      const result = await castContentVote('outlet', slug)
+      if (result.state) setStarBalance(result.state.stars)
 
-    if (!result.ok) {
-      if (result.reason === 'not_authenticated') {
-        setPendingOutletVote(slug)
-        setShowVoteLogin(true)
+      if (!result.ok) {
+        if (result.reason === 'not_authenticated') {
+          setPendingOutletVote(slug)
+          setShowVoteLogin(true)
+          return
+        }
+
+        if (result.reason === 'insufficient_stars') {
+          setShowTopupModal(true)
+          return
+        }
+
+        window.alert('Hệ thống chưa thể xác nhận vote lúc này. Số sao chỉ bị trừ khi vote được ghi nhận thành công.')
         return
       }
 
-      if (result.reason === 'insufficient_stars') {
-        setShowTopupModal(true)
-        return
-      }
-
-      window.alert('Bạn không đủ sao để vote outlet. Hãy nạp thêm sao trong tài khoản.')
-      return
+      setOutletVotes((prev) => ({ ...prev, [slug]: result.voteCount ?? prev[slug] ?? 0 }))
+      setVotedOutletSlugs((current) => (current.includes(slug) ? current : [...current, slug]))
+    } finally {
+      setVotingOutletSlug(null)
     }
-
-    if (result.state) setStarBalance(result.state.stars)
-    setOutletVotes((prev) => ({ ...prev, [slug]: result.voteCount ?? prev[slug] ?? 0 }))
-    setVotedOutletSlugs((current) => (current.includes(slug) ? current : [...current, slug]))
   }
 
   const handleVoteLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -271,8 +278,9 @@ function TableBookingContent() {
                           type="button"
                           className={votedOutletSlugs.includes(outlet.slug) ? 'button-secondary button-secondary-highlighted' : 'button-secondary'}
                           onClick={() => void handleOutletVote(outlet.slug)}
+                          disabled={votingOutletSlug === outlet.slug}
                         >
-                          Vote outlet
+                          {votingOutletSlug === outlet.slug ? 'Đang vote...' : 'Vote outlet'}
                         </button>
                         <Link href={`/dat-ban/${outlet.slug}`} className="more-link-unified">
                           Xem profile

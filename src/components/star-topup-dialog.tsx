@@ -20,7 +20,7 @@ export function StarTopupDialog({ open, onClose }: StarTopupDialogProps) {
         </p>
         <div className="login-gate-actions">
           <button type="button" className="button-secondary" onClick={onClose}>Để sau</button>
-          <Link href="/tai-khoan/dashboard#star-wallet" className="button" onClick={onClose}>Nạp sao</Link>
+          <Link href="/tai-khoan/dashboard#star-wallet" className="button" onClick={onClose}>Mở Ví Sao</Link>
         </div>
       </div>
     </div>

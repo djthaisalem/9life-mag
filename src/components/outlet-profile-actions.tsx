@@ -30,6 +30,7 @@ export function OutletProfileActions({
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [pendingVote, setPendingVote] = useState(false)
+  const [isVoting, setIsVoting] = useState(false)
   const [voteCount, setVoteCount] = useState(initialVoteCount)
   const [hasVoted, setHasVoted] = useState(false)
 
@@ -48,27 +49,33 @@ export function OutletProfileActions({
   }, [])
 
   const handleVote = async () => {
-    const result = await castContentVote('outlet', outletSlug)
+    if (isVoting) return
+    setIsVoting(true)
+    try {
+      const result = await castContentVote('outlet', outletSlug)
+      if (result.state) setStarBalance(result.state.stars)
 
-    if (!result.ok) {
-      if (result.reason === 'not_authenticated') {
-        setPendingVote(true)
-        setShowVoteLogin(true)
+      if (!result.ok) {
+        if (result.reason === 'not_authenticated') {
+          setPendingVote(true)
+          setShowVoteLogin(true)
+          return
+        }
+
+        if (result.reason === 'insufficient_stars') {
+          setShowTopupModal(true)
+          return
+        }
+
+        window.alert('Hệ thống chưa thể xác nhận vote lúc này. Số sao chỉ bị trừ khi vote được ghi nhận thành công.')
         return
       }
 
-      if (result.reason === 'insufficient_stars') {
-        setShowTopupModal(true)
-        return
-      }
-
-      window.alert('Bạn không đủ sao để vote outlet. Hãy nạp thêm sao trong tài khoản.')
-      return
+      setVoteCount(result.voteCount ?? voteCount)
+      setHasVoted(true)
+    } finally {
+      setIsVoting(false)
     }
-
-    if (result.state) setStarBalance(result.state.stars)
-    setVoteCount(result.voteCount ?? voteCount)
-    setHasVoted(true)
   }
 
   const handleVoteLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -127,8 +134,9 @@ export function OutletProfileActions({
           type="button"
           className={hasVoted ? 'button-secondary button-secondary-highlighted' : 'button-secondary'}
           onClick={() => void handleVote()}
+          disabled={isVoting}
         >
-          Vote outlet
+          {isVoting ? 'Đang vote...' : 'Vote outlet'}
         </button>
         <button
           type="button"

@@ -78,29 +78,24 @@ export async function castContentVote(input: { userId: string; target: VoteTarge
       return { ok: false as const, reason: 'target_unavailable' as const }
     }
 
+    const charge = await spendStarsForUser(input.userId, 1, 'spend_vote', {
+      reference: `content-vote:${input.target.type}:${input.target.slug}:${input.userId}:${randomUUID()}`,
+      note: `Vote for ${input.target.type} ${input.target.slug}`,
+    })
+    if (!charge.ok) return charge
+
     const payload = await loadPayloadClient()
-    // Create first so a storage error never takes a star without recording its vote.
-    const vote = await payload.create({
+    await payload.create({
       collection: 'content-votes',
       data: {
         targetType: input.target.type,
         targetSlug: input.target.slug,
         siteUserId: input.userId,
-        user: Number(input.userId) || undefined,
         status: 'confirmed',
       },
       depth: 0,
       overrideAccess: true,
     })
-
-    const charge = await spendStarsForUser(input.userId, 1, 'spend_vote', {
-      reference: `content-vote:${input.target.type}:${input.target.slug}:${input.userId}:${randomUUID()}`,
-      note: `Vote for ${input.target.type} ${input.target.slug}`,
-    })
-    if (!charge.ok) {
-      await payload.delete({ collection: 'content-votes', id: vote.id, overrideAccess: true })
-      return charge
-    }
 
     const counts = await getContentVoteCounts(input.target.type, [input.target.slug])
     return { ok: true as const, voteCount: counts.get(input.target.slug) ?? 0, state: charge.state }

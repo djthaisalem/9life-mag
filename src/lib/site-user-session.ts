@@ -119,7 +119,7 @@ type SiteAccountStore = {
 
 type AccessResult = {
   ok: boolean
-  reason?: 'not_authenticated' | 'insufficient_stars' | 'already_claimed' | 'bonus_locked'
+  reason?: 'not_authenticated' | 'insufficient_stars' | 'already_claimed' | 'bonus_locked' | 'server_error'
   state: UserAccessState
   profile: StoredUserProfile | null
   userId?: string
@@ -1380,7 +1380,9 @@ export async function spendStarsForUser(
             record.stars = Math.max(record.stars - amount, 0)
           })
 
-    if (account) {
+    if (!account) return buildAccessResult(current, 'server_error')
+
+    try {
       await recordWalletLedgerEntry({
         userId: accountId,
         amount: -Math.abs(amount),
@@ -1389,6 +1391,15 @@ export async function spendStarsForUser(
         reference: options?.reference ?? `spend-${Date.now()}`,
         note: options?.note ?? 'Star spend from protected action',
       })
+    } catch (error) {
+      // Keep the wallet and ledger consistent if the ledger write is rejected.
+      if (getStorageDriver() === 'payload') {
+        await updatePayloadAccount(accountId, { stars: current.stars })
+      } else {
+        await updateFileAccount(accountId, (record) => { record.stars = current.stars })
+      }
+      console.error('Wallet ledger recording failed', error)
+      return buildAccessResult(current, 'server_error')
     }
 
     return buildAccessResult(account)
