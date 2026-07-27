@@ -748,10 +748,15 @@ function HtmlSyncPlugin({
   onHtmlChange: (html: string) => void
 }) {
   const [editor] = useLexicalComposerContext()
-  const initializedRef = useRef(false)
+  const lastAppliedHtmlRef = useRef<string | null>(null)
+  const lastEmittedHtmlRef = useRef('')
 
   useEffect(() => {
-    if (initializedRef.current) return
+    // Ignore the value emitted by this editor, but apply content loaded later
+    // from the persisted article record.
+    if (html === lastEmittedHtmlRef.current || html === lastAppliedHtmlRef.current) return
+
+    lastAppliedHtmlRef.current = html
 
     editor.update(() => {
       const parser = new DOMParser()
@@ -764,15 +769,15 @@ function HtmlSyncPlugin({
         root.append($createParagraphNode().append($createTextNode('')))
       }
     })
-
-    initializedRef.current = true
   }, [editor, html])
 
   return (
     <OnChangePlugin
       onChange={(editorState) => {
         editorState.read(() => {
-          onHtmlChange($generateHtmlFromNodes(editor, null))
+          const nextHtml = $generateHtmlFromNodes(editor, null)
+          lastEmittedHtmlRef.current = nextHtml
+          onHtmlChange(nextHtml)
         })
       }}
     />
