@@ -28,8 +28,13 @@ export default async function CmsArticleListPage({
     summary: article.excerpt ?? '',
     category: 'Bài viết CMS',
     date: article.updatedAt.slice(0, 10),
+    persisted: true,
   }))
-  const catalog = repairVietnameseValue([...persistedCatalog, ...featuredArticles, ...newsCatalogSupplement])
+  const staticCatalog = [...featuredArticles, ...newsCatalogSupplement].map((article) => ({
+    ...article,
+    persisted: false,
+  }))
+  const catalog = repairVietnameseValue([...persistedCatalog, ...staticCatalog])
     .filter((article, index, rows) => rows.findIndex((item) => item.slug === article.slug) === index)
     .filter((article) => !query || [article.title, article.summary, article.category, article.slug].some((value) => value.toLowerCase().includes(query)))
   const totalPages = Math.max(1, Math.ceil(catalog.length / CMS_LIST_PAGE_SIZE))
@@ -92,7 +97,12 @@ export default async function CmsArticleListPage({
                   <td>{article.slug}</td>
                   <td>
                     <div className="cms-table-actions">
-                      <Link className="cms-table-link" href={`/tin-tuc/${article.slug}`}>Xem</Link>
+                      <Link
+                        className="cms-table-link"
+                        href={article.persisted ? `/cms/dashboard/articles/preview/${article.slug}` : `/tin-tuc/${article.slug}`}
+                      >
+                        Xem
+                      </Link>
                       <Link className="cms-table-link" href={`/cms/dashboard/articles?edit=${article.slug}`}>Chỉnh sửa</Link>
                     </div>
                   </td>

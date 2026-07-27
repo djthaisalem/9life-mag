@@ -56,13 +56,53 @@ export default function CmsArticlesPage() {
   useEffect(() => { if (editorMode === 'html') autoGrow(htmlRef.current) }, [articleHtml, editorMode])
   useEffect(() => {
     const editSlug = new URLSearchParams(window.location.search).get('edit')
-    const editArticle = articleCatalog.find((article) => article.slug === editSlug)
-    if (!editArticle) return
-    setPostTitle(editArticle.title)
-    setPostSlug(editArticle.slug)
-    setPostExcerpt(editArticle.summary)
-    setPostCategory(editArticle.category)
-  }, [articleCatalog])
+    if (!editSlug) return
+
+    let cancelled = false
+    const loadPersistedArticle = async () => {
+      try {
+        const response = await fetch(`/api/cms/articles?slug=${encodeURIComponent(editSlug)}`, {
+          credentials: 'include',
+          headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
+        })
+        const result = await response.json() as {
+          ok?: boolean
+          post?: {
+            title: string
+            slug: string
+            excerpt: string
+            html: string
+            coverImage: { id: string; url: string; alt: string } | null
+            gallery: Array<{ id: string; url: string; alt: string }>
+          }
+        }
+        if (!response.ok || !result.ok || !result.post || cancelled) throw new Error()
+
+        setPostTitle(result.post.title)
+        setPostSlug(result.post.slug)
+        setPostExcerpt(result.post.excerpt)
+        setArticleHtml(result.post.html || initialArticleHtml)
+        setCoverImage(result.post.coverImage
+          ? { id: result.post.coverImage.id, preview: result.post.coverImage.url, alt: result.post.coverImage.alt }
+          : null)
+        setGalleryImages(result.post.gallery.map((image) => ({
+          id: image.id,
+          preview: image.url,
+          alt: image.alt,
+        })))
+      } catch {
+        const editArticle = articleCatalog.find((article) => article.slug === editSlug)
+        if (!editArticle || cancelled) return
+        setPostTitle(editArticle.title)
+        setPostSlug(editArticle.slug)
+        setPostExcerpt(editArticle.summary)
+        setPostCategory(editArticle.category)
+      }
+    }
+
+    void loadPersistedArticle()
+    return () => { cancelled = true }
+  }, [articleCatalog, capability])
 
   const applySignal = (signal: (typeof newsSignalCards)[number]) => {
     setSelectedSignal(signal.key)

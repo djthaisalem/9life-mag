@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
+import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-content'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { toUrlSlug } from '@/lib/url-slug'
 
@@ -13,6 +14,46 @@ const articleSchema = z.object({
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
   galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
 })
+
+export async function GET(request: Request) {
+  const access = await requireCmsApiAccess('content')
+  if (!access.ok) return access.response
+
+  const slug = new URL(request.url).searchParams.get('slug')?.trim()
+  if (!slug) return NextResponse.json({ ok: false, message: 'Thiếu slug bài viết.' }, { status: 400 })
+
+  try {
+    const payload = await loadPayloadClient()
+    const found = await payload.find({
+      collection: 'posts',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 1,
+      overrideAccess: true,
+    })
+    const post = found.docs[0]
+    if (!post) return NextResponse.json({ ok: false, message: 'Không tìm thấy bài viết đã lưu.' }, { status: 404 })
+
+    return NextResponse.json({
+      ok: true,
+      post: {
+        id: String(post.id),
+        title: post.title,
+        slug: post.slug,
+        excerpt: post.excerpt ?? '',
+        html: getCmsArticleHtml(post.content),
+        status: post.status,
+        coverImage: getCmsMediaReference(post.coverImage),
+        gallery: Array.isArray(post.gallery)
+          ? post.gallery.map(getCmsMediaReference).filter(Boolean)
+          : [],
+      },
+    })
+  } catch (error) {
+    console.error('CMS article read failed', { slug, error })
+    return NextResponse.json({ ok: false, message: 'Không thể đọc bài viết đã lưu lúc này.' }, { status: 500 })
+  }
+}
 
 export async function POST(request: Request) {
   const access = await requireCmsApiAccess('content')
