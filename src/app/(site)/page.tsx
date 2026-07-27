@@ -12,7 +12,7 @@ import type { AudioTrack } from '@/lib/audio-types'
 import { curateMusicCatalog } from '@/lib/music-curation'
 import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
-import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
+import { repairVietnameseText as repairVietnameseTextShared, repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 type NewsCategory = 'all' | 'events' | 'music' | 'nightlife' | 'interview' | 'review' | 'tech'
@@ -59,6 +59,8 @@ type HomeRankingItem = {
 const mojibakePattern = /[ÃÂÄÅÆÐØÞáºá»â€]/u
 
 function repairVietnameseText(input: string) {
+  const sharedResult = repairVietnameseTextShared(input)
+  if (sharedResult !== input) return sharedResult
   if (!mojibakePattern.test(input)) return input
 
   let current = input
@@ -76,6 +78,16 @@ function repairVietnameseText(input: string) {
   }
 
   return current
+}
+
+function truncateNewsDescription(input: string, limit = 100) {
+  const plainText = repairVietnameseText(input)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if ([...plainText].length <= limit) return plainText
+  return `${[...plainText].slice(0, limit).join('').trimEnd()}...`
 }
 
 function normalizeNewsCategory(value: string): Exclude<NewsCategory, 'all'> {
@@ -100,7 +112,7 @@ function articleToHomeNewsItem(article: PublicArticle, fallback?: HomeNewsItem):
     label: repairVietnameseText(article.category || fallback?.label || 'Tin tức'),
     date: repairVietnameseText(article.date || fallback?.date || ''),
     title: repairVietnameseText(article.title || fallback?.title || ''),
-    description: repairVietnameseText(article.summary || fallback?.description || ''),
+    description: truncateNewsDescription(article.summary || fallback?.description || ''),
     image: article.image || fallback?.image || 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&h=600&fit=crop',
   }
 }
@@ -632,7 +644,13 @@ export default function HomePage() {
   const [votedTargets, setVotedTargets] = useState<string[]>([])
   const [homeNonstopTracks, setHomeNonstopTracks] = useState<AudioTrack[]>(homeNonstopCatalog.slice(0, 10))
   const [homeRemixTracks, setHomeRemixTracks] = useState<AudioTrack[]>(homeRemixCatalog.slice(0, 10))
-  const [homeNewsItems, setHomeNewsItems] = useState<HomeNewsItem[]>(newsItems)
+  const [homeNewsItems, setHomeNewsItems] = useState<HomeNewsItem[]>(() => newsItems.map((article) => ({
+    ...article,
+    label: repairVietnameseText(article.label),
+    date: repairVietnameseText(article.date),
+    title: repairVietnameseText(article.title),
+    description: truncateNewsDescription(article.description),
+  })))
   const [homeFeaturedSlides, setHomeFeaturedSlides] = useState<HomeFeaturedSlide[]>(featuredSlides)
 
   const filteredNews = useMemo(() => {
@@ -690,7 +708,7 @@ export default function HomePage() {
           return article ? {
             ...slide,
             title: repairVietnameseText(article.title || slide.title),
-            description: repairVietnameseText(article.summary || slide.description),
+            description: truncateNewsDescription(article.summary || slide.description),
             image: article.image || slide.image,
             tag: repairVietnameseText(article.category || slide.tag),
           } : slide
@@ -976,7 +994,7 @@ export default function HomePage() {
                 </Link>
                 <div className="card-copy">
                   <time className="small-meta">{article.date}</time>
-                  <h3>{article.title}</h3>
+                  <h3>{repairVietnameseText(article.title)}</h3>
                   <p className="muted">{article.description}</p>
                   <div className="card-action-row">
                     <Link href={`/tin-tuc/${article.slug}`} className="more-link-unified">

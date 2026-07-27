@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { getCmsMediaReference } from '@/lib/cms-article-content'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
 
 function taxonomyName(value: unknown, fallback: string) {
   if (!value || typeof value !== 'object') return fallback
@@ -31,8 +32,8 @@ export async function GET() {
       const cover = getCmsMediaReference(post.coverImage)
       return {
         slug: post.slug,
-        title: post.title,
-        summary: post.excerpt ?? '',
+        title: repairVietnameseText(post.title),
+        summary: repairVietnameseText(post.excerpt ?? ''),
         category: taxonomyName(post.category, 'Tin tức'),
         topic: taxonomyName(post.topic, ''),
         placement: post.placement ?? 'Feed tin tức',
