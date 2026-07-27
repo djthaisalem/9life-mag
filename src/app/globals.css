@@ -9931,6 +9931,25 @@ html, body { background: #080a12; }
   background: rgba(255, 255, 255, 0.03);
 }
 
+.cms-editor-toolbar-dock {
+  position: sticky;
+  top: 12px;
+  z-index: 12;
+  background: rgba(10, 13, 23, 0.96);
+}
+
+.cms-editor-toolbar-dock.is-pinned {
+  position: fixed;
+  top: 12px;
+  left: max(12px, calc((100vw - 1280px) / 2));
+  right: max(12px, calc((100vw - 1280px) / 2));
+  z-index: 90;
+  overflow: hidden;
+  border: 1px solid rgba(255, 214, 102, 0.34);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.46);
+}
+
 .cms-editor-word-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -9939,6 +9958,25 @@ html, body { background: #080a12; }
   padding: 14px 16px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.025);
+}
+
+.cms-editor-toolbar-pin {
+  min-height: 38px;
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 214, 102, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 214, 102, 0.1);
+  color: #ffe8a3;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cms-editor-toolbar-pin[aria-pressed='true'] {
+  background: #ffdc62;
+  color: #17120a;
 }
 
 .cms-editor-word-toolbar select {
@@ -11222,6 +11260,10 @@ html, body { background: #080a12; }
   margin-top: 8px;
 }
 
+.cms-editor-shell:has(.cms-editor-toolbar-dock) {
+  overflow: visible;
+}
+
 .cms-editor-body-wide {
   padding: 22px;
 }
@@ -11384,6 +11426,22 @@ html, body { background: #080a12; }
 
 .cms-editor-body-rich {
   position: relative;
+}
+
+@media (max-width: 640px) {
+  .cms-editor-toolbar-dock {
+    top: 8px;
+  }
+
+  .cms-editor-toolbar-dock.is-pinned {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .cms-editor-toolbar-pin {
+    margin-left: 0;
+  }
 }
 
 .cms-article-body-input,

@@ -377,6 +377,7 @@ function buildSeoMarkup({ metaTitle, metaDescription, focusKeyword, canonicalUrl
 function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
   const [editor] = useLexicalComposerContext()
   const [activeModal, setActiveModal] = useState<ModalTool | null>(null)
+  const [isToolbarPinned, setIsToolbarPinned] = useState(false)
   const [imageForm, setImageForm] = useState<ImageFormState>({ url: '', caption: '', alt: '', files: [] })
   const [galleryForm, setGalleryForm] = useState<GalleryFormState>({ urls: '', caption: '', files: [] })
   const [videoForm, setVideoForm] = useState<VideoFormState>({ title: '', url: '', iframe: '', note: '' })
@@ -547,6 +548,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
 
   return (
     <>
+      <div className={`cms-editor-toolbar-dock${isToolbarPinned ? ' is-pinned' : ''}`}>
       <div className="cms-editor-word-toolbar" aria-label="Công cụ định dạng bài viết">
         <select aria-label="Kiểu đoạn văn" defaultValue="" onChange={(event) => { applyBlockType(event.currentTarget.value); event.currentTarget.value = '' }}>
           <option value="" disabled>Đoạn văn</option>
@@ -587,6 +589,15 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
           <button type="button" title="Giảm thụt lề" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined) }}>←</button>
           <button type="button" title="Tăng thụt lề" onMouseDown={(event) => { event.preventDefault(); editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined) }}>→</button>
         </span>
+        <button
+          type="button"
+          className="cms-editor-toolbar-pin"
+          aria-pressed={isToolbarPinned}
+          title={isToolbarPinned ? 'Bỏ ghim thanh công cụ' : 'Ghim thanh công cụ ở đầu màn hình'}
+          onClick={() => setIsToolbarPinned((current) => !current)}
+        >
+          {isToolbarPinned ? 'Bỏ ghim' : 'Ghim'}
+        </button>
       </div>
       <div className="cms-editor-toolbar">
         {tools.map((tool) => (
@@ -602,6 +613,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
             {tool}
           </button>
         ))}
+      </div>
       </div>
 
       {activeModal ? (
