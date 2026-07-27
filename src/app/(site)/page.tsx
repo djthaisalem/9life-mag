@@ -17,6 +17,30 @@ import { StarTopupDialog } from '@/components/star-topup-dialog'
 
 type NewsCategory = 'all' | 'events' | 'music' | 'nightlife' | 'interview' | 'review' | 'tech'
 type ArtistFilter = 'all' | 'dj' | 'mc' | 'rapper' | 'dancer' | 'photographer' | 'model' | 'designer' | 'female' | 'male'
+type HomeNewsItem = {
+  category: Exclude<NewsCategory, 'all'>
+  slug: string
+  label: string
+  date: string
+  title: string
+  description: string
+  image: string
+}
+type HomeFeaturedSlide = {
+  tag: string
+  slug: string
+  title: string
+  description: string
+  image: string
+}
+type PublicArticle = {
+  slug: string
+  title: string
+  summary?: string
+  category?: string
+  date?: string
+  image?: string
+}
 type RankingVoteTarget =
   | { kind: 'artist'; id: number }
   | { kind: 'ranking'; id: string }
@@ -54,6 +78,33 @@ function repairVietnameseText(input: string) {
   return current
 }
 
+function normalizeNewsCategory(value: string): Exclude<NewsCategory, 'all'> {
+  const normalized = repairVietnameseText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  if (normalized.includes('su kien') || normalized.includes('event')) return 'events'
+  if (normalized.includes('am nhac') || normalized.includes('music')) return 'music'
+  if (normalized.includes('nightlife') || normalized.includes('dem')) return 'nightlife'
+  if (normalized.includes('phong van') || normalized.includes('interview')) return 'interview'
+  if (normalized.includes('review') || normalized.includes('danh gia')) return 'review'
+  return 'tech'
+}
+
+function articleToHomeNewsItem(article: PublicArticle, fallback?: HomeNewsItem): HomeNewsItem {
+  const category = fallback?.category ?? normalizeNewsCategory(article.category ?? '')
+  return {
+    category,
+    slug: article.slug,
+    label: repairVietnameseText(article.category || fallback?.label || 'Tin tức'),
+    date: repairVietnameseText(article.date || fallback?.date || ''),
+    title: repairVietnameseText(article.title || fallback?.title || ''),
+    description: repairVietnameseText(article.summary || fallback?.description || ''),
+    image: article.image || fallback?.image || 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=900&h=600&fit=crop',
+  }
+}
+
 const newsTabs: { label: string; value: NewsCategory }[] = [
   { label: 'Tất Cả', value: 'all' },
   { label: 'Sự Kiện', value: 'events' },
@@ -64,7 +115,7 @@ const newsTabs: { label: string; value: NewsCategory }[] = [
   { label: 'Công Nghệ', value: 'tech' }
 ]
 
-const newsItems = [
+const newsItems: HomeNewsItem[] = [
   {
     category: 'events',
     slug: 'dem-nhac-edm-quoc-te-tai-tp-hcm',
@@ -119,9 +170,9 @@ const newsItems = [
     description: 'Các nền tảng bán nhạc số tối ưu trải nghiệm nghe thử, bản quyền và kiểm soát file master.',
     image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=900&h=600&fit=crop'
   }
-] as const
+] 
 
-const featuredSlides = [
+const featuredSlides: HomeFeaturedSlide[] = [
   {
     tag: 'Featured Story',
     slug: 'hybrid-club-media-package',
@@ -157,7 +208,7 @@ const featuredSlides = [
     description: 'Các outlet được chia theo Miền Nam, Miền Trung và Miền Bắc để người dùng vào nhanh đúng khu vực và chọn đúng night club cho nhóm của mình.',
     image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=900&fit=crop'
   }
-] as const
+]
 
 const artistTabs: { label: string; value: ArtistFilter }[] = [
   { label: 'Tất Cả', value: 'all' },
@@ -581,11 +632,13 @@ export default function HomePage() {
   const [votedTargets, setVotedTargets] = useState<string[]>([])
   const [homeNonstopTracks, setHomeNonstopTracks] = useState<AudioTrack[]>(homeNonstopCatalog.slice(0, 10))
   const [homeRemixTracks, setHomeRemixTracks] = useState<AudioTrack[]>(homeRemixCatalog.slice(0, 10))
+  const [homeNewsItems, setHomeNewsItems] = useState<HomeNewsItem[]>(newsItems)
+  const [homeFeaturedSlides, setHomeFeaturedSlides] = useState<HomeFeaturedSlide[]>(featuredSlides)
 
   const filteredNews = useMemo(() => {
-    if (activeNewsTab === 'all') return newsItems
-    return newsItems.filter((item) => item.category === activeNewsTab)
-  }, [activeNewsTab])
+    if (activeNewsTab === 'all') return homeNewsItems
+    return homeNewsItems.filter((item) => item.category === activeNewsTab)
+  }, [activeNewsTab, homeNewsItems])
 
   const filteredArtists = useMemo(() => {
     if (activeArtistTab === 'all') return artists
@@ -595,7 +648,7 @@ export default function HomePage() {
     return artists.filter((item) => item.gender === activeArtistTab)
   }, [activeArtistTab])
 
-  const activeSlide = featuredSlides[activeSlideIndex]
+  const activeSlide = homeFeaturedSlides[activeSlideIndex]
   const visibleArtists = useMemo(() => {
     const artistById = new Map<number, (typeof artists)[number]>()
     filteredArtists.forEach((artist) => artistById.set(artist.id, artist))
@@ -619,6 +672,36 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch('/api/public/articles', { cache: 'no-store' })
+        const result = await response.json() as { ok?: boolean; articles?: PublicArticle[] }
+        if (!response.ok || !result.ok || !Array.isArray(result.articles)) return
+
+        const fallbackBySlug = new Map(newsItems.map((article) => [article.slug, article]))
+        const publishedNews = result.articles
+          .filter((article) => article.slug && article.title)
+          .map((article) => articleToHomeNewsItem(article, fallbackBySlug.get(article.slug)))
+        const publishedSlugs = new Set(publishedNews.map((article) => article.slug))
+
+        setHomeNewsItems([...publishedNews, ...newsItems.filter((article) => !publishedSlugs.has(article.slug))])
+        setHomeFeaturedSlides(featuredSlides.map((slide) => {
+          const article = result.articles?.find((item) => item.slug === slide.slug)
+          return article ? {
+            ...slide,
+            title: repairVietnameseText(article.title || slide.title),
+            description: repairVietnameseText(article.summary || slide.description),
+            image: article.image || slide.image,
+            tag: repairVietnameseText(article.category || slide.tag),
+          } : slide
+        }))
+      } catch {
+        // Static cards remain available if the public feed is temporarily unavailable.
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
     void fetchPublicMusicCatalog().then((tracks) => {
       const mappedNonstop = tracks
         .filter((track) => track.displayMap.includes('Trang chủ - Nonstop picks'))
@@ -636,11 +719,11 @@ export default function HomePage() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setActiveSlideIndex((current) => (current + 1) % featuredSlides.length)
+      setActiveSlideIndex((current) => (current + 1) % homeFeaturedSlides.length)
     }, 4500)
 
     return () => window.clearInterval(timer)
-  }, [])
+  }, [homeFeaturedSlides.length])
 
   const getVoteKey = (vote: RankingVoteTarget) => {
     if (vote.kind === 'artist') return `artist:${vote.id}`
@@ -843,7 +926,7 @@ export default function HomePage() {
             </article>
 
             <div className="headline-dots">
-              {featuredSlides.map((slide, index) => (
+              {homeFeaturedSlides.map((slide, index) => (
                 <button
                   key={slide.title}
                   type="button"
