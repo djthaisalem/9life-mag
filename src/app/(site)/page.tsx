@@ -124,30 +124,35 @@ const newsItems = [
 const featuredSlides = [
   {
     tag: 'Featured Story',
+    slug: 'hybrid-club-media-package',
     title: '9LIFE MAG mở rộng từ trang tin sang hệ sinh thái booking và music commerce',
     description: 'Trang chủ mới ưu tiên bài nổi bật dạng slide để cảm giác gần với một tạp chí điện tử hơn, đồng thời dẫn người dùng xuống các khu vực artist, ranking và playlist.',
     image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1400&h=900&fit=crop'
   },
   {
     tag: 'Nightlife',
+    slug: 'nightlife-ha-noi-hybrid-show',
     title: 'Club culture đang chuyển mạnh sang mô hình nội dung số và chart cộng đồng',
     description: 'Các venue muốn vừa có tin tức, vừa có hồ sơ nghệ sĩ, vừa có playlist và ranking để giữ chân người dùng lâu hơn trên cùng một nền tảng.',
     image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1400&h=900&fit=crop'
   },
   {
     tag: 'Music',
+    slug: 'waveform-preview-signed-download-music-commerce',
     title: 'Playlist nonstop, top remix và gói nhạc thương mại trở thành điểm giữ traffic mới',
     description: 'Khối music phía dưới được mở rộng để người dùng không chỉ nghe thử mà còn có thêm nhiều điểm khám phá playlist và remix nổi bật.',
     image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1400&h=900&fit=crop'
   },
   {
     tag: 'Artists',
+    slug: 'artist-profile-media-kit-moi',
     title: 'Profile nghệ sĩ, bảng xếp hạng và booking đang được gom vào cùng một hành trình khám phá',
     description: 'Người dùng có thể đi từ bài viết nổi bật sang profile nghệ sĩ, bảng xếp hạng tuần và các điểm chạm booking mà không bị đứt mạch trải nghiệm.',
     image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1400&h=900&fit=crop'
   },
   {
     tag: 'Night Club',
+    slug: 'rooftop-concept-night-competition',
     title: 'Tab đặt bàn giúp khám phá outlet theo miền, xem profile venue và chọn trải nghiệm nightlife phù hợp',
     description: 'Các outlet được chia theo Miền Nam, Miền Trung và Miền Bắc để người dùng vào nhanh đúng khu vực và chọn đúng night club cho nhóm của mình.',
     image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=900&fit=crop'
@@ -823,6 +828,11 @@ export default function HomePage() {
 
           <div className="headline-slider">
             <article className="headline-slide">
+              <Link
+                href={`/tin-tuc/${activeSlide.slug}`}
+                className="headline-slide-image-link"
+                aria-label={`Mở bài viết: ${repairVietnameseText(activeSlide.title)}`}
+              />
               <img src={activeSlide.image} alt={activeSlide.title} className="headline-slide-image" />
               <div className="headline-slide-overlay" />
               <div className="headline-slide-copy">

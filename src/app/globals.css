@@ -1165,11 +1165,12 @@ img {
 }
 
 .artist-login-slider { position: relative; min-height: 250px; margin-top: 24px; overflow: hidden; border: 1px solid rgba(255, 214, 102, 0.2); border-radius: 26px; background: #0a0d16; }
+.artist-login-slide-image-link { position: absolute; inset: 0; z-index: 0; }
 .artist-login-slider img { width: 100%; height: 250px; object-fit: cover; opacity: 0.72; transition: opacity 280ms ease; }
-.artist-login-slider-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: end; gap: 8px; padding: 24px; background: linear-gradient(180deg, transparent 25%, rgba(5, 7, 12, 0.94)); }
+.artist-login-slider-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: end; gap: 8px; padding: 24px; background: linear-gradient(180deg, transparent 25%, rgba(5, 7, 12, 0.94)); pointer-events: none; }
 .artist-login-slider-overlay strong { max-width: 360px; font-size: clamp(1.25rem, 2vw, 1.7rem); }
-.artist-login-slider-overlay a { width: fit-content; color: #ffe082; font-weight: 700; }
-.artist-login-slider-dots { position: absolute; top: 18px; right: 18px; display: flex; gap: 7px; }
+.artist-login-slider-overlay a { width: fit-content; color: #ffe082; font-weight: 700; pointer-events: auto; }
+.artist-login-slider-dots { position: absolute; top: 18px; right: 18px; z-index: 1; display: flex; gap: 7px; }
 .artist-login-slider-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.42); cursor: pointer; }
 .artist-login-slider-dot-active { width: 24px; background: #ffd666; }
 
@@ -3188,6 +3189,12 @@ button.artist-dashboard-module-card {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
 }
 
+.headline-slide-image-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
 .headline-slide-image {
   position: absolute;
   inset: 0;
@@ -3209,6 +3216,7 @@ button.artist-dashboard-module-card {
   padding: 34px;
   text-align: left;
   margin-top: 140px;
+  pointer-events: none;
 }
 
 .headline-slide-copy h3 {
@@ -3602,11 +3610,23 @@ button.more-link-unified {
   object-fit: cover;
 }
 
+.artist-spotlight-image-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 .artist-spotlight-overlay {
   position: absolute;
   inset: auto 0 0 0;
   padding: 24px;
   background: linear-gradient(180deg, rgba(6, 6, 11, 0.06), rgba(6, 6, 11, 0.96));
+  pointer-events: none;
+}
+
+.artist-spotlight-overlay a,
+.artist-spotlight-overlay button {
+  pointer-events: auto;
 }
 
 .artist-spotlight-overlay strong {
