@@ -88,8 +88,10 @@ export default function CmsArticlesPage() {
       headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
       body: formData,
     })
-    const result = await response.json() as { ok?: boolean; message?: string; media?: { id: string; url: string; alt: string } }
-    if (!response.ok || !result.ok || !result.media) throw new Error(result.message ?? 'Không thể upload ảnh bài viết.')
+    const raw = await response.text()
+    let result: { ok?: boolean; message?: string; media?: { id: string; url: string; alt: string } } = {}
+    try { result = JSON.parse(raw) as typeof result } catch { /* The status below is more useful than a JSON parse error. */ }
+    if (!response.ok || !result.ok || !result.media) throw new Error(result.message ?? `Upload ảnh bị máy chủ từ chối (HTTP ${response.status}).`)
     return { ...image, id: result.media.id, preview: result.media.url, alt: result.media.alt }
   }
 
@@ -119,10 +121,17 @@ export default function CmsArticlesPage() {
           galleryImageIds: uploadedGallery.map((image) => image.id).filter((id): id is string => Boolean(id)),
         }),
       })
-      const result = await response.json() as { message?: string }
+      const raw = await response.text()
+      let result: { ok?: boolean; message?: string } = {}
+      try { result = JSON.parse(raw) as typeof result } catch { /* Keep the server status visible to the editor. */ }
+      if (!response.ok || !result.ok) throw new Error(result.message ?? `Lưu bài viết bị máy chủ từ chối (HTTP ${response.status}).`)
       setPostSlug(normalizedSlug)
       setSaveMessage(result.message ?? 'Không thể lưu bài viết.')
-    } catch {
+    } catch (error) {
+      if (error instanceof Error) {
+        setSaveMessage(error.message)
+        return
+      }
       setSaveMessage('Không thể kết nối tới tiến trình lưu bài viết.')
     } finally {
       setIsSaving(false)

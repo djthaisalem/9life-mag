@@ -603,6 +603,7 @@ async function findPayloadAccountById(accountId: string) {
       collection: 'users',
       id: accountId,
       depth: 0,
+      overrideAccess: true,
     })
 
     return normalizePayloadUser(doc as Record<string, unknown>)
