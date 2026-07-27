@@ -9,6 +9,7 @@ import * as migration_20260727_000001_artist_agency_status from './20260727_0000
 import * as migration_20260727_000002_content_votes from './20260727_000002_content_votes';
 import * as migration_20260727_000003_allow_repeat_content_votes from './20260727_000003_allow_repeat_content_votes';
 import * as migration_20260727_000004_post_gallery from './20260727_000004_post_gallery';
+import * as migration_20260727_000005_fix_content_vote_lock_relation from './20260727_000005_fix_content_vote_lock_relation';
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20260727_000004_post_gallery.up,
     down: migration_20260727_000004_post_gallery.down,
     name: '20260727_000004_post_gallery'
+  },
+  {
+    up: migration_20260727_000005_fix_content_vote_lock_relation.up,
+    down: migration_20260727_000005_fix_content_vote_lock_relation.down,
+    name: '20260727_000005_fix_content_vote_lock_relation'
   },
 ];
