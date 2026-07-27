@@ -11556,6 +11556,26 @@ html, body { background: #080a12; }
   border: 0;
 }
 
+.cms-editor-media-preview {
+  margin-top: 4px;
+}
+
+.cms-editor-media-preview iframe {
+  width: 100%;
+  min-height: 320px;
+  border: 0;
+  border-radius: 16px;
+}
+
+.cms-editor-media-preview-note {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 214, 102, 0.2);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(255, 214, 102, 0.05);
+}
+
 .cms-article-embed span {
   display: block;
   margin-bottom: 10px;

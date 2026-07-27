@@ -185,9 +185,14 @@ function insertBlock(editor: LexicalEditor, text: string) {
 function insertHtmlBlock(editor: LexicalEditor, html: string) {
   editor.update(() => {
     const selection = $getSelection()
-    if (!$isRangeSelection(selection)) return
+    const node = $createCmsHtmlBlockNode(html)
 
-    selection.insertNodes([$createCmsHtmlBlockNode(html)])
+    if ($isRangeSelection(selection)) {
+      selection.insertNodes([node])
+      return
+    }
+
+    $getRoot().append(node)
   })
 }
 
@@ -252,6 +257,32 @@ function buildSafeEmbedFrame(source: string, title: string) {
   const embed = getMediaEmbed(source)
   if (!embed) return ''
   return `<iframe src="${escapeHtml(embed.src)}" title="${escapeHtml(title)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
+}
+
+function ArticleMediaEmbedPreview({ source }: { source: string }) {
+  if (!source.trim()) return null
+  const embed = getMediaEmbed(source)
+
+  if (!embed) {
+    return (
+      <p className="cms-editor-media-preview-note">
+        Link này chưa được nhận diện để phát trực tiếp. Hãy dùng link công khai từ YouTube,
+        Facebook, Instagram, SoundCloud, Mixcloud hoặc Spotify.
+      </p>
+    )
+  }
+
+  return (
+    <div className="artist-media-embed-preview cms-editor-media-preview">
+      <iframe
+        src={embed.src}
+        title={embed.title}
+        loading="lazy"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    </div>
+  )
 }
 
 function buildVideoMarkup({ title, url, iframe, note }: VideoFormState) {
@@ -720,6 +751,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     onChange={(event) => updateVideoForm('iframe', event.currentTarget.value)}
                   />
                 </div>
+                <ArticleMediaEmbedPreview source={getEmbedSource(videoForm.url, videoForm.iframe)} />
                 <div className="field">
                   <label htmlFor="cmsVideoNote">Ghi chú dưới video</label>
                   <input
@@ -784,6 +816,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                     onChange={(event) => updateEmbedForm('iframe', event.currentTarget.value)}
                   />
                 </div>
+                <ArticleMediaEmbedPreview source={getEmbedSource(embedForm.url, embedForm.iframe)} />
                 <div className="cms-inline-actions">
                   <button type="button" className="button" onClick={submitEmbed}>
                     Chèn embed
