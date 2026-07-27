@@ -4,16 +4,10 @@ export const WalletLedger: CollectionConfig = {
   slug: 'wallet-ledger',
   admin: {
     useAsTitle: 'reference',
-    defaultColumns: ['reference', 'userId', 'eventType', 'amount', 'balanceAfter', 'createdAt'],
+    defaultColumns: ['reference', 'siteUserId', 'eventType', 'amount', 'balanceAfter', 'createdAt'],
   },
   fields: [
     {
-      name: 'user',
-      type: 'relationship',
-      relationTo: 'users',
-    },
-    {
-      // Avoid colliding with the `user` relationship database column.
       name: 'siteUserId',
       type: 'text',
       required: true,

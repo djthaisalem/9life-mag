@@ -55,11 +55,9 @@ export async function recordWalletLedgerEntry(input: Omit<WalletLedgerEntry, 'id
 
   if (env.SITE_USER_STORAGE_DRIVER === 'payload') {
     const payload = await loadPayloadClient()
-    const payloadUserId = /^\d+$/.test(entry.userId) ? Number(entry.userId) : undefined
     await payload.create({
       collection: 'wallet-ledger',
       data: {
-        ...(payloadUserId ? { user: payloadUserId } : {}),
         siteUserId: entry.userId,
         amount: entry.amount,
         balanceAfter: entry.balanceAfter,
@@ -95,7 +93,7 @@ export async function getWalletLedgerSnapshot() {
 
   return (result.docs as Array<Record<string, unknown>>).map<WalletLedgerEntry>((entry) => ({
     id: String(entry.id),
-    userId: String(entry.siteUserId ?? entry.user ?? ''),
+    userId: String(entry.siteUserId ?? ''),
     amount: typeof entry.amount === 'number' ? entry.amount : 0,
     balanceAfter: typeof entry.balanceAfter === 'number' ? entry.balanceAfter : 0,
     eventType: entry.eventType as WalletEventType,
