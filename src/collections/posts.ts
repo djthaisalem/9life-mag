@@ -23,6 +23,12 @@ export const Posts: CollectionConfig = {
       relationTo: 'media'
     },
     {
+      name: 'gallery',
+      type: 'relationship',
+      relationTo: 'media',
+      hasMany: true,
+    },
+    {
       name: 'category',
       type: 'relationship',
       relationTo: 'categories'

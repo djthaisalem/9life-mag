@@ -12,6 +12,7 @@ import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { toUrlSlug } from '@/lib/url-slug'
 
 type ArticleSeries = { title: string; description: string; placement: string; status: string }
+type ArticleImage = { id?: string; file?: File; preview: string; alt: string }
 
 const initialSeries: ArticleSeries[] = [
   { title: 'Nightlife Spotlight', description: 'Chuỗi bài nổi bật về nightlife, sự kiện và những đêm diễn đáng chú ý.', placement: 'Trang chủ + /tin-tuc', status: 'Đang áp dụng' },
@@ -41,6 +42,8 @@ export default function CmsArticlesPage() {
   const [postCategory, setPostCategory] = useState(articleCategories[0])
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [coverImage, setCoverImage] = useState<ArticleImage | null>(null)
+  const [galleryImages, setGalleryImages] = useState<ArticleImage[]>([])
   const htmlRef = useRef<HTMLTextAreaElement | null>(null)
   const activeSignal = newsSignalCards.find((signal) => signal.key === selectedSignal) ?? newsSignalCards[0]
 
@@ -66,6 +69,30 @@ export default function CmsArticlesPage() {
     setPostPlacement(signal.placement)
   }
 
+  const makeArticleImage = (file: File): ArticleImage => ({
+    file,
+    preview: URL.createObjectURL(file),
+    alt: file.name.replace(/\.[^.]+$/, ''),
+  })
+
+  const uploadArticleImage = async (image: ArticleImage, role: 'cover' | 'gallery') => {
+    if (image.id) return image
+    if (!image.file) throw new Error('Ảnh chưa sẵn sàng để upload.')
+
+    const formData = new FormData()
+    formData.append('file', image.file)
+    formData.append('alt', `${postTitle || 'Bài viết'} - ${role === 'cover' ? 'cover' : image.alt}`)
+    const response = await fetch('/api/cms/articles/upload', {
+      method: 'POST',
+      credentials: 'include',
+      headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
+      body: formData,
+    })
+    const result = await response.json() as { ok?: boolean; message?: string; media?: { id: string; url: string; alt: string } }
+    if (!response.ok || !result.ok || !result.media) throw new Error(result.message ?? 'Không thể upload ảnh bài viết.')
+    return { ...image, id: result.media.id, preview: result.media.url, alt: result.media.alt }
+  }
+
   const saveArticle = async () => {
     const normalizedSlug = toUrlSlug(postSlug || postTitle)
     if (!normalizedSlug) {
@@ -75,11 +102,22 @@ export default function CmsArticlesPage() {
     setIsSaving(true)
     setSaveMessage('')
     try {
+      const uploadedCover = coverImage ? await uploadArticleImage(coverImage, 'cover') : null
+      const uploadedGallery = await Promise.all(galleryImages.map((image) => uploadArticleImage(image, 'gallery')))
+      setCoverImage(uploadedCover)
+      setGalleryImages(uploadedGallery)
       const response = await fetch('/api/cms/articles', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
-        body: JSON.stringify({ title: postTitle, slug: normalizedSlug, excerpt: postExcerpt, html: articleHtml }),
+        body: JSON.stringify({
+          title: postTitle,
+          slug: normalizedSlug,
+          excerpt: postExcerpt,
+          html: articleHtml,
+          coverImageId: uploadedCover?.id,
+          galleryImageIds: uploadedGallery.map((image) => image.id).filter((id): id is string => Boolean(id)),
+        }),
       })
       const result = await response.json() as { message?: string }
       setPostSlug(normalizedSlug)
@@ -125,6 +163,20 @@ export default function CmsArticlesPage() {
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} onHtmlChange={setArticleHtml} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
+        <div className="cms-article-media-fields">
+          <div className="field">
+            <label htmlFor="articleCoverUpload">Ảnh cover</label>
+            <input id="articleCoverUpload" type="file" accept="image/*" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) setCoverImage(makeArticleImage(file)); event.currentTarget.value = '' }} />
+            <span className="cms-field-hint">Chọn 1 ảnh cover, tối đa 10MB.</span>
+            {coverImage ? <div className="cms-article-image-preview"><img src={coverImage.preview} alt={coverImage.alt} /><button type="button" className="button-secondary" onClick={() => setCoverImage(null)}>Bỏ ảnh</button></div> : null}
+          </div>
+          <div className="field">
+            <label htmlFor="articleGalleryUpload">Gallery ảnh</label>
+            <input id="articleGalleryUpload" type="file" accept="image/*" multiple onChange={(event) => { const files = Array.from(event.currentTarget.files ?? []).slice(0, Math.max(0, 20 - galleryImages.length)); if (files.length) setGalleryImages((current) => [...current, ...files.map(makeArticleImage)]); event.currentTarget.value = '' }} />
+            <span className="cms-field-hint">Chọn nhiều ảnh, tối đa 20 ảnh và 10MB mỗi ảnh.</span>
+            {galleryImages.length ? <div className="cms-article-gallery-preview">{galleryImages.map((image, index) => <div key={`${image.preview}-${index}`}><img src={image.preview} alt={image.alt} /><button type="button" className="button-secondary" onClick={() => setGalleryImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Xóa</button></div>)}</div> : null}
+          </div>
+        </div>
         <div className="cms-editor-body cms-editor-body-wide"><div className="cms-article-meta-grid"><div className="field"><label htmlFor="coverImage">Ảnh cover</label><input id="coverImage" placeholder="Upload hoặc dán URL ảnh cover" /></div><div className="field"><label htmlFor="galleryImages">Gallery ảnh</label><input id="galleryImages" placeholder="Danh sách ảnh cho recap hoặc phỏng vấn" /></div><div className="field"><label htmlFor="youtubeEmbed">Embed YouTube</label><input id="youtubeEmbed" placeholder="https://youtube.com/watch?v=..." /></div><div className="field"><label htmlFor="facebookEmbed">Embed Facebook video</label><input id="facebookEmbed" placeholder="https://facebook.com/.../videos/..." /></div></div></div>
         <div className="cms-inline-actions"><button type="button" className="button">Lưu bài</button><button type="button" className="button-secondary">Gửi duyệt</button><button type="button" className="button-secondary">Lưu bản HTML</button></div>
         {saveMessage ? <p className="cms-field-hint" role="status">{saveMessage}</p> : null}

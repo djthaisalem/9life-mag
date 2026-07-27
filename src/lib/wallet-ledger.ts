@@ -65,6 +65,7 @@ export async function recordWalletLedgerEntry(input: Omit<WalletLedgerEntry, 'id
         note: entry.note,
         reference: entry.reference,
       },
+      overrideAccess: true,
     })
     return entry
   }
@@ -87,6 +88,7 @@ export async function getWalletLedgerSnapshot() {
     limit: 5000,
     depth: 0,
     pagination: false,
+    overrideAccess: true,
   })
 
   return (result.docs as Array<Record<string, unknown>>).map<WalletLedgerEntry>((entry) => ({

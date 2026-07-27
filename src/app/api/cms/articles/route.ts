@@ -10,6 +10,8 @@ const articleSchema = z.object({
   slug: z.string().trim().max(180).default(''),
   excerpt: z.string().trim().max(800).default(''),
   html: z.string().trim().max(300_000).default(''),
+  coverImageId: z.string().trim().regex(/^\d+$/).optional(),
+  galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
 })
 
 export async function POST(request: Request) {
@@ -23,7 +25,17 @@ export async function POST(request: Request) {
     const payload = await loadPayloadClient()
     const found = await payload.find({ collection: 'posts', where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
     const content = input.html ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: input.html, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
-    const data = { title: input.title, slug, excerpt: input.excerpt || undefined, content, status: 'draft' as const, seoTitle: input.title, seoDescription: input.excerpt || undefined }
+    const data = {
+      title: input.title,
+      slug,
+      excerpt: input.excerpt || undefined,
+      content,
+      coverImage: input.coverImageId ? Number(input.coverImageId) : undefined,
+      gallery: input.galleryImageIds.map(Number),
+      status: 'draft' as const,
+      seoTitle: input.title,
+      seoDescription: input.excerpt || undefined,
+    }
     const existingPost = found.docs[0]
     const post = existingPost
       ? await payload.update({ collection: 'posts', id: existingPost.id, depth: 0, overrideAccess: true, data })

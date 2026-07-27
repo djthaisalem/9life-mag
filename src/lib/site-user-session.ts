@@ -618,6 +618,7 @@ async function updatePayloadAccount(accountId: string, data: Record<string, unkn
     id: accountId,
     data,
     depth: 0,
+    overrideAccess: true,
   })
 
   return normalizePayloadUser(doc as Record<string, unknown>)
