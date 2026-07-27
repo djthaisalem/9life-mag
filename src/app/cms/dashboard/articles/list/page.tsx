@@ -26,7 +26,9 @@ export default async function CmsArticleListPage({
     title: article.title,
     slug: article.slug,
     summary: article.excerpt ?? '',
-    category: 'Bài viết CMS',
+    category: typeof article.category === 'object' && article.category && 'name' in article.category
+      ? String(article.category.name)
+      : 'Chưa phân chuyên mục',
     date: article.updatedAt.slice(0, 10),
     persisted: true,
   }))

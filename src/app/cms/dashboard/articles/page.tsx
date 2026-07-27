@@ -74,6 +74,7 @@ export default function CmsArticlesPage() {
           post?: {
             title: string
             slug: string
+            category: string
             excerpt: string
             html: string
             status?: 'draft' | 'scheduled' | 'published'
@@ -85,6 +86,7 @@ export default function CmsArticlesPage() {
 
         setPostTitle(result.post.title)
         setPostSlug(result.post.slug)
+        setPostCategory(result.post.category || articleCategories[0])
         setPostExcerpt(result.post.excerpt)
         setPostStatus(result.post.status === 'published' || result.post.status === 'scheduled' ? result.post.status : 'draft')
         setArticleHtml(result.post.html || initialArticleHtml)
@@ -141,7 +143,7 @@ export default function CmsArticlesPage() {
     return { ...image, id: result.media.id, preview: result.media.url, alt: result.media.alt }
   }
 
-  const saveArticle = async () => {
+  const saveArticle = async (options?: { status?: 'draft' | 'scheduled' | 'published'; successMessage?: string }) => {
     const normalizedSlug = toUrlSlug(postSlug || postTitle)
     if (!normalizedSlug) {
       setSaveMessage('Nhập tiêu đề bài viết để hệ thống tạo đường dẫn.')
@@ -161,11 +163,12 @@ export default function CmsArticlesPage() {
         body: JSON.stringify({
           title: postTitle,
           slug: normalizedSlug,
+          category: postCategory,
           excerpt: postExcerpt,
           html: articleHtml,
           coverImageId: uploadedCover?.id,
           galleryImageIds: uploadedGallery.map((image) => image.id).filter((id): id is string => Boolean(id)),
-          status: postStatus,
+          status: options?.status ?? postStatus,
         }),
       })
       const raw = await response.text()
@@ -173,7 +176,8 @@ export default function CmsArticlesPage() {
       try { result = JSON.parse(raw) as typeof result } catch { /* Keep the server status visible to the editor. */ }
       if (!response.ok || !result.ok) throw new Error(result.message ?? `Lưu bài viết bị máy chủ từ chối (HTTP ${response.status}).`)
       setPostSlug(normalizedSlug)
-      setSaveMessage(result.message ?? 'Không thể lưu bài viết.')
+      setPostStatus(options?.status ?? postStatus)
+      setSaveMessage(options?.successMessage ?? result.message ?? 'Không thể lưu bài viết.')
     } catch (error) {
       if (error instanceof Error) {
         setSaveMessage(error.message)
@@ -229,7 +233,7 @@ export default function CmsArticlesPage() {
           </div>
         </div>
         <div className="cms-editor-body cms-editor-body-wide"><div className="cms-article-meta-grid"><div className="field"><label htmlFor="coverImage">Ảnh cover</label><input id="coverImage" placeholder="Upload hoặc dán URL ảnh cover" /></div><div className="field"><label htmlFor="galleryImages">Gallery ảnh</label><input id="galleryImages" placeholder="Danh sách ảnh cho recap hoặc phỏng vấn" /></div><div className="field"><label htmlFor="youtubeEmbed">Embed YouTube</label><input id="youtubeEmbed" placeholder="https://youtube.com/watch?v=..." /></div><div className="field"><label htmlFor="facebookEmbed">Embed Facebook video</label><input id="facebookEmbed" placeholder="https://facebook.com/.../videos/..." /></div></div></div>
-        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button-secondary">Gửi duyệt</button><button type="button" className="button-secondary">Lưu bản HTML</button></div>
+        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button-secondary" disabled={isSaving} onClick={() => void saveArticle({ status: 'draft', successMessage: 'Đã lưu bài viết và gửi yêu cầu duyệt.' })}>Gửi duyệt</button><button type="button" className="button-secondary" disabled={isSaving} onClick={() => void saveArticle({ successMessage: 'Đã lưu bản HTML vào database.' })}>Lưu bản HTML</button></div>
         {saveMessage ? <p className="cms-field-hint" role="status">{saveMessage}</p> : null}
       </div>
     </article>

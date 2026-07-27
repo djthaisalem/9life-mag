@@ -9,12 +9,40 @@ import { toUrlSlug } from '@/lib/url-slug'
 const articleSchema = z.object({
   title: z.string().trim().min(2).max(240),
   slug: z.string().trim().max(180).default(''),
+  category: z.string().trim().min(2).max(120).default('Tin tức'),
   excerpt: z.string().trim().max(800).default(''),
   html: z.string().trim().max(300_000).default(''),
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
   galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
   status: z.enum(['draft', 'scheduled', 'published']).default('draft'),
 })
+
+function getCategoryName(value: unknown) {
+  if (!value || typeof value !== 'object') return 'Tin tức'
+  const name = (value as { name?: unknown }).name
+  return typeof name === 'string' && name.trim() ? name : 'Tin tức'
+}
+
+async function getOrCreateCategoryId(payload: Awaited<ReturnType<typeof loadPayloadClient>>, name: string) {
+  const slug = toUrlSlug(name)
+  const found = await payload.find({
+    collection: 'categories',
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const existing = found.docs[0]
+  if (existing) return existing.id
+
+  const category = await payload.create({
+    collection: 'categories',
+    depth: 0,
+    overrideAccess: true,
+    data: { name, slug },
+  })
+  return category.id
+}
 
 export async function GET(request: Request) {
   const access = await requireCmsApiAccess('content')
@@ -41,6 +69,7 @@ export async function GET(request: Request) {
         id: String(post.id),
         title: post.title,
         slug: post.slug,
+        category: getCategoryName(post.category),
         excerpt: post.excerpt ?? '',
         html: getCmsArticleHtml(post.content),
         status: post.status,
@@ -66,10 +95,12 @@ export async function POST(request: Request) {
     if (slug.length < 2) return NextResponse.json({ ok: false, message: 'Chưa thể tạo slug hợp lệ từ tiêu đề bài viết.' }, { status: 400 })
     const payload = await loadPayloadClient()
     const found = await payload.find({ collection: 'posts', where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
+    const categoryId = await getOrCreateCategoryId(payload, input.category)
     const content = input.html ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: input.html, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
     const data = {
       title: input.title,
       slug,
+      category: categoryId,
       excerpt: input.excerpt || undefined,
       content,
       coverImage: input.coverImageId ? Number(input.coverImageId) : undefined,

@@ -52,6 +52,12 @@ function formatArticleDate(value?: string) {
   return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' }).format(date)
 }
 
+function getArticleCategory(value: unknown) {
+  if (!value || typeof value !== 'object') return 'Tin tức'
+  const name = (value as { name?: unknown }).name
+  return typeof name === 'string' && name.trim() ? name : 'Tin tức'
+}
+
 async function getPublishedCmsArticle(slug: string): Promise<Article | undefined> {
   try {
     const payload = await loadPayloadClient()
@@ -67,7 +73,7 @@ async function getPublishedCmsArticle(slug: string): Promise<Article | undefined
 
     const cover = getCmsMediaReference(post.coverImage)
     return {
-      category: 'Tin tức',
+      category: getArticleCategory(post.category),
       date: formatArticleDate(post.publishedAt ?? post.updatedAt),
       title: post.title,
       summary: post.excerpt ?? '',
