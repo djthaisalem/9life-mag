@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
 import { $patchStyleText, $setBlocksType } from '@lexical/selection'
 import {
@@ -477,7 +476,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
         ))}
       </div>
 
-      {activeModal && typeof document !== 'undefined' ? createPortal((
+      {activeModal ? (
         <div className="cms-editor-modal-overlay" role="dialog" aria-modal="true">
           <div className="cms-editor-modal" onClick={(event) => event.stopPropagation()}>
             <div className="cms-editor-modal-head">
@@ -646,12 +645,12 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
             ) : null}
 
             {activeModal === 'embed' ? (
-              <form
+              <div
                 className="cms-editor-modal-form"
-                onSubmit={(event) => {
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
                   event.preventDefault()
                   event.stopPropagation()
-                  submitEmbed()
                 }}
               >
                 <div className="field">
@@ -693,11 +692,11 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   />
                 </div>
                 <div className="cms-inline-actions">
-                  <button type="submit" className="button">
+                  <button type="button" className="button" onClick={submitEmbed}>
                     Chèn embed
                   </button>
                 </div>
-              </form>
+              </div>
             ) : null}
 
             {activeModal === 'cta' ? (
@@ -792,7 +791,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
             ) : null}
           </div>
         </div>
-      ), document.body) : null}
+      ) : null}
     </>
   )
 }
