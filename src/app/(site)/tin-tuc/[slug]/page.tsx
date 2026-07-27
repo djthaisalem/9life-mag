@@ -5,12 +5,13 @@ import { createShareMetadata } from '@/lib/seo'
 import { ArticleShareButton } from '@/components/article-share-button'
 import { ContentDiscovery } from '@/components/content-discovery'
 import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-content'
+import { extractArticleSeoMetadata, getArticleSeoKeywords, stripArticleSeoMetadata, type ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { getSupplementArticleDetail, newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 export const revalidate = 0
 
-type Article = { category: string; date: string; title: string; summary: string; image: string; body: string[]; html?: string }
+type Article = { category: string; date: string; title: string; summary: string; image: string; body: string[]; html?: string; seo?: ArticleSeoMetadata }
 
 const articleMap: Record<string, Article> = {
   'dem-nhac-edm-quoc-te-tai-tp-hcm': { category: 'Sự kiện', date: '10 Tháng 7, 2026', title: 'Đêm nhạc EDM quốc tế thu hút 10.000 khán giả tại TP.HCM', summary: 'Sự kiện âm nhạc điện tử lớn nhất mùa hè quy tụ các DJ hàng đầu và một sân khấu giàu năng lượng.', image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=860&fit=crop', body: ['Đêm diễn đánh dấu một bước tiến mới của những sự kiện âm nhạc điện tử quy mô lớn tại Việt Nam, với hệ thống visual đồng bộ cùng line-up quốc tế.', 'Bên cạnh trải nghiệm sân khấu, các hoạt động cộng đồng và khu vực sáng tạo giúp khán giả kết nối với nghệ sĩ theo một cách gần gũi hơn.', 'Khi kết nối CMS, nội dung, ảnh cover, metadata SEO và bài liên quan sẽ được phân phối tự động theo slug bài viết.'] },
@@ -72,6 +73,7 @@ async function getPublishedCmsArticle(slug: string): Promise<Article | undefined
     if (!post) return undefined
 
     const cover = getCmsMediaReference(post.coverImage)
+    const html = getCmsArticleHtml(post.content)
     return {
       category: getArticleCategory(post.category),
       date: formatArticleDate(post.publishedAt ?? post.updatedAt),
@@ -79,7 +81,8 @@ async function getPublishedCmsArticle(slug: string): Promise<Article | undefined
       summary: post.excerpt ?? '',
       image: cover?.url ?? fallbackArticleImage,
       body: [],
-      html: getCmsArticleHtml(post.content),
+      html: stripArticleSeoMetadata(html),
+      seo: extractArticleSeoMetadata(html),
     }
   } catch (error) {
     console.error('Published CMS article lookup failed', { slug, error })
@@ -95,17 +98,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const article = await getArticle(slug)
   if (!article) return {}
-  return createShareMetadata({ title: article.title, description: article.summary, path: `/tin-tuc/${slug}`, image: article.image, type: 'article' })
+  const title = article.seo?.title || article.title
+  const description = article.seo?.description || article.summary
+  const metadata = createShareMetadata({ title, description, path: `/tin-tuc/${slug}`, image: article.image, type: 'article' })
+  const keywords = getArticleSeoKeywords(article.seo ?? {})
+  return {
+    ...metadata,
+    keywords: keywords.length ? keywords : undefined,
+    alternates: article.seo?.canonicalUrl ? { canonical: article.seo.canonicalUrl } : metadata.alternates,
+  }
 }
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const article = await getArticle(slug)
   if (!article) notFound()
+  const seoTitle = article.seo?.title || article.title
+  const seoDescription = article.seo?.description || article.summary
+  const canonicalUrl = article.seo?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/tin-tuc/${slug}`
   const articles = [...Object.entries({ ...articleMap, ...feedArticleDetails }).map(([entrySlug, entry]) => ({ slug: entrySlug, ...entry })), ...newsCatalogSupplement.map(getSupplementArticleDetail)]
   const related = articles.filter((entry) => entry.slug !== slug && entry.category === article.category).concat(articles.filter((entry) => entry.slug !== slug && entry.category !== article.category)).slice(0, 3)
   const latest = articles.filter((entry) => entry.slug !== slug).slice(0, 4)
-  const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: article.title, description: article.summary, image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: `${process.env.NEXT_PUBLIC_SITE_URL}/tin-tuc/${slug}`, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
+  const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: seoTitle, description: seoDescription, keywords: getArticleSeoKeywords(article.seo ?? {}).join(', '), image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: canonicalUrl, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
   return <><main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} /><section className="section"><div className="container article-layout"><div className="tag-row"><span className="pill">{article.category}</span><span className="pill">{article.date}</span></div><h1 className="page-title article-title">{article.title}</h1><p className="page-intro article-summary">{article.summary}</p><ArticleShareButton slug={slug} title={article.title} /><img className="article-hero-image" src={article.image} alt="" />
     {article.html ? <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: article.html }} /> : <div className="article-body-shell">{article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}</div>}
     <section className="article-continue-section"><div className="article-section-head"><div><p className="section-eyebrow">Continue Reading</p><h2>Đọc tiếp cùng chủ đề</h2></div><Link href="/tin-tuc" className="view-more-link">Xem tất cả tin</Link></div><div className="article-related-grid">{related.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`} className="article-related-card"><img src={entry.image} alt="" /><div><span>{entry.category} • {entry.date}</span><strong>{entry.title}</strong><p>{entry.summary}</p></div></Link>)}</div></section>

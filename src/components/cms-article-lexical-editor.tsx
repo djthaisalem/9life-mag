@@ -81,7 +81,8 @@ type CtaFormState = {
 type SeoFormState = {
   metaTitle: string
   metaDescription: string
-  focusKeyword: string
+  primaryKeywords: string
+  secondaryKeywords: string
   canonicalUrl: string
 }
 
@@ -362,16 +363,17 @@ function buildCtaMarkup({ label, href, supportingText }: CtaFormState) {
   `
 }
 
-function buildSeoMarkup({ metaTitle, metaDescription, focusKeyword, canonicalUrl }: SeoFormState) {
-  return `
-    <aside class="cms-article-seo-note">
-      <strong>SEO note</strong>
-      <p><b>Meta title:</b> ${escapeHtml(metaTitle || 'Chưa điền')}</p>
-      <p><b>Meta description:</b> ${escapeHtml(metaDescription || 'Chưa điền')}</p>
-      <p><b>Focus keyword:</b> ${escapeHtml(focusKeyword || 'Chưa điền')}</p>
-      <p><b>Canonical:</b> ${escapeHtml(canonicalUrl || 'Chưa điền')}</p>
-    </aside>
-  `
+function buildSeoMarkup({ metaTitle, metaDescription, primaryKeywords, secondaryKeywords, canonicalUrl }: SeoFormState) {
+  const rows = [
+    ['Tiêu đề SEO', metaTitle],
+    ['Thẻ Meta Description', metaDescription],
+    ['Từ khóa chính', primaryKeywords],
+    ['Từ khóa phụ', secondaryKeywords],
+    ['Đường dẫn đề xuất', canonicalUrl],
+  ].filter(([, value]) => value.trim())
+
+  if (!rows.length) return ''
+  return `<aside class="cms-article-seo-note">${rows.map(([label, value]) => `<p><b>${label}:</b> ${escapeHtml(value)}</p>`).join('')}</aside>`
 }
 
 function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
@@ -386,7 +388,8 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
   const [seoForm, setSeoForm] = useState<SeoFormState>({
     metaTitle: '',
     metaDescription: '',
-    focusKeyword: '',
+    primaryKeywords: '',
+    secondaryKeywords: '',
     canonicalUrl: '',
   })
 
@@ -542,7 +545,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
 
   const submitSeo = () => {
     insertHtmlBlock(editor, buildSeoMarkup(seoForm))
-    setSeoForm({ metaTitle: '', metaDescription: '', focusKeyword: '', canonicalUrl: '' })
+    setSeoForm({ metaTitle: '', metaDescription: '', primaryKeywords: '', secondaryKeywords: '', canonicalUrl: '' })
     closeModal()
   }
 
@@ -635,7 +638,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   {activeModal === 'video' && 'Dán link YouTube/Facebook hoặc iframe để nhúng trực tiếp.'}
                   {activeModal === 'embed' && 'Dùng cho SoundCloud, Spotify, Facebook post hoặc iframe khác.'}
                   {activeModal === 'cta' && 'CTA là nút kêu gọi hành động như đặt bàn, xem thêm, đăng ký.'}
-                  {activeModal === 'seo' && 'SEO note để editor lưu meta title, mô tả, từ khóa và canonical.'}
+                  {activeModal === 'seo' && 'Thông tin này được tự động đưa vào metadata SEO, không hiển thị trong bài viết public.'}
                 </span>
               </div>
               <button type="button" className="button-secondary" onClick={closeModal}>
@@ -895,12 +898,21 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="cmsSeoKeyword">Focus keyword</label>
+                  <label htmlFor="cmsSeoPrimaryKeyword">Từ khóa chính</label>
                   <input
-                    id="cmsSeoKeyword"
-                    value={seoForm.focusKeyword}
-                    placeholder="Ví dụ: DJ nữ Việt Nam, nightlife Hà Nội..."
-                    onChange={(event) => updateSeoForm('focusKeyword', event.currentTarget.value)}
+                    id="cmsSeoPrimaryKeyword"
+                    value={seoForm.primaryKeywords}
+                    placeholder="Phân cách các từ khóa bằng dấu phẩy"
+                    onChange={(event) => updateSeoForm('primaryKeywords', event.currentTarget.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="cmsSeoSecondaryKeyword">Từ khóa phụ</label>
+                  <input
+                    id="cmsSeoSecondaryKeyword"
+                    value={seoForm.secondaryKeywords}
+                    placeholder="Các cụm từ liên quan, phân cách bằng dấu phẩy"
+                    onChange={(event) => updateSeoForm('secondaryKeywords', event.currentTarget.value)}
                   />
                 </div>
                 <div className="field">
@@ -914,7 +926,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                 </div>
                 <div className="cms-inline-actions">
                   <button type="button" className="button" onClick={submitSeo}>
-                    Chèn ghi chú SEO
+                    Lưu metadata SEO
                   </button>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
 import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-content'
+import { buildArticleSeoMarkup, extractArticleSeoMetadata, stripArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { toUrlSlug } from '@/lib/url-slug'
 
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
         topic: getOptionalCategoryName(post.topic),
         placement: post.placement ?? 'Feed tin tức',
         excerpt: post.excerpt ?? '',
-        html: getCmsArticleHtml(post.content),
+        html: stripArticleSeoMetadata(getCmsArticleHtml(post.content)),
         status: post.status,
         coverImage: getCmsMediaReference(post.coverImage),
         gallery: Array.isArray(post.gallery)
@@ -107,7 +108,9 @@ export async function POST(request: Request) {
     const found = await payload.find({ collection: 'posts', where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
     const categoryId = await getOrCreateCategoryId(payload, input.category)
     const topicId = input.topic ? await getOrCreateCategoryId(payload, input.topic, 'topic') : undefined
-    const content = input.html ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: input.html, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
+    const seoMetadata = extractArticleSeoMetadata(input.html)
+    const articleHtml = [stripArticleSeoMetadata(input.html), buildArticleSeoMarkup(seoMetadata)].filter(Boolean).join('')
+    const content = articleHtml ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: articleHtml, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
     const data = {
       title: input.title,
       slug,
@@ -120,8 +123,8 @@ export async function POST(request: Request) {
       gallery: input.galleryImageIds.map(Number),
       status: input.status,
       publishedAt: input.status === 'published' ? new Date().toISOString() : undefined,
-      seoTitle: input.title,
-      seoDescription: input.excerpt || undefined,
+      seoTitle: seoMetadata.title || input.title,
+      seoDescription: seoMetadata.description || input.excerpt || undefined,
     }
     const existingPost = found.docs[0]
     const post = existingPost
