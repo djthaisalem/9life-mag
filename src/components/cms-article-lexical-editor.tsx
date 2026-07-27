@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
 import { $patchStyleText, $setBlocksType } from '@lexical/selection'
 import {
@@ -395,6 +396,15 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
     closeModal()
   }
 
+  const pasteEmbedUrl = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedUrl = event.clipboardData.getData('text/plain').trim()
+    if (!pastedUrl) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    setEmbedForm((current) => ({ ...current, url: pastedUrl }))
+  }
+
   const submitCta = () => {
     if (!ctaForm.label.trim()) return
     insertHtmlBlock(editor, buildCtaMarkup(ctaForm))
@@ -467,9 +477,9 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
         ))}
       </div>
 
-      {activeModal ? (
+      {activeModal && typeof document !== 'undefined' ? createPortal((
         <div className="cms-editor-modal-overlay" role="dialog" aria-modal="true">
-          <div className="cms-editor-modal">
+          <div className="cms-editor-modal" onClick={(event) => event.stopPropagation()}>
             <div className="cms-editor-modal-head">
               <div>
                 <strong>
@@ -636,7 +646,14 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
             ) : null}
 
             {activeModal === 'embed' ? (
-              <div className="cms-editor-modal-form">
+              <form
+                className="cms-editor-modal-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  submitEmbed()
+                }}
+              >
                 <div className="field">
                   <label htmlFor="cmsEmbedTitle">Tên nội dung embed</label>
                   <input
@@ -659,8 +676,10 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   <label htmlFor="cmsEmbedUrl">Link media</label>
                   <input
                     id="cmsEmbedUrl"
+                    type="url"
                     value={embedForm.url}
                     placeholder="https://soundcloud.com/..."
+                    onPaste={pasteEmbedUrl}
                     onChange={(event) => setEmbedForm((current) => ({ ...current, url: event.currentTarget.value }))}
                   />
                 </div>
@@ -674,11 +693,11 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   />
                 </div>
                 <div className="cms-inline-actions">
-                  <button type="button" className="button" onClick={submitEmbed}>
+                  <button type="submit" className="button">
                     Chèn embed
                   </button>
                 </div>
-              </div>
+              </form>
             ) : null}
 
             {activeModal === 'cta' ? (
@@ -773,7 +792,7 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
             ) : null}
           </div>
         </div>
-      ) : null}
+      ), document.body) : null}
     </>
   )
 }
