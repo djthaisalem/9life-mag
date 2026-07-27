@@ -59,8 +59,7 @@ type HomeRankingItem = {
 const mojibakePattern = /[ÃÂÄÅÆÐØÞáºá»â€]/u
 
 function repairVietnameseText(input: string) {
-  const sharedResult = repairVietnameseTextShared(input)
-  if (sharedResult !== input) return sharedResult
+  return repairVietnameseTextShared(input)
   if (!mojibakePattern.test(input)) return input
 
   let current = input

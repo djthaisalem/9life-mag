@@ -14,6 +14,9 @@ function decodeUtf8Once(input: string) { return new TextDecoder('utf-8', { fatal
 
 export function repairVietnameseText(input: string) {
   let current = input
+  // Vietnamese accents are valid Unicode. Only repair strings that carry a real
+  // mojibake lead byte or replacement character, never text just because it has accents.
+  if (!/[\u00c3\u00c4\u00c5\u00c6\u00d0\u00d8\u00de\u00ef\ufffd\u0010\u0011]/u.test(current)) return current
   for (const [broken, correct] of directRepairs) current = current.split(broken).join(correct)
   if (!mojibakePattern.test(current)) return current
   try {
