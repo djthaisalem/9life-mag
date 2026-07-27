@@ -10,6 +10,8 @@ const articleSchema = z.object({
   title: z.string().trim().min(2).max(240),
   slug: z.string().trim().max(180).default(''),
   category: z.string().trim().min(2).max(120).default('Tin tức'),
+  topic: z.string().trim().max(120).default(''),
+  placement: z.string().trim().max(160).default('Feed tin tức'),
   excerpt: z.string().trim().max(800).default(''),
   html: z.string().trim().max(300_000).default(''),
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
@@ -23,8 +25,14 @@ function getCategoryName(value: unknown) {
   return typeof name === 'string' && name.trim() ? name : 'Tin tức'
 }
 
-async function getOrCreateCategoryId(payload: Awaited<ReturnType<typeof loadPayloadClient>>, name: string) {
-  const slug = toUrlSlug(name)
+function getOptionalCategoryName(value: unknown) {
+  if (!value || typeof value !== 'object') return ''
+  const name = (value as { name?: unknown }).name
+  return typeof name === 'string' ? name : ''
+}
+
+async function getOrCreateCategoryId(payload: Awaited<ReturnType<typeof loadPayloadClient>>, name: string, kind: 'category' | 'topic' = 'category') {
+  const slug = kind === 'topic' ? `topic-${toUrlSlug(name)}` : toUrlSlug(name)
   const found = await payload.find({
     collection: 'categories',
     where: { slug: { equals: slug } },
@@ -39,7 +47,7 @@ async function getOrCreateCategoryId(payload: Awaited<ReturnType<typeof loadPayl
     collection: 'categories',
     depth: 0,
     overrideAccess: true,
-    data: { name, slug },
+    data: { name, slug, description: `[news-taxonomy:${kind}]` },
   })
   return category.id
 }
@@ -70,6 +78,8 @@ export async function GET(request: Request) {
         title: post.title,
         slug: post.slug,
         category: getCategoryName(post.category),
+        topic: getOptionalCategoryName(post.topic),
+        placement: post.placement ?? 'Feed tin tức',
         excerpt: post.excerpt ?? '',
         html: getCmsArticleHtml(post.content),
         status: post.status,
@@ -96,11 +106,14 @@ export async function POST(request: Request) {
     const payload = await loadPayloadClient()
     const found = await payload.find({ collection: 'posts', where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
     const categoryId = await getOrCreateCategoryId(payload, input.category)
+    const topicId = input.topic ? await getOrCreateCategoryId(payload, input.topic, 'topic') : undefined
     const content = input.html ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: input.html, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
     const data = {
       title: input.title,
       slug,
       category: categoryId,
+      topic: topicId,
+      placement: input.placement,
       excerpt: input.excerpt || undefined,
       content,
       coverImage: input.coverImageId ? Number(input.coverImageId) : undefined,

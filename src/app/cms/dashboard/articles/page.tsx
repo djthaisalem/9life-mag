@@ -20,8 +20,19 @@ const initialSeries: ArticleSeries[] = [
   { title: 'Club Radar', description: 'Câu chuyện về outlet, lịch event và trải nghiệm địa phương.', placement: '/dat-ban + /tin-tuc', status: 'Đang lên lịch' },
 ]
 
-const articleCategories = ['Tin nightlife', 'Phỏng vấn nghệ sĩ', 'Music release', 'Outlet spotlight', 'Recap sự kiện', 'Văn hóa club']
+const defaultArticleCategories = ['Sự kiện', 'Nightlife', 'Nghệ sĩ', 'Review', 'Hậu trường', 'Xu hướng', 'Âm nhạc']
 const initialArticleHtml = '<h2>Tiêu đề mở bài</h2><p>Soạn bài viết tại đây, bôi chọn đoạn văn rồi dùng thanh công cụ để định dạng, chèn hình ảnh, video hoặc CTA.</p><p>Chuyển sang chế độ HTML khi cần chỉnh trực tiếp mã nội dung.</p>'
+
+function normalizeArticleCategory(value: string) {
+  const slug = toUrlSlug(value)
+  if (slug.includes('nghe-si') || slug.includes('artist')) return 'Nghệ sĩ'
+  if (slug.includes('am-nhac') || slug.includes('music')) return 'Âm nhạc'
+  if (slug.includes('su-kien') || slug.includes('event')) return 'Sự kiện'
+  if (slug.includes('hau-truong') || slug.includes('backstage')) return 'Hậu trường'
+  if (slug.includes('nightlife') || slug.includes('outlet')) return 'Nightlife'
+  if (slug.includes('review')) return 'Review'
+  return defaultArticleCategories.includes(value) ? value : 'Xu hướng'
+}
 
 export default function CmsArticlesPage() {
   const capability = useCmsCapability('content')
@@ -33,13 +44,16 @@ export default function CmsArticlesPage() {
   const [articleHtml, setArticleHtml] = useState(initialArticleHtml)
   const [seriesList, setSeriesList] = useState(initialSeries)
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [selectedSignal, setSelectedSignal] = useState<(typeof newsSignalCards)[number]['key']>('hot-topic')
   const [postPlacement, setPostPlacement] = useState('Feed tin tức')
   const [seriesForm, setSeriesForm] = useState({ title: '', description: '', placement: '', status: 'Nháp' })
   const [postTitle, setPostTitle] = useState('')
   const [postSlug, setPostSlug] = useState('')
   const [postExcerpt, setPostExcerpt] = useState('')
-  const [postCategory, setPostCategory] = useState(articleCategories[0])
+  const [articleCategories, setArticleCategories] = useState(defaultArticleCategories)
+  const [postCategory, setPostCategory] = useState(defaultArticleCategories[0])
+  const [postTopic, setPostTopic] = useState('')
   const [postStatus, setPostStatus] = useState<'draft' | 'scheduled' | 'published'>('draft')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
@@ -59,6 +73,25 @@ export default function CmsArticlesPage() {
 
   useEffect(() => { if (editorMode === 'html') autoGrow(htmlRef.current) }, [articleHtml, editorMode])
   useEffect(() => {
+    let cancelled = false
+    const loadTaxonomy = async () => {
+      try {
+        const response = await fetch('/api/cms/article-taxonomy', {
+          credentials: 'include',
+          headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
+        })
+        const result = await response.json() as { ok?: boolean; categories?: Array<{ name: string }>; topics?: Array<{ name: string; description?: string }> }
+        if (!response.ok || !result.ok || cancelled) return
+        if (result.categories?.length) setArticleCategories(result.categories.map((entry) => entry.name))
+        if (result.topics?.length) setSeriesList(result.topics.map((entry) => ({ title: entry.name, description: entry.description || 'Chuyên đề bài viết', placement: 'Feed tin tức', status: 'Đang áp dụng' })))
+      } catch {
+        // Keep the built-in taxonomy available if the request is temporarily unavailable.
+      }
+    }
+    void loadTaxonomy()
+    return () => { cancelled = true }
+  }, [capability])
+  useEffect(() => {
     const editSlug = new URLSearchParams(window.location.search).get('edit')
     if (!editSlug) return
 
@@ -75,6 +108,8 @@ export default function CmsArticlesPage() {
             title: string
             slug: string
             category: string
+            topic: string
+            placement: string
             excerpt: string
             html: string
             status?: 'draft' | 'scheduled' | 'published'
@@ -86,7 +121,9 @@ export default function CmsArticlesPage() {
 
         setPostTitle(result.post.title)
         setPostSlug(result.post.slug)
-        setPostCategory(result.post.category || articleCategories[0])
+        setPostCategory(normalizeArticleCategory(result.post.category))
+        setPostTopic(result.post.topic || '')
+        setPostPlacement(result.post.placement || 'Feed tin tức')
         setPostExcerpt(result.post.excerpt)
         setPostStatus(result.post.status === 'published' || result.post.status === 'scheduled' ? result.post.status : 'draft')
         setArticleHtml(result.post.html || initialArticleHtml)
@@ -104,7 +141,7 @@ export default function CmsArticlesPage() {
         setPostTitle(editArticle.title)
         setPostSlug(editArticle.slug)
         setPostExcerpt(editArticle.summary)
-        setPostCategory(editArticle.category)
+        setPostCategory(normalizeArticleCategory(editArticle.category))
         // Editing a seeded article turns that slug into a real published CMS article.
         setPostStatus('published')
       }
@@ -166,6 +203,8 @@ export default function CmsArticlesPage() {
           title: postTitle,
           slug: normalizedSlug,
           category: postCategory,
+          topic: postTopic,
+          placement: postPlacement,
           excerpt: postExcerpt,
           html: articleHtml,
           coverImageId: uploadedCover?.id,
@@ -191,11 +230,25 @@ export default function CmsArticlesPage() {
     }
   }
 
-  const submitSeries = () => {
+  const submitSeries = async (kind: 'category' | 'topic') => {
     if (!seriesForm.title.trim()) return
-    setSeriesList((current) => [{ title: seriesForm.title.trim(), description: seriesForm.description.trim() || 'Chuyên đề mới được tạo trong CMS.', placement: seriesForm.placement.trim() || 'Chưa gắn vị trí hiển thị', status: seriesForm.status }, ...current])
-    setSeriesForm({ title: '', description: '', placement: '', status: 'Nháp' })
-    setIsSeriesModalOpen(false)
+    try {
+      const response = await fetch('/api/cms/article-taxonomy', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
+        body: JSON.stringify({ kind, name: seriesForm.title, description: seriesForm.description }),
+      })
+      const result = await response.json() as { ok?: boolean; entry?: { name: string; description?: string }; message?: string }
+      if (!response.ok || !result.ok || !result.entry) throw new Error(result.message ?? 'Không thể lưu taxonomy.')
+      if (kind === 'category') setArticleCategories((current) => current.includes(result.entry!.name) ? current : [...current, result.entry!.name])
+      else setSeriesList((current) => current.some((item) => item.title === result.entry!.name) ? current : [{ title: result.entry!.name, description: result.entry!.description || 'Chuyên đề mới được tạo trong CMS.', placement: seriesForm.placement.trim() || 'Feed tin tức', status: seriesForm.status }, ...current])
+      setSeriesForm({ title: '', description: '', placement: '', status: 'Nháp' })
+      setIsSeriesModalOpen(false)
+      setIsCategoryModalOpen(false)
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Không thể lưu taxonomy.')
+    }
   }
 
   return <CmsDashboardShell activeKey="articles" title="Quản lý Bài viết" description="Soạn, biên tập và phân phối bài viết đến đúng chuyên mục, vị trí hiển thị và đối tượng độc giả.">
@@ -204,7 +257,7 @@ export default function CmsArticlesPage() {
       <Link href="/cms/dashboard/articles/list" className="cms-booking-tab">Danh sách bài viết</Link>
     </div>
     <article className="panel">
-      <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Article Series</p><h2>Chuyên đề bài viết</h2><p className="cms-muted">Nhóm các bài cùng chiến dịch, nhân vật hoặc chủ đề để quản lý và phân phối nhất quán.</p></div><button type="button" className="button" onClick={() => setIsSeriesModalOpen(true)}>Tạo chuyên đề</button></div>
+      <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Article Taxonomy</p><h2>Chuyên mục và chuyên đề</h2><p className="cms-muted">Tạo taxonomy thật để bài viết được map đúng nhóm trên trang tin tức.</p></div><div className="cms-inline-actions"><button type="button" className="button-secondary" onClick={() => setIsCategoryModalOpen(true)}>Tạo chuyên mục</button><button type="button" className="button" onClick={() => setIsSeriesModalOpen(true)}>Tạo chuyên đề</button></div></div>
       <div className="cms-link-grid">{seriesList.map((series) => <article key={series.title} className="cms-link-card"><strong>{series.title}</strong><span>{series.description}</span><span>{series.placement}</span><span className="pill">{series.status}</span></article>)}</div>
     </article>
 
@@ -216,7 +269,7 @@ export default function CmsArticlesPage() {
     <article className="panel cms-article-editor-panel">
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Editorial Desk</p><h2>Editor bài đăng</h2></div><div className="cms-inline-actions"><button type="button" className={editorMode === 'rich' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('rich')}>Soạn bài</button><button type="button" className={editorMode === 'html' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('html')}>Edit HTML</button><button type="button" className="button" onClick={() => setIsPreviewOpen(true)}>Xem preview</button></div></div>
       <div className="form-shell cms-embedded-form">
-        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries">{seriesList.map((series) => <option key={series.title}>{series.title}</option>)}<option>Không gắn chuyên đề</option></select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Chờ duyệt</option><option value="published">Xuất bản</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
+        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries" value={postTopic} onChange={(event) => setPostTopic(event.currentTarget.value)}><option value="">Không gắn chuyên đề</option>{seriesList.map((series) => <option key={series.title} value={series.title}>{series.title}</option>)}</select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Chờ duyệt</option><option value="published">Xuất bản</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
@@ -260,6 +313,6 @@ export default function CmsArticlesPage() {
       </article>
     </div> : null}
 
-    {isSeriesModalOpen ? <div className="cms-editor-modal-overlay" role="dialog" aria-modal="true"><div className="cms-editor-modal"><div className="cms-editor-modal-head"><div><strong>Tạo chuyên đề bài viết</strong><span>Nhóm bài theo chiến dịch, nhân vật, địa phương hoặc vị trí hiển thị.</span></div><button type="button" className="button-secondary" onClick={() => setIsSeriesModalOpen(false)}>Đóng</button></div><div className="cms-editor-modal-form"><div className="field"><label htmlFor="seriesTitle">Tên chuyên đề</label><input id="seriesTitle" value={seriesForm.title} placeholder="Ví dụ: Festival Summer Pulse" onChange={(event) => updateSeriesForm('title', event.currentTarget.value)} /></div><div className="field"><label htmlFor="seriesDescription">Mô tả ngắn</label><textarea id="seriesDescription" value={seriesForm.description} placeholder="Mục tiêu và dạng bài viết của chuyên đề" onChange={(event) => updateSeriesForm('description', event.currentTarget.value)} /></div><div className="field"><label htmlFor="seriesPlacement">Áp dụng lên đâu</label><input id="seriesPlacement" value={seriesForm.placement} placeholder="Trang chủ + /tin-tuc" onChange={(event) => updateSeriesForm('placement', event.currentTarget.value)} /></div><div className="field"><label htmlFor="seriesStatus">Trạng thái</label><select id="seriesStatus" value={seriesForm.status} onChange={(event) => updateSeriesForm('status', event.currentTarget.value)}><option>Nháp</option><option>Đang áp dụng</option><option>Chờ bài mới</option><option>Đang lên lịch</option></select></div><div className="cms-inline-actions"><button type="button" className="button" onClick={submitSeries}>Lưu chuyên đề</button></div></div></div></div> : null}
+    {isSeriesModalOpen || isCategoryModalOpen ? <div className="cms-editor-modal-overlay" role="dialog" aria-modal="true"><div className="cms-editor-modal"><div className="cms-editor-modal-head"><div><strong>{isCategoryModalOpen ? 'Tạo chuyên mục bài viết' : 'Tạo chuyên đề bài viết'}</strong><span>{isCategoryModalOpen ? 'Chuyên mục được map trực tiếp vào trang Tin tức.' : 'Nhóm bài theo chiến dịch, nhân vật, địa phương hoặc vị trí hiển thị.'}</span></div><button type="button" className="button-secondary" onClick={() => { setIsSeriesModalOpen(false); setIsCategoryModalOpen(false) }}>Đóng</button></div><div className="cms-editor-modal-form"><div className="field"><label htmlFor="seriesTitle">{isCategoryModalOpen ? 'Tên chuyên mục' : 'Tên chuyên đề'}</label><input id="seriesTitle" value={seriesForm.title} placeholder={isCategoryModalOpen ? 'Ví dụ: Fashion & Lifestyle' : 'Ví dụ: Festival Summer Pulse'} onChange={(event) => updateSeriesForm('title', event.currentTarget.value)} /></div>{!isCategoryModalOpen ? <><div className="field"><label htmlFor="seriesDescription">Mô tả ngắn</label><textarea id="seriesDescription" value={seriesForm.description} placeholder="Mục tiêu và dạng bài viết của chuyên đề" onChange={(event) => updateSeriesForm('description', event.currentTarget.value)} /></div><div className="field"><label htmlFor="seriesPlacement">Áp dụng lên đâu</label><input id="seriesPlacement" value={seriesForm.placement} placeholder="Trang chủ + /tin-tuc" onChange={(event) => updateSeriesForm('placement', event.currentTarget.value)} /></div></> : null}<div className="cms-inline-actions"><button type="button" className="button" onClick={() => void submitSeries(isCategoryModalOpen ? 'category' : 'topic')}>Lưu taxonomy</button></div></div></div></div> : null}
   </CmsDashboardShell>
 }

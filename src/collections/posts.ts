@@ -34,6 +34,15 @@ export const Posts: CollectionConfig = {
       relationTo: 'categories'
     },
     {
+      name: 'topic',
+      type: 'relationship',
+      relationTo: 'categories',
+    },
+    {
+      name: 'placement',
+      type: 'text',
+    },
+    {
       name: 'content',
       type: 'richText'
     },

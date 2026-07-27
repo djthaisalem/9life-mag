@@ -10,14 +10,15 @@ import { CmsListSearchForm } from '@/components/cms-list-search-form'
 export default async function CmsArticleListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>
+  searchParams: Promise<{ page?: string; q?: string; status?: string }>
 }) {
   const params = await searchParams
   const query = (params.q ?? '').trim().toLowerCase()
+  const status = ['draft', 'scheduled', 'published'].includes(params.status ?? '') ? params.status! : 'all'
   const payload = await loadPayloadClient()
   const persisted = await payload.find({
     collection: 'posts',
-    depth: 0,
+    depth: 1,
     limit: 500,
     sort: '-updatedAt',
     overrideAccess: true,
@@ -30,14 +31,17 @@ export default async function CmsArticleListPage({
       ? String(article.category.name)
       : 'Chưa phân chuyên mục',
     date: article.updatedAt.slice(0, 10),
+    status: article.status,
     persisted: true,
   }))
   const staticCatalog = [...featuredArticles, ...newsCatalogSupplement].map((article) => ({
     ...article,
+    status: 'sample',
     persisted: false,
   }))
   const catalog = repairVietnameseValue([...persistedCatalog, ...staticCatalog])
     .filter((article, index, rows) => rows.findIndex((item) => item.slug === article.slug) === index)
+    .filter((article) => status === 'all' || article.status === status)
     .filter((article) => !query || [article.title, article.summary, article.category, article.slug].some((value) => value.toLowerCase().includes(query)))
   const totalPages = Math.max(1, Math.ceil(catalog.length / CMS_LIST_PAGE_SIZE))
   const page = Math.min(
@@ -58,6 +62,13 @@ export default async function CmsArticleListPage({
       <div className="cms-booking-tabs">
         <Link href="/cms/dashboard/articles" className="cms-booking-tab">Soạn bài</Link>
         <Link href="/cms/dashboard/articles/list" className="cms-booking-tab cms-booking-tab-active">Danh sách bài viết</Link>
+      </div>
+
+      <div className="cms-booking-tabs">
+        <Link href="/cms/dashboard/articles/list" className={status === 'all' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'}>Tất cả</Link>
+        <Link href="/cms/dashboard/articles/list?status=draft" className={status === 'draft' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'}>Nháp</Link>
+        <Link href="/cms/dashboard/articles/list?status=scheduled" className={status === 'scheduled' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'}>Chờ duyệt</Link>
+        <Link href="/cms/dashboard/articles/list?status=published" className={status === 'published' ? 'cms-booking-tab cms-booking-tab-active' : 'cms-booking-tab'}>Đã xuất bản</Link>
       </div>
 
       <section className="cms-panel">
@@ -84,6 +95,7 @@ export default async function CmsArticleListPage({
                 <th>STT</th>
                 <th>Bài viết</th>
                 <th>Chuyên mục</th>
+                <th>Trạng thái</th>
                 <th>Ngày đăng</th>
                 <th>Slug</th>
                 <th>Thao tác</th>
@@ -95,6 +107,7 @@ export default async function CmsArticleListPage({
                   <td>{String((page - 1) * CMS_LIST_PAGE_SIZE + index + 1).padStart(2, '0')}</td>
                   <td><strong>{article.title}</strong><span>{article.summary}</span></td>
                   <td>{article.category}</td>
+                  <td>{article.status === 'published' ? 'Đã xuất bản' : article.status === 'scheduled' ? 'Chờ duyệt' : article.status === 'draft' ? 'Nháp' : 'Dữ liệu mẫu'}</td>
                   <td>{article.date}</td>
                   <td>{article.slug}</td>
                   <td>

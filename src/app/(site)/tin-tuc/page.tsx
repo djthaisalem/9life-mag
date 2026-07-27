@@ -7,7 +7,9 @@ import { newsCategoryChips, newsSignalCards } from '@/lib/news-taxonomy'
 import { getFairRotation } from '@/lib/music-curation'
 import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 
-const legacyFeedArticles = [
+type NewsArticle = { slug: string; title: string; category: string; date: string; summary: string; image: string }
+
+const legacyFeedArticles: NewsArticle[] = [
   ...featuredArticles,
   {
     slug: 'aftermovie-club-recap-tao-traffic-moi',
@@ -120,18 +122,35 @@ const legacyFeedArticles = [
 ] as const
 
 // One source for every card displayed in the feed. Detail pages use the same supplement as a fallback.
-const feedArticles = [...legacyFeedArticles, ...newsCatalogSupplement]
+const staticFeedArticles: NewsArticle[] = [...legacyFeedArticles, ...newsCatalogSupplement]
 
 const INITIAL_VISIBLE = 4
 const LOAD_MORE_STEP = 4
 
 export default function NewsPage() {
+  const [cmsArticles, setCmsArticles] = useState<NewsArticle[]>([])
   const [activeChip, setActiveChip] = useState<(typeof newsCategoryChips)[number]>('Tất cả')
   const [activeSignal, setActiveSignal] = useState<(typeof newsSignalCards)[number]['key'] | null>(null)
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
   const [activeSlide, setActiveSlide] = useState(0)
   const [topStoryIds, setTopStoryIds] = useState<string[]>([])
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/public/articles', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((result: { ok?: boolean; articles?: NewsArticle[] }) => {
+        if (!cancelled && result.ok && result.articles) setCmsArticles(result.articles)
+      })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [])
+
+  const feedArticles = useMemo(() => {
+    const cmsSlugs = new Set(cmsArticles.map((article) => article.slug))
+    return [...cmsArticles, ...staticFeedArticles.filter((article) => !cmsSlugs.has(article.slug))]
+  }, [cmsArticles])
 
   const activeSignalConfig = newsSignalCards.find((item) => item.key === activeSignal) ?? null
 
@@ -152,7 +171,7 @@ export default function NewsPage() {
   const topStoryCandidateKey = topStoryCandidates.map((article) => article.slug).join('|')
   const topStories = topStoryIds
     .map((slug) => topStoryCandidates.find((article) => article.slug === slug))
-    .filter((article): article is (typeof feedArticles)[number] => Boolean(article))
+    .filter((article): article is NewsArticle => Boolean(article))
   const displayedTopStories = topStories.length ? topStories : topStoryCandidates.slice(0, 3)
   const storyFeed = displayArticles.length > 6 ? displayArticles.slice(6) : displayArticles.slice(3)
   const visibleStories = storyFeed.slice(0, visibleCount)
