@@ -149,7 +149,7 @@ export async function spendUserStars(amount: number, purpose: 'general' | 'vote'
   })
 
   const result = await readJson<AccessApiResponse>(response)
-  if (result.ok) publishUserAccessState(result.state)
+  if (result.state) publishUserAccessState(result.state)
   return result
 }
 

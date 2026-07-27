@@ -36,6 +36,7 @@ export function AudioShowcasePlayer({
     openReportModal,
     isFavorite,
     hasDownloaded,
+    isDownloading,
     toggleFavorite,
   } = useMediaPlayer()
   const [premiumPromptOpen, setPremiumPromptOpen] = useState(false)
@@ -163,8 +164,9 @@ export function AudioShowcasePlayer({
                       type="button"
                       className={hasDownloaded(track.id) ? 'mini-button mini-button-icon mini-button-liked' : 'mini-button mini-button-icon'}
                       onClick={() => openDownloadRequest(track)}
+                      disabled={isDownloading(track.id)}
                       aria-label="Download track"
-                      title="Download track"
+                      title={isDownloading(track.id) ? 'Đang chuẩn bị file' : 'Download track'}
                     >
                       <Download size={16} />
                     </button>

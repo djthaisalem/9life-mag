@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { USER_ACCESS_STATE_EVENT, accessTrackWithStars, fetchUserAccessState, loginDemoUser, type UserAccessState } from '@/lib/client-user-access'
+import { USER_ACCESS_STATE_EVENT, accessTrackWithStars, fetchUserAccessState, loginDemoUser, publishUserAccessState, type UserAccessState } from '@/lib/client-user-access'
 import { createReferralShareUrl } from '@/lib/client-referrals'
 import { copyText } from '@/lib/client-share'
 import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
@@ -67,6 +67,7 @@ type MediaPlayerContextValue = {
   openReportModal: (track: AudioTrack, sourceType: AudioSourceType) => void
   isFavorite: (trackId: string) => boolean
   hasDownloaded: (trackId: string) => boolean
+  isDownloading: (trackId: string) => boolean
   toggleFavorite: (track: AudioTrack) => void
   downloadCounts: Record<string, number>
   favoriteTrackIds: string[]
@@ -150,6 +151,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   const [playlistFeedback, setPlaylistFeedback] = useState('')
   const [downloadCounts, setDownloadCounts] = useState<Record<string, number>>({})
   const [downloadedTrackIds, setDownloadedTrackIds] = useState<string[]>([])
+  const [downloadingTrackIds, setDownloadingTrackIds] = useState<string[]>([])
   const [favoriteTrackIds, setFavoriteTrackIds] = useState<string[]>([])
   const [isShuffled, setIsShuffled] = useState(false)
   const [isRepeatOn, setIsRepeatOn] = useState(false)
@@ -368,6 +370,15 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
 
   const isFavorite = (trackId: string) => favoriteTrackIds.includes(trackId)
   const hasDownloaded = (trackId: string) => downloadedTrackIds.includes(trackId)
+  const isDownloading = (trackId: string) => downloadingTrackIds.includes(trackId)
+
+  const synchronizeUserAccess = () => {
+    void fetchUserAccessState().then((snapshot) => {
+      setIsAuthenticated(snapshot.state.isAuthenticated)
+      setStarBalance(snapshot.state.stars)
+      publishUserAccessState(snapshot.state)
+    })
+  }
 
   const toggleFavorite = (track: AudioTrack) => {
     setFavoriteTrackIds((current) => {
@@ -381,20 +392,30 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   }
 
   const requestProtectedMedia = async (track: AudioTrack, kind: 'preview' | 'download') => {
-    const response = await fetch(`/api/media/${encodeURIComponent(track.id)}`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind }),
-    })
-    const result = await response.json() as { ok?: boolean; url?: string; message?: string; stars?: number }
-    return {
-      ok: response.ok && result.ok === true && Boolean(result.url),
-      url: result.url,
-      message: result.message,
-      stars: result.stars,
-      status: response.status,
+    try {
+      const response = await fetch(`/api/media/${encodeURIComponent(track.id)}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind }),
+      })
+      const result = response.headers.get('content-type')?.includes('application/json')
+        ? await response.json() as { ok?: boolean; url?: string; message?: string; stars?: number }
+        : {}
+      return {
+        ok: response.ok && result.ok === true && Boolean(result.url),
+        url: result.url,
+        message: result.message,
+        stars: result.stars,
+        status: response.status,
+      }
+    } catch {
+      return {
+        ok: false,
+        message: 'Không thể kết nối kho nhạc để chuẩn bị file tải xuống. Vui lòng thử lại.',
+        status: 0,
+      }
     }
   }
 
@@ -748,53 +769,62 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
   }
 
   const openDownloadRequest = async (track: AudioTrack) => {
-    if (track.protectedMedia) {
-      const result = await requestProtectedMedia(track, 'download')
-      if (!result.ok || !result.url) {
-        if (result.status === 401) {
-          setPendingDownloadTrack(track)
-          setShowLoginModal(true)
+    if (isDownloading(track.id)) return
+    setDownloadingTrackIds((current) => [...current, track.id])
+    try {
+      if (track.protectedMedia) {
+        const result = await requestProtectedMedia(track, 'download')
+        if (!result.ok || !result.url) {
+          if (result.status === 401) {
+            setPendingDownloadTrack(track)
+            setShowLoginModal(true)
+            return
+          }
+          if (result.status === 402) {
+            setShowTopupModal(true)
+            return
+          }
+          window.alert(result.message ?? 'Không thể cấp quyền download lúc này.')
           return
         }
-        if (result.status === 402) {
-          setShowTopupModal(true)
-          return
+        if (typeof result.stars === 'number') {
+          setStarBalance(result.stars)
+          synchronizeUserAccess()
         }
-        window.alert(result.message ?? 'Không thể cấp quyền download lúc này.')
+        openDownload({ ...track, downloadUrl: result.url })
         return
       }
-      if (typeof result.stars === 'number') setStarBalance(result.stars)
-      openDownload({ ...track, downloadUrl: result.url })
-      return
-    }
 
-    if (isAuthenticated) {
-      const result = await accessTrackWithStars(track.id, 'download')
-      if (!result.ok) {
-        if (result.reason === 'insufficient_stars') {
-          setShowTopupModal(true)
+      if (isAuthenticated) {
+        const result = await accessTrackWithStars(track.id, 'download')
+        if (!result.ok) {
+          if (result.reason === 'insufficient_stars') {
+            setShowTopupModal(true)
+            return
+          }
+
+          if (result.reason !== undefined) {
+            window.alert(
+              result.reason === 'not_authenticated'
+                ? 'Vui lòng đăng nhập để tải nhạc.'
+                : result.message ?? 'Không thể xác thực quyền download lúc này. Vui lòng thử lại sau.',
+            )
+            return
+          }
+
+          window.alert('Bạn không đủ sao để download. Hãy nạp thêm sao trong tài khoản.')
           return
         }
-
-        if (result.reason !== undefined) {
-          window.alert(
-            result.reason === 'not_authenticated'
-              ? 'Vui lòng đăng nhập để tải nhạc.'
-              : result.message ?? 'Không thể xác thực quyền download lúc này. Vui lòng thử lại sau.',
-          )
-          return
-        }
-
-        window.alert('Bạn không đủ sao để download. Hãy nạp thêm sao trong tài khoản.')
+        setStarBalance(result.state.stars)
+        openDownload(track)
         return
       }
-      setStarBalance(result.state.stars)
-      openDownload(track)
-      return
-    }
 
-    setPendingDownloadTrack(track)
-    setShowLoginModal(true)
+      setPendingDownloadTrack(track)
+      setShowLoginModal(true)
+    } finally {
+      setDownloadingTrackIds((current) => current.filter((trackId) => trackId !== track.id))
+    }
   }
 
   const buildCopyrightReportHref = (track: AudioTrack, sourceType: AudioSourceType) => {
@@ -1046,6 +1076,7 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
     openReportModal,
     isFavorite,
     hasDownloaded,
+    isDownloading,
     toggleFavorite,
     downloadCounts,
     favoriteTrackIds,
@@ -1190,6 +1221,8 @@ export function MediaPlayerProvider({ children }: Readonly<{ children: React.Rea
                 type="button"
                 className={hasDownloaded(activeTrack.id) ? 'player-icon-button player-icon-button-active' : 'player-icon-button'}
                 onClick={() => openDownloadRequest(activeTrack)}
+                disabled={isDownloading(activeTrack.id)}
+                title={isDownloading(activeTrack.id) ? 'Đang chuẩn bị file' : 'Tải xuống'}
               >
                 <Download size={16} />
               </button>
