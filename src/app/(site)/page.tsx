@@ -170,7 +170,7 @@ const newsItems: HomeNewsItem[] = [
     description: 'Các nền tảng bán nhạc số tối ưu trải nghiệm nghe thử, bản quyền và kiểm soát file master.',
     image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=900&h=600&fit=crop'
   }
-] 
+]
 
 const featuredSlides: HomeFeaturedSlide[] = [
   {
