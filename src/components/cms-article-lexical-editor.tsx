@@ -17,8 +17,13 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
+import {
+  DecoratorBlockNode,
+  type SerializedDecoratorBlockNode,
+} from '@lexical/react/LexicalDecoratorBlockNode'
 import { $createHeadingNode, $createQuoteNode, HeadingNode, QuoteNode } from '@lexical/rich-text'
 import {
+  $applyNodeReplacement,
   $createParagraphNode,
   $createTextNode,
   $getRoot,
@@ -28,7 +33,11 @@ import {
   FORMAT_TEXT_COMMAND,
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND,
+  type DOMConversionMap,
+  type ElementFormatType,
   type LexicalEditor,
+  type NodeKey,
+  type Spread,
 } from 'lexical'
 import { getMediaEmbed } from '@/lib/media-embed'
 
@@ -76,6 +85,84 @@ type SeoFormState = {
   canonicalUrl: string
 }
 
+type SerializedCmsHtmlBlockNode = Spread<
+  {
+    html: string
+  },
+  SerializedDecoratorBlockNode
+>
+
+class CmsHtmlBlockNode extends DecoratorBlockNode {
+  __html: string
+
+  static getType() {
+    return 'cms-html-block'
+  }
+
+  static clone(node: CmsHtmlBlockNode) {
+    return new CmsHtmlBlockNode(node.__html, node.__format, node.__key)
+  }
+
+  static importJSON(serializedNode: SerializedCmsHtmlBlockNode) {
+    return $createCmsHtmlBlockNode(serializedNode.html)
+  }
+
+  static importDOM(): DOMConversionMap {
+    const convertElement = (element: HTMLElement, useOuterHtml = false) => ({
+      conversion: () => ({
+        after: () => [],
+        node: $createCmsHtmlBlockNode(useOuterHtml ? element.outerHTML : element.innerHTML),
+      }),
+      priority: 2 as const,
+    })
+
+    return {
+      div: (element) =>
+        element.hasAttribute('data-cms-html-block') ? convertElement(element) : null,
+      section: (element) =>
+        element.matches(
+          '.cms-article-gallery, .cms-article-video, .cms-article-embed, .cms-article-cta, .cms-article-seo-note',
+        )
+          ? convertElement(element, true)
+          : null,
+    }
+  }
+
+  constructor(html: string, format: ElementFormatType = '', key?: NodeKey) {
+    super(format, key)
+    this.__html = html
+  }
+
+  exportJSON(): SerializedCmsHtmlBlockNode {
+    return {
+      ...super.exportJSON(),
+      html: this.__html,
+      type: 'cms-html-block',
+      version: 1,
+    }
+  }
+
+  exportDOM() {
+    const element = document.createElement('div')
+    element.setAttribute('data-cms-html-block', 'true')
+    element.innerHTML = this.__html
+    return { element }
+  }
+
+  decorate() {
+    return (
+      <div
+        className="cms-article-rich-html-block"
+        dangerouslySetInnerHTML={{ __html: this.__html }}
+      />
+    )
+  }
+}
+
+function $createCmsHtmlBlockNode(html: string) {
+  return $applyNodeReplacement(new CmsHtmlBlockNode(html))
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -100,10 +187,7 @@ function insertHtmlBlock(editor: LexicalEditor, html: string) {
     const selection = $getSelection()
     if (!$isRangeSelection(selection)) return
 
-    const parser = new DOMParser()
-    const dom = parser.parseFromString(html, 'text/html')
-    const nodes = $generateNodesFromDOM(editor, dom)
-    selection.insertNodes(nodes)
+    selection.insertNodes([$createCmsHtmlBlockNode(html)])
   })
 }
 
@@ -856,7 +940,7 @@ export function CmsArticleLexicalEditor({
       onError(error: Error) {
         throw error
       },
-      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode],
+      nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, CmsHtmlBlockNode],
       theme: {},
     }),
     [],

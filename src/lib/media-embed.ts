@@ -1,4 +1,4 @@
-export type MediaEmbedProvider = 'youtube' | 'facebook' | 'instagram' | 'soundcloud' | 'mixcloud'
+export type MediaEmbedProvider = 'youtube' | 'facebook' | 'instagram' | 'soundcloud' | 'mixcloud' | 'spotify'
 
 export type MediaEmbed = {
   provider: MediaEmbedProvider
@@ -56,6 +56,17 @@ export function getMediaEmbed(value: string): MediaEmbed | null {
 
   if (host === 'mixcloud.com') {
     return { provider: 'mixcloud', src: `https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&feed=${encodeURIComponent(url.pathname)}`, title: 'Mixcloud player' }
+  }
+
+  if (host === 'open.spotify.com') {
+    const [type, id] = url.pathname.split('/').filter(Boolean)
+    const supportedTypes = ['track', 'album', 'playlist', 'episode', 'show', 'artist']
+    if (!id || !supportedTypes.includes(type ?? '')) return null
+    return {
+      provider: 'spotify',
+      src: `https://open.spotify.com/embed/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,
+      title: 'Spotify player',
+    }
   }
 
   return null
