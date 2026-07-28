@@ -1,7 +1,6 @@
 import { artistProfiles } from '@/lib/artist-directory-data'
 import { clubOutlets } from '@/lib/club-booking-data'
 import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
-import { featuredArticles } from '@/lib/site-data'
 
 export type SearchCategory = 'news' | 'artists' | 'outlets' | 'music'
 
@@ -16,15 +15,6 @@ export type SearchItem = {
 }
 
 export const searchIndex: SearchItem[] = [
-  ...featuredArticles.map((article) => ({
-    id: `news:${article.slug}`,
-    category: 'news' as const,
-    title: article.title,
-    description: article.summary,
-    image: article.image,
-    href: `/tin-tuc/${article.slug}`,
-    label: `Tin tức · ${article.category}`,
-  })),
   ...artistProfiles.map((artist) => ({
     id: `artist:${artist.slug}`,
     category: 'artists' as const,

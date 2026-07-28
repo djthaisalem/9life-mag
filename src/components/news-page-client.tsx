@@ -15,6 +15,7 @@ type NewsArticle = {
   topic?: string
   placement?: string
   date: string
+  publishedAt?: string
   image: string
 }
 
@@ -145,6 +146,7 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
   const [activeSlide, setActiveSlide] = useState(0)
   const [topStoryIds, setTopStoryIds] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(initialCmsArticles.length === 0)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -155,36 +157,50 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
         if (!cancelled && result.ok && result.articles) setCmsArticles(result.articles)
       })
       .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
     return () => { cancelled = true }
   }, [])
 
   const feedArticles = useMemo(() => {
-    const cmsSlugs = new Set(cmsArticles.map((article) => article.slug))
-    return [...cmsArticles, ...staticFeedArticles.filter((article) => !cmsSlugs.has(article.slug))]
+    return [...cmsArticles].sort((left, right) => {
+      const leftTime = Date.parse(left.publishedAt ?? '')
+      const rightTime = Date.parse(right.publishedAt ?? '')
+      return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime)
+    })
   }, [cmsArticles])
 
   const activeSignalConfig = newsSignalCards.find((item) => item.key === activeSignal) ?? null
 
   const filteredArticles = useMemo(() => {
     return feedArticles.filter((article) => {
-      const matchesChip = activeChip === 'Tất cả' ? true : article.category === activeChip
+      const taxonomyValues = [article.category, article.topic].filter(Boolean)
+      const matchesChip = activeChip === 'Tất cả' ? true : taxonomyValues.includes(activeChip)
       const matchesSignal = activeSignalConfig
-        ? (activeSignalConfig.categories as readonly string[]).includes(article.category)
+        ? article.placement === activeSignalConfig.placement
+          || taxonomyValues.some((value) => (activeSignalConfig.categories as readonly string[]).includes(value as string))
         : true
       return matchesChip && matchesSignal
     })
-  }, [activeChip, activeSignalConfig])
+  }, [activeChip, activeSignalConfig, feedArticles])
 
-  const displayArticles = filteredArticles.length ? filteredArticles : feedArticles
+  const displayArticles = filteredArticles
   const headlineArticles = displayArticles.slice(0, 3)
-  const heroArticle = headlineArticles[activeSlide % headlineArticles.length]
+  const heroArticle = headlineArticles.length
+    ? headlineArticles[activeSlide % headlineArticles.length]
+    : undefined
   const topStoryCandidates = displayArticles.slice(3)
   const topStoryCandidateKey = topStoryCandidates.map((article) => article.slug).join('|')
   const topStories = topStoryIds
     .map((slug) => topStoryCandidates.find((article) => article.slug === slug))
     .filter((article): article is NewsArticle => Boolean(article))
   const displayedTopStories = topStories.length ? topStories : topStoryCandidates.slice(0, 3)
-  const storyFeed = displayArticles.length > 6 ? displayArticles.slice(6) : displayArticles.slice(3)
+  const featuredSlugs = new Set([
+    ...headlineArticles.map((article) => article.slug),
+    ...displayedTopStories.map((article) => article.slug),
+  ])
+  const storyFeed = displayArticles.filter((article) => !featuredSlugs.has(article.slug))
   const visibleStories = storyFeed.slice(0, visibleCount)
   const hasMoreStories = visibleCount < storyFeed.length
 
@@ -220,6 +236,40 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
     const image = event.currentTarget
     if (image.src.endsWith(DEFAULT_NEWS_IMAGE)) return
     image.src = DEFAULT_NEWS_IMAGE
+  }
+
+  if (!heroArticle) {
+    return (
+      <main className="news-feed-page">
+        <section className="home-section">
+          <div className="container">
+            <div className="home-section-head news-feed-head">
+              <div>
+                <p className="eyebrow">Nightlife Feed</p>
+                <h1 className="home-title">Tin tức 9LIFE MAG</h1>
+                <p className="page-intro news-feed-intro">
+                  {isLoading
+                    ? 'Đang tải các bài viết mới nhất...'
+                    : 'Chưa có bài viết nào được xuất bản trong chuyên mục này.'}
+                </p>
+                {!isLoading && feedArticles.length > 0 ? (
+                  <button
+                    type="button"
+                    className="more-link-unified"
+                    onClick={() => {
+                      setActiveChip('Tất cả')
+                      setActiveSignal(null)
+                    }}
+                  >
+                    Xem tất cả bài viết
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   return (

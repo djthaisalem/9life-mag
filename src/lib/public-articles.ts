@@ -12,6 +12,7 @@ export type PublicNewsArticle = {
   topic?: string
   placement?: string
   date: string
+  publishedAt: string
   image: string
 }
 
@@ -46,6 +47,7 @@ export async function listPublicArticles(): Promise<PublicNewsArticle[]> {
   return result.docs.flatMap((post) => {
     if (!post.slug) return []
     const cover = getCmsMediaReference(post.coverImage)
+    const publishedAt = post.publishedAt ?? post.updatedAt ?? ''
     return [{
       slug: post.slug,
       title: repairVietnameseText(post.title),
@@ -53,8 +55,13 @@ export async function listPublicArticles(): Promise<PublicNewsArticle[]> {
       category: taxonomyName(post.category, 'Tin tức'),
       topic: taxonomyName(post.topic, ''),
       placement: repairVietnameseText(post.placement ?? 'Feed tin tức'),
-      date: formatDate(post.publishedAt ?? post.updatedAt),
+      date: formatDate(publishedAt),
+      publishedAt,
       image: cover?.url ?? '/images/default-music-cover.png',
     }]
+  }).sort((left, right) => {
+    const leftTime = Date.parse(left.publishedAt)
+    const rightTime = Date.parse(right.publishedAt)
+    return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime)
   })
 }

@@ -25,10 +25,40 @@ function SearchPageContent() {
   const requestedTab = searchParams.get('tab')
   const activeTab = tabs.some((tab) => tab.value === requestedTab) ? requestedTab as SearchCategory | 'all' : 'all'
   const [input, setInput] = useState(query)
+  const [databaseNewsItems, setDatabaseNewsItems] = useState<SearchItem[]>([])
   const [databaseMusicItems, setDatabaseMusicItems] = useState<SearchItem[]>([])
   const [databaseArtistItems, setDatabaseArtistItems] = useState<SearchItem[]>([])
   const [databaseOutletItems, setDatabaseOutletItems] = useState<SearchItem[]>([])
-  const results = useMemo(() => findSearchItems(query, activeTab, [...databaseMusicItems, ...databaseArtistItems, ...databaseOutletItems]), [query, activeTab, databaseMusicItems, databaseArtistItems, databaseOutletItems])
+  const results = useMemo(
+    () => findSearchItems(query, activeTab, [...databaseNewsItems, ...databaseMusicItems, ...databaseArtistItems, ...databaseOutletItems]),
+    [query, activeTab, databaseNewsItems, databaseMusicItems, databaseArtistItems, databaseOutletItems],
+  )
+
+  useEffect(() => {
+    void fetch('/api/public/articles', { cache: 'no-store' })
+      .then(async (response) => response.ok ? response.json() : { articles: [] })
+      .then((result: {
+        articles?: Array<{
+          slug: string
+          title: string
+          summary?: string
+          image?: string
+          category?: string
+          topic?: string
+        }>
+      }) => {
+        setDatabaseNewsItems((result.articles ?? []).map((article) => ({
+          id: `news:${article.slug}`,
+          category: 'news',
+          title: article.title,
+          description: [article.summary, article.category, article.topic].filter(Boolean).join(' · '),
+          image: article.image || '/images/default-music-cover.png',
+          href: `/tin-tuc/${article.slug}`,
+          label: `Tin tức · ${article.topic || article.category || '9LIFE MAG'}`,
+        })))
+      })
+      .catch(() => setDatabaseNewsItems([]))
+  }, [])
 
   useEffect(() => {
     void fetchPublicMusicCatalog().then((tracks) => {

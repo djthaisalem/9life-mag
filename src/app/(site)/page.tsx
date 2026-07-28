@@ -40,6 +40,7 @@ type PublicArticle = {
   category?: string
   placement?: string
   date?: string
+  publishedAt?: string
   image?: string
 }
 type RankingVoteTarget =
@@ -644,14 +645,8 @@ export default function HomePage() {
   const [votedTargets, setVotedTargets] = useState<string[]>([])
   const [homeNonstopTracks, setHomeNonstopTracks] = useState<AudioTrack[]>(homeNonstopCatalog.slice(0, 10))
   const [homeRemixTracks, setHomeRemixTracks] = useState<AudioTrack[]>(homeRemixCatalog.slice(0, 10))
-  const [homeNewsItems, setHomeNewsItems] = useState<HomeNewsItem[]>(() => newsItems.map((article) => ({
-    ...article,
-    label: repairVietnameseText(article.label),
-    date: repairVietnameseText(article.date),
-    title: repairVietnameseText(article.title),
-    description: truncateNewsDescription(article.description),
-  })))
-  const [homeFeaturedSlides, setHomeFeaturedSlides] = useState<HomeFeaturedSlide[]>(featuredSlides)
+  const [homeNewsItems, setHomeNewsItems] = useState<HomeNewsItem[]>([])
+  const [homeFeaturedSlides, setHomeFeaturedSlides] = useState<HomeFeaturedSlide[]>([])
   const [visibleNewsIds, setVisibleNewsIds] = useState<string[]>([])
 
   const filteredNews = useMemo(() => {
@@ -710,13 +705,11 @@ export default function HomePage() {
         const result = await response.json() as { ok?: boolean; articles?: PublicArticle[] }
         if (!response.ok || !result.ok || !Array.isArray(result.articles)) return
 
-        const fallbackBySlug = new Map(newsItems.map((article) => [article.slug, article]))
         const publishedNews = result.articles
           .filter((article) => article.slug && article.title)
-          .map((article) => articleToHomeNewsItem(article, fallbackBySlug.get(article.slug)))
-        const publishedSlugs = new Set(publishedNews.map((article) => article.slug))
+          .map((article) => articleToHomeNewsItem(article))
 
-        setHomeNewsItems([...publishedNews, ...newsItems.filter((article) => !publishedSlugs.has(article.slug))])
+        setHomeNewsItems(publishedNews)
         const placedSlides = result.articles
           .filter((article) => repairVietnameseText(article.placement || '') === 'Headline slider trang chủ')
           .slice(0, 5)
@@ -727,23 +720,10 @@ export default function HomePage() {
             image: article.image || '/images/default-music-cover.png',
             tag: repairVietnameseText(article.category || 'Tin tức'),
           }))
-        const placedSlugs = new Set(placedSlides.map((slide) => slide.slug))
-        setHomeFeaturedSlides(
-          placedSlides.length
-            ? [...placedSlides, ...featuredSlides.filter((slide) => !placedSlugs.has(slide.slug))].slice(0, 5)
-            : featuredSlides.map((slide) => {
-                const article = result.articles?.find((item) => item.slug === slide.slug)
-                return article ? {
-                  ...slide,
-                  title: repairVietnameseText(article.title || slide.title),
-                  description: truncateNewsDescription(article.summary || slide.description),
-                  image: article.image || slide.image,
-                  tag: repairVietnameseText(article.category || slide.tag),
-                } : slide
-              }),
-        )
+        setHomeFeaturedSlides(placedSlides)
       } catch {
-        // Static cards remain available if the public feed is temporarily unavailable.
+        setHomeNewsItems([])
+        setHomeFeaturedSlides([])
       }
     })()
   }, [])
@@ -765,6 +745,7 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (homeFeaturedSlides.length < 2) return
     const timer = window.setInterval(() => {
       setActiveSlideIndex((current) => (current + 1) % homeFeaturedSlides.length)
     }, 4500)
@@ -956,7 +937,7 @@ export default function HomePage() {
             <a href="#music" className="button-secondary">Nghe Nhạc Nonstop</a>
           </div>
 
-          <div className="headline-slider">
+          {activeSlide ? <div className="headline-slider">
             <article className="headline-slide">
               <Link
                 href={`/tin-tuc/${activeSlide.slug}`}
@@ -983,7 +964,7 @@ export default function HomePage() {
                 />
               ))}
             </div>
-          </div>
+          </div> : null}
         </div>
       </section>
 

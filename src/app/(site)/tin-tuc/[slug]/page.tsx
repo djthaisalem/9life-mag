@@ -8,6 +8,7 @@ import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-conte
 import { extractArticleSeoMetadata, getArticleSeoKeywords, stripArticleSeoMetadata, type ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { getSupplementArticleDetail, newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { listPublicArticles } from '@/lib/public-articles'
 
 export const revalidate = 0
 
@@ -91,7 +92,7 @@ async function getPublishedCmsArticle(slug: string): Promise<Article | undefined
 }
 
 async function getArticle(slug: string) {
-  return (await getPublishedCmsArticle(slug)) ?? getStaticArticle(slug)
+  return getPublishedCmsArticle(slug)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -116,7 +117,15 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
   const seoTitle = article.seo?.title || article.title
   const seoDescription = article.seo?.description || article.summary
   const canonicalUrl = article.seo?.canonicalUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/tin-tuc/${slug}`
-  const articles = [...Object.entries({ ...articleMap, ...feedArticleDetails }).map(([entrySlug, entry]) => ({ slug: entrySlug, ...entry })), ...newsCatalogSupplement.map(getSupplementArticleDetail)]
+  const articles = (await listPublicArticles()).map((entry) => ({
+    slug: entry.slug,
+    category: entry.category,
+    date: entry.date,
+    title: entry.title,
+    summary: entry.summary,
+    image: entry.image,
+    body: [] as string[],
+  }))
   const related = articles.filter((entry) => entry.slug !== slug && entry.category === article.category).concat(articles.filter((entry) => entry.slug !== slug && entry.category !== article.category)).slice(0, 3)
   const latest = articles.filter((entry) => entry.slug !== slug).slice(0, 4)
   const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: seoTitle, description: seoDescription, keywords: getArticleSeoKeywords(article.seo ?? {}).join(', '), image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: canonicalUrl, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
