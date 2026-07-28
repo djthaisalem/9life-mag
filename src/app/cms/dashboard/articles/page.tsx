@@ -258,7 +258,6 @@ export default function CmsArticlesPage() {
     </div>
     <article className="panel">
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Article Taxonomy</p><h2>Chuyên mục và chuyên đề</h2><p className="cms-muted">Tạo taxonomy thật để bài viết được map đúng nhóm trên trang tin tức.</p></div><div className="cms-inline-actions"><button type="button" className="button-secondary" onClick={() => setIsCategoryModalOpen(true)}>Tạo chuyên mục</button><button type="button" className="button" onClick={() => setIsSeriesModalOpen(true)}>Tạo chuyên đề</button></div></div>
-      <div className="cms-link-grid">{seriesList.map((series) => <article key={series.title} className="cms-link-card"><strong>{series.title}</strong><span>{series.description}</span><span>{series.placement}</span><span className="pill">{series.status}</span></article>)}</div>
     </article>
 
     <article className="panel">

@@ -9,7 +9,7 @@ import { clubOutlets } from '@/lib/club-booking-data'
 import { buildArtistDirectoryHref } from '@/lib/artist-segments'
 import { artistProfiles } from '@/lib/artist-directory-data'
 import type { AudioTrack } from '@/lib/audio-types'
-import { curateMusicCatalog } from '@/lib/music-curation'
+import { curateMusicCatalog, getFairRotation } from '@/lib/music-curation'
 import { tidalNonstopTracks, tidalRemixTracks } from '@/lib/music-frontend-data'
 import { catalogItemToAudioTrack, fetchPublicMusicCatalog } from '@/lib/public-music-catalog'
 import { repairVietnameseText as repairVietnameseTextShared, repairVietnameseValue } from '@/lib/repair-vietnamese-text'
@@ -651,11 +651,17 @@ export default function HomePage() {
     description: truncateNewsDescription(article.description),
   })))
   const [homeFeaturedSlides, setHomeFeaturedSlides] = useState<HomeFeaturedSlide[]>(featuredSlides)
+  const [visibleNewsIds, setVisibleNewsIds] = useState<string[]>([])
 
   const filteredNews = useMemo(() => {
     if (activeNewsTab === 'all') return homeNewsItems
     return homeNewsItems.filter((item) => item.category === activeNewsTab)
   }, [activeNewsTab, homeNewsItems])
+
+  const visibleNews = useMemo(() => {
+    const bySlug = new Map(filteredNews.map((article) => [article.slug, article]))
+    return visibleNewsIds.map((slug) => bySlug.get(slug)).filter((article): article is HomeNewsItem => Boolean(article))
+  }, [filteredNews, visibleNewsIds])
 
   const filteredArtists = useMemo(() => {
     if (activeArtistTab === 'all') return artists
@@ -679,6 +685,14 @@ export default function HomePage() {
   useEffect(() => {
     setFeaturedArtistIds(getFairFeaturedArtistIds(activeArtistTab, filteredArtists.map((artist) => artist.id)))
   }, [activeArtistTab, filteredArtists])
+
+  useEffect(() => {
+    setVisibleNewsIds(getFairRotation(
+      `nine-life-home-news-rotation-v1:${activeNewsTab}`,
+      filteredNews.map((article) => article.slug),
+      6,
+    ))
+  }, [activeNewsTab, filteredNews])
 
   useEffect(() => {
     void (async () => {
@@ -981,7 +995,7 @@ export default function HomePage() {
           </div>
 
           <div className="home-grid home-grid-3">
-            {filteredNews.map((article) => (
+            {visibleNews.map((article) => (
               <article key={article.title} className="glass-card-9life">
                 <Link
                   href={`/tin-tuc/${article.slug}`}
@@ -1106,6 +1120,9 @@ export default function HomePage() {
             <div>
               <h2 className="home-title">Bảng Xếp Hạng <span>Tuần</span></h2>
               <p className="muted">Ranking do cộng đồng bình chọn, có thể nối tiếp với collection vote ở các vòng sau.</p>
+            </div>
+            <div className="home-news-all-action">
+              <Link href="/tin-tuc" className="button">Xem tất cả tin tức</Link>
             </div>
           </div>
 

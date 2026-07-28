@@ -3415,6 +3415,18 @@ button.more-link-unified {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.home-news-all-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+/* Article placement is not used by the public feed, so do not expose a misleading control. */
+.cms-article-meta-grid .field:has(#postPlacement),
+.cms-news-signal-grid {
+  display: none;
+}
+
 .glass-card-9life {
   overflow: hidden;
   border-radius: 28px;

@@ -112,6 +112,7 @@ export default function MusicPage() {
   const [featuredPlaylists, setFeaturedPlaylists] = useState<FeaturedUserPlaylist[]>(communityPlaylistFallbacks)
   const [communityMixOrder, setCommunityMixOrder] = useState<string[]>([])
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
+  const [visibleAlbumIds, setVisibleAlbumIds] = useState<string[]>([])
   const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
   const [publishedUserPlaylists, setPublishedUserPlaylists] = useState<UserPlaylist[]>([])
   const [expandedList, setExpandedList] = useState<ExpandedMusicList>(null)
@@ -198,6 +199,23 @@ export default function MusicPage() {
     { tracks: tidalRemixTracks.slice(2, 5), sourceType: 'remix' },
     { tracks: tidalNonstopTracks.slice(3, 6), sourceType: 'nonstop' },
   ]
+  const albumCandidates = useMemo<PublishedAlbum[]>(() => publishedAlbums.length
+    ? publishedAlbums
+    : albumOrder.map((index) => {
+      const item = tidalAlbums[index]
+      return item ? {
+        id: item.title,
+        title: item.title,
+        artist: item.artist,
+        cover: item.cover,
+        href: `/music/album/${toUrlSlug(item.title)}`,
+        collection: albumCollections[index] ?? albumCollections[0],
+      } : null
+    }).filter((item): item is PublishedAlbum => Boolean(item)), [albumOrder, publishedAlbums])
+  const visibleAlbums = useMemo(() => {
+    const byId = new Map(albumCandidates.map((album) => [album.id, album]))
+    return visibleAlbumIds.map((id) => byId.get(id)).filter((album): album is PublishedAlbum => Boolean(album))
+  }, [albumCandidates, visibleAlbumIds])
 
   const chartRows = [
     ...liveRemixTracks.map((track) => ({ track, sourceType: 'remix' as const })),
@@ -332,6 +350,14 @@ export default function MusicPage() {
         .filter((index): index is number => index !== undefined)
     )
   }, [communityMixCandidates, publishedCatalog, publishedUserPlaylists])
+
+  useEffect(() => {
+    setVisibleAlbumIds(getFairRotation(
+      'nine-life-album-release-rotation-v2',
+      albumCandidates.map((album) => album.id),
+      4,
+    ))
+  }, [albumCandidates])
 
   useEffect(() => {
     setGenreTracks(getFairGenreTracks(activeGenreTab, publishedTracks, liveNonstopTracks, liveRemixTracks))
@@ -573,17 +599,7 @@ export default function MusicPage() {
             </div>
 
             <div className="tidal-album-grid">
-              {(publishedAlbums.length ? publishedAlbums : albumOrder.map((index) => {
-                const item = tidalAlbums[index]
-                return item ? {
-                  id: item.title,
-                  title: item.title,
-                  artist: item.artist,
-                  cover: item.cover,
-                  href: `/music/album/${toUrlSlug(item.title)}`,
-                  collection: albumCollections[index] ?? albumCollections[0],
-                } : null
-              }).filter((item): item is PublishedAlbum => Boolean(item))).map((item) => {
+              {visibleAlbums.map((item) => {
                 return (
                 <article key={item.title} className="tidal-album-card">
                   <Link href={item.href} className="tidal-album-cover-link" aria-label={`Mở Album ${item.title}`}><img src={item.cover} alt={item.title} /></Link>
