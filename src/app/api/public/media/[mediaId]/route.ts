@@ -15,9 +15,12 @@ function getCandidateKeys(media: MediaDocument) {
   if (media.url) {
     try {
       const pathname = decodeURIComponent(new URL(media.url).pathname)
-      const bucketPath = `/${env.R2_BUCKET}/`
-      const bucketIndex = pathname.indexOf(bucketPath)
-      if (bucketIndex >= 0) keys.push(pathname.slice(bucketIndex + bucketPath.length))
+      const path = pathname.replace(/^\/+/, '')
+      // R2 may return either a bucket endpoint URL or a custom public URL.
+      // Keep the complete object path first, then try it without the bucket.
+      keys.push(path)
+      const bucketPrefix = `${env.R2_BUCKET}/`
+      if (path.startsWith(bucketPrefix)) keys.push(path.slice(bucketPrefix.length))
     } catch {
       // The document may contain a local URL. The storage fields below remain valid.
     }

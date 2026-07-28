@@ -4,6 +4,7 @@ import { listPublishedArtists } from '@/lib/public-artists'
 import { listPublishedOutlets } from '@/lib/public-outlets'
 import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
 import { getPublishedUserPlaylists } from '@/lib/shared-user-playlists'
+import { toUrlSlug } from '@/lib/url-slug'
 
 type DiscoveryKind = 'artist' | 'music' | 'outlet' | 'article' | 'playlist'
 
@@ -34,10 +35,23 @@ type PostDocument = {
   coverImage?: MediaValue
 }
 
+type AlbumDocument = {
+  id: string | number
+  title?: string
+  slug?: string
+  description?: string
+  musician?: string
+  coverImage?: MediaValue
+  isPublic?: boolean
+  status?: string
+}
+
 function mediaUrl(value: MediaValue) {
   if (typeof value === 'string') return value.startsWith('/') || /^https:\/\//.test(value) ? value : undefined
-  if (value?.url) return value.url
-  return value?.id ? `/api/public/media/${encodeURIComponent(String(value.id))}` : undefined
+  // Route every Payload media relation through the public image resolver. It
+  // understands both R2 bucket URLs and custom-domain paths.
+  if (value?.id) return `/api/public/media/${encodeURIComponent(String(value.id))}`
+  return value?.url || undefined
 }
 
 function normalizeLocation(value?: string) {
@@ -65,10 +79,16 @@ function trackItem(track: TrackDocument, label = trackLabel(track.trackType)): D
   }
 }
 
+function prioritizeLocation<T>(items: T[], location: string, getLocation: (item: T) => string) {
+  if (!location) return items
+  const sameLocation = items.filter((item) => normalizeLocation(getLocation(item)) === location)
+  return sameLocation.length ? sameLocation : items
+}
+
 export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
   try {
     const payload = await loadPayloadClient()
-    const [tracksResult, postsResult, userPlaylists, publishedArtists, publishedOutlets] = await Promise.all([
+    const [tracksResult, postsResult, albumsResult, userPlaylists, publishedArtists, publishedOutlets] = await Promise.all([
       payload.find({
         collection: 'tracks',
         where: {
@@ -94,6 +114,15 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
         pagination: false,
         overrideAccess: true,
       }),
+      payload.find({
+        collection: 'albums',
+        where: { and: [{ isPublic: { equals: true } }, { status: { equals: 'published' } }] },
+        sort: '-updatedAt',
+        limit: 100,
+        depth: 1,
+        pagination: false,
+        overrideAccess: true,
+      }),
       getPublishedUserPlaylists(100),
       listPublishedArtists(),
       listPublishedOutlets(),
@@ -101,6 +130,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
 
     const tracks = tracksResult.docs as TrackDocument[]
     const posts = postsResult.docs as PostDocument[]
+    const albums = albumsResult.docs as AlbumDocument[]
     const currentTrackId = current?.kind === 'music' ? current.id : undefined
 
     const musicItems = tracks
@@ -114,16 +144,26 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
       ))
       .map((track) => trackItem(track, 'DJ set community'))
 
-    const playlistItems: DiscoveryItem[] = [
+    const collectionItems: DiscoveryItem[] = [
       ...userPlaylists
         .filter((playlist) => playlist.shareCode !== current?.id)
         .map((playlist) => ({
           id: `playlist-${playlist.shareCode}`,
           label: 'Playlist User nổi bật',
           title: playlist.name,
-          meta: `${playlist.items.length} bản nhạc · ${playlist.listens.toLocaleString('vi-VN')} lượt nghe`,
+          meta: `${playlist.items.length} bản nhạc`,
           image: playlist.cover || playlist.items[0]?.cover,
           href: `/music/library/${playlist.shareCode}`,
+        })),
+      ...albums
+        .filter((album) => album.slug !== current?.id && Boolean(album.slug || album.title))
+        .map((album) => ({
+          id: `album-${album.id}`,
+          label: 'Album / Release',
+          title: album.title || 'Album 9LIFE',
+          meta: album.musician || album.description || 'Album mới phát hành',
+          image: mediaUrl(album.coverImage),
+          href: `/music/album/${toUrlSlug(album.slug || album.title || String(album.id))}`,
         })),
       ...communityItems,
     ]
@@ -139,49 +179,45 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
         href: `/tin-tuc/${post.slug}`,
       }))
 
-    const profileItems: DiscoveryItem[] = []
-    if (current?.kind === 'outlet' && current.id) {
-      const currentOutlet = publishedOutlets.find((item) => item.outlet.slug === current.id)?.outlet
-      const location = normalizeLocation(currentOutlet?.city)
-      if (location) {
-        publishedArtists
-          .map((item) => item.artist)
-          .filter((artist) => normalizeLocation(artist.location) === location)
-          .forEach((artist) => profileItems.push({
-            id: `artist-${artist.slug}`,
-            label: `Nghệ sĩ tại ${artist.location}`,
-            title: artist.name,
-            meta: `${artist.role} · ${artist.genres}`,
-            image: artist.image,
-            href: `/nghe-si/${artist.slug}`,
-          }))
-      }
-    }
+    const artists = publishedArtists.map((item) => item.artist)
+    const outlets = publishedOutlets.map((item) => item.outlet)
+    const currentArtist = current?.kind === 'artist' ? artists.find((artist) => artist.slug === current.id) : undefined
+    const currentOutlet = current?.kind === 'outlet' ? outlets.find((outlet) => outlet.slug === current.id) : undefined
+    const nearbyLocation = normalizeLocation(currentArtist?.location || currentOutlet?.city)
 
-    if (current?.kind === 'artist' && current.id) {
-      const currentArtist = publishedArtists.find((item) => item.artist.slug === current.id)?.artist
-      const location = normalizeLocation(currentArtist?.location)
-      if (location) {
-        publishedOutlets
-          .map((item) => item.outlet)
-          .filter((outlet) => normalizeLocation(outlet.city) === location)
-          .forEach((outlet) => profileItems.push({
-            id: `outlet-${outlet.slug}`,
-            label: `Outlet tại ${outlet.city}`,
-            title: outlet.name,
-            meta: `${outlet.type} · ${outlet.vibe}`,
-            image: outlet.image,
-            href: `/dat-ban/${outlet.slug}`,
-          }))
-      }
-    }
+    const artistItems = current?.kind === 'artist' ? [] : prioritizeLocation(
+      artists.filter((artist) => artist.slug !== current?.id),
+      nearbyLocation,
+      (artist) => artist.location,
+    ).map((artist) => ({
+      id: `artist-${artist.slug}`,
+      label: 'Nghệ sĩ',
+      title: artist.name,
+      meta: `${artist.role} · ${artist.location}`,
+      image: artist.image,
+      href: `/nghe-si/${artist.slug}`,
+    }))
+
+    const outletItems = current?.kind === 'outlet' ? [] : prioritizeLocation(
+      outlets.filter((outlet) => outlet.slug !== current?.id),
+      nearbyLocation,
+      (outlet) => outlet.city,
+    ).map((outlet) => ({
+      id: `outlet-${outlet.slug}`,
+      label: 'Outlet',
+      title: outlet.name,
+      meta: `${outlet.type} · ${outlet.city}`,
+      image: outlet.image,
+      href: `/dat-ban/${outlet.slug}`,
+    }))
 
     const groups: DiscoveryGroup[] = [
-      { key: 'music', items: musicItems },
-      { key: 'playlist-community', items: playlistItems },
-      { key: 'article', items: articleItems },
-      { key: current?.kind === 'artist' ? 'outlet-by-location' : 'artist-by-location', items: profileItems },
-    ].filter((group) => group.items.length > 0)
+      current?.kind !== 'music' ? { key: 'track', items: musicItems } : null,
+      current?.kind !== 'playlist' ? { key: 'collection', items: collectionItems } : null,
+      current?.kind !== 'article' ? { key: 'article', items: articleItems } : null,
+      current?.kind !== 'artist' ? { key: 'artist', items: artistItems } : null,
+      current?.kind !== 'outlet' ? { key: 'outlet', items: outletItems } : null,
+    ].filter((group): group is DiscoveryGroup => Boolean(group && group.items.length > 0))
 
     if (!groups.length) return null
 

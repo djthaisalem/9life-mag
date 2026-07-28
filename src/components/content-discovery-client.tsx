@@ -29,7 +29,7 @@ export function ContentDiscoveryClient({ groups }: { groups: DiscoveryGroup[] })
   useEffect(() => {
     setItems(groups.flatMap((group) => {
       const [selectedId] = getFairRotation(
-        `nine-life-content-discovery-${group.key}-v2`,
+        `nine-life-content-discovery-${group.key}-v3`,
         group.items.map((item) => item.id),
         1,
       )
@@ -48,7 +48,6 @@ export function ContentDiscoveryClient({ groups }: { groups: DiscoveryGroup[] })
             <p className="section-eyebrow">Khám phá thêm</p>
             <h2>Nội dung dành cho bạn</h2>
           </div>
-          <p>Mỗi nội dung được phân bổ theo vòng công bằng; chỉ lặp lại sau khi các lựa chọn phù hợp khác đã xuất hiện.</p>
         </div>
         <div className="content-discovery-grid">
           {items.map((item) => (
@@ -57,7 +56,6 @@ export function ContentDiscoveryClient({ groups }: { groups: DiscoveryGroup[] })
               <div>
                 <span>{item.label}</span>
                 <strong>{item.title}</strong>
-                <small>{item.meta}</small>
               </div>
             </Link>
           ))}
