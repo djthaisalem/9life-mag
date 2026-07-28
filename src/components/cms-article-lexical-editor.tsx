@@ -40,6 +40,7 @@ import {
   type Spread,
 } from 'lexical'
 import { getMediaEmbed } from '@/lib/media-embed'
+import type { ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 
 const tools = ['Image', 'Gallery', 'Video', 'Embed', 'CTA', 'SEO', 'Preview'] as const
 
@@ -376,7 +377,15 @@ function buildSeoMarkup({ metaTitle, metaDescription, primaryKeywords, secondary
   return `<aside class="cms-article-seo-note">${rows.map(([label, value]) => `<p><b>${label}:</b> ${escapeHtml(value)}</p>`).join('')}</aside>`
 }
 
-function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
+function ToolbarPlugin({
+  onPreview,
+  seoMetadata,
+  onSeoMetadataChange,
+}: {
+  onPreview?: () => void
+  seoMetadata?: ArticleSeoMetadata
+  onSeoMetadataChange?: (metadata: ArticleSeoMetadata) => void
+}) {
   const [editor] = useLexicalComposerContext()
   const [activeModal, setActiveModal] = useState<ModalTool | null>(null)
   const [isToolbarPinned, setIsToolbarPinned] = useState(false)
@@ -392,6 +401,16 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
     secondaryKeywords: '',
     canonicalUrl: '',
   })
+
+  useEffect(() => {
+    setSeoForm({
+      metaTitle: seoMetadata?.title ?? '',
+      metaDescription: seoMetadata?.description ?? '',
+      primaryKeywords: seoMetadata?.primaryKeywords ?? '',
+      secondaryKeywords: seoMetadata?.secondaryKeywords ?? '',
+      canonicalUrl: seoMetadata?.canonicalUrl ?? '',
+    })
+  }, [seoMetadata])
 
   const updateImageForm = (field: 'url' | 'caption' | 'alt', value: string) =>
     setImageForm((current) => ({ ...current, [field]: value }))
@@ -544,9 +563,19 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
   }
 
   const submitSeo = () => {
-    insertHtmlBlock(editor, buildSeoMarkup(seoForm))
-    setSeoForm({ metaTitle: '', metaDescription: '', primaryKeywords: '', secondaryKeywords: '', canonicalUrl: '' })
+    onSeoMetadataChange?.({
+      title: seoForm.metaTitle,
+      description: seoForm.metaDescription,
+      primaryKeywords: seoForm.primaryKeywords,
+      secondaryKeywords: seoForm.secondaryKeywords,
+      canonicalUrl: seoForm.canonicalUrl,
+    })
     closeModal()
+  }
+
+  const clearSeo = () => {
+    setSeoForm({ metaTitle: '', metaDescription: '', primaryKeywords: '', secondaryKeywords: '', canonicalUrl: '' })
+    onSeoMetadataChange?.({})
   }
 
   return (
@@ -928,6 +957,9 @@ function ToolbarPlugin({ onPreview }: { onPreview?: () => void }) {
                   <button type="button" className="button" onClick={submitSeo}>
                     Lưu metadata SEO
                   </button>
+                  <button type="button" className="button-secondary" onClick={clearSeo}>
+                    Xóa metadata SEO
+                  </button>
                 </div>
               </div>
             ) : null}
@@ -984,10 +1016,14 @@ function HtmlSyncPlugin({
 
 export function CmsArticleLexicalEditor({
   html,
+  seoMetadata,
+  onSeoMetadataChange,
   onHtmlChange,
   onPreview,
 }: {
   html: string
+  seoMetadata?: ArticleSeoMetadata
+  onSeoMetadataChange?: (metadata: ArticleSeoMetadata) => void
   onHtmlChange: (html: string) => void
   onPreview?: () => void
 }) {
@@ -1006,7 +1042,7 @@ export function CmsArticleLexicalEditor({
   return (
     <div className="cms-editor-shell cms-editor-shell-wide">
       <LexicalComposer initialConfig={initialConfig}>
-        <ToolbarPlugin onPreview={onPreview} />
+        <ToolbarPlugin onPreview={onPreview} seoMetadata={seoMetadata} onSeoMetadataChange={onSeoMetadataChange} />
         <div className="cms-editor-body cms-editor-body-wide cms-editor-body-rich">
           <RichTextPlugin
             contentEditable={<ContentEditable id="postBody" className="cms-article-rich-editor" />}

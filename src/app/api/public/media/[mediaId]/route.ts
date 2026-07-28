@@ -56,7 +56,9 @@ export async function GET(_: Request, context: { params: Promise<{ mediaId: stri
         const body = await object.Body.transformToWebStream()
         return new NextResponse(body, {
           headers: {
-            'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+            // Keep public images fast, but let cover replacements propagate
+            // quickly throughout homepage cards and headline slides.
+            'Cache-Control': 'public, max-age=300, s-maxage=300',
             'Content-Type': object.ContentType || 'image/jpeg',
           },
         })

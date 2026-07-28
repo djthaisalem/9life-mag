@@ -22,11 +22,14 @@ export function getCmsMediaReference(value: unknown) {
   }
   if (!value || typeof value !== 'object') return null
 
-  const media = value as { id?: string | number; alt?: string }
+  const media = value as { id?: string | number; alt?: string; updatedAt?: string; createdAt?: string }
   if (media.id === undefined || media.id === null) return null
+  const version = media.updatedAt ?? media.createdAt
   return {
     id: String(media.id),
-    url: `/api/public/media/${media.id}`,
+    // A cover can be replaced while the article slug stays unchanged. Version
+    // the public URL so hero cards never retain a stale failed image response.
+    url: `/api/public/media/${media.id}${version ? `?v=${encodeURIComponent(version)}` : ''}`,
     alt: media.alt ?? '',
   }
 }

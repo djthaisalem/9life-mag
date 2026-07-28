@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CmsArticleLexicalEditor } from '@/components/cms-article-lexical-editor'
+import type { ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { useCmsCapability } from '@/components/cms-capability-provider'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { cmsNewsPlacementOptions, newsSignalCards } from '@/lib/news-taxonomy'
@@ -42,6 +43,7 @@ export default function CmsArticlesPage() {
   )
   const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich')
   const [articleHtml, setArticleHtml] = useState(initialArticleHtml)
+  const [articleSeo, setArticleSeo] = useState<ArticleSeoMetadata>({})
   const [seriesList, setSeriesList] = useState(initialSeries)
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -56,6 +58,7 @@ export default function CmsArticlesPage() {
   const [postTopic, setPostTopic] = useState('')
   const [postStatus, setPostStatus] = useState<'draft' | 'scheduled' | 'published'>('draft')
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [coverImage, setCoverImage] = useState<ArticleImage | null>(null)
@@ -113,6 +116,7 @@ export default function CmsArticlesPage() {
             excerpt: string
             html: string
             status?: 'draft' | 'scheduled' | 'published'
+            seo?: ArticleSeoMetadata
             coverImage: { id: string; url: string; alt: string } | null
             gallery: Array<{ id: string; url: string; alt: string }>
           }
@@ -127,6 +131,7 @@ export default function CmsArticlesPage() {
         setPostExcerpt(result.post.excerpt)
         setPostStatus(result.post.status === 'published' || result.post.status === 'scheduled' ? result.post.status : 'draft')
         setArticleHtml(result.post.html || initialArticleHtml)
+        setArticleSeo(result.post.seo ?? {})
         setCoverImage(result.post.coverImage
           ? { id: result.post.coverImage.id, preview: result.post.coverImage.url, alt: result.post.coverImage.alt }
           : null)
@@ -207,6 +212,7 @@ export default function CmsArticlesPage() {
           placement: postPlacement,
           excerpt: postExcerpt,
           html: articleHtml,
+          seo: articleSeo,
           coverImageId: uploadedCover?.id,
           galleryImageIds: uploadedGallery.map((image) => image.id).filter((id): id is string => Boolean(id)),
           status: options?.status ?? postStatus,
@@ -227,6 +233,27 @@ export default function CmsArticlesPage() {
       setSaveMessage('Không thể kết nối tới tiến trình lưu bài viết.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const deleteArticle = async () => {
+    const slug = toUrlSlug(postSlug || postTitle)
+    if (!slug || !window.confirm('Xóa bài viết này khỏi CMS? Thao tác không thể hoàn tác.')) return
+
+    setIsDeleting(true)
+    setSaveMessage('')
+    try {
+      const response = await fetch(`/api/cms/articles?slug=${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: capability ? { Authorization: `Bearer ${capability}` } : undefined,
+      })
+      const result = await response.json() as { ok?: boolean; message?: string }
+      if (!response.ok || !result.ok) throw new Error(result.message ?? 'Không thể xóa bài viết.')
+      window.location.assign('/cms/dashboard/articles/list')
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Không thể xóa bài viết lúc này.')
+      setIsDeleting(false)
     }
   }
 
@@ -271,7 +298,7 @@ export default function CmsArticlesPage() {
         <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries" value={postTopic} onChange={(event) => setPostTopic(event.currentTarget.value)}><option value="">Không gắn chuyên đề</option>{seriesList.map((series) => <option key={series.title} value={series.title}>{series.title}</option>)}</select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Chờ duyệt</option><option value="published">Xuất bản</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
-        {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
+        {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} seoMetadata={articleSeo} onSeoMetadataChange={setArticleSeo} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
         <div className="cms-article-media-fields">
           <div className="field">
             <label htmlFor="articleCoverUpload">Ảnh cover</label>
@@ -287,7 +314,7 @@ export default function CmsArticlesPage() {
           </div>
         </div>
         <div className="cms-editor-body cms-editor-body-wide"><div className="cms-article-meta-grid"><div className="field"><label htmlFor="coverImage">Ảnh cover</label><input id="coverImage" placeholder="Upload hoặc dán URL ảnh cover" /></div><div className="field"><label htmlFor="galleryImages">Gallery ảnh</label><input id="galleryImages" placeholder="Danh sách ảnh cho recap hoặc phỏng vấn" /></div><div className="field"><label htmlFor="youtubeEmbed">Embed YouTube</label><input id="youtubeEmbed" placeholder="https://youtube.com/watch?v=..." /></div><div className="field"><label htmlFor="facebookEmbed">Embed Facebook video</label><input id="facebookEmbed" placeholder="https://facebook.com/.../videos/..." /></div></div></div>
-        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button-secondary" disabled={isSaving} onClick={() => void saveArticle({ status: 'scheduled', successMessage: 'Đã lưu bài viết và chuyển sang chờ duyệt.' })}>Gửi duyệt</button><button type="button" className="button-secondary" disabled={isSaving} onClick={() => void saveArticle({ successMessage: 'Đã lưu bản HTML vào database.' })}>Lưu bản HTML</button></div>
+        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving || isDeleting} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ status: 'scheduled', successMessage: 'Đã lưu bài viết và chuyển sang chờ duyệt.' })}>Gửi duyệt</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ successMessage: 'Đã lưu bản HTML vào database.' })}>Lưu bản HTML</button>{postSlug ? <button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void deleteArticle()}>{isDeleting ? 'Đang xóa...' : 'Xóa bài viết'}</button> : null}</div>
         {saveMessage ? <p className="cms-field-hint" role="status">{saveMessage}</p> : null}
       </div>
     </article>

@@ -18,6 +18,13 @@ const articleSchema = z.object({
   coverImageId: z.string().trim().regex(/^\d+$/).optional(),
   galleryImageIds: z.array(z.string().trim().regex(/^\d+$/)).max(20).default([]),
   status: z.enum(['draft', 'scheduled', 'published']).default('draft'),
+  seo: z.object({
+    title: z.string().trim().max(240).optional(),
+    description: z.string().trim().max(800).optional(),
+    primaryKeywords: z.string().trim().max(800).optional(),
+    secondaryKeywords: z.string().trim().max(800).optional(),
+    canonicalUrl: z.string().trim().max(800).optional(),
+  }).optional(),
 })
 
 function getCategoryName(value: unknown) {
@@ -83,6 +90,7 @@ export async function GET(request: Request) {
         placement: post.placement ?? 'Feed tin tức',
         excerpt: post.excerpt ?? '',
         html: stripArticleSeoMetadata(getCmsArticleHtml(post.content)),
+        seo: extractArticleSeoMetadata(getCmsArticleHtml(post.content)),
         status: post.status,
         coverImage: getCmsMediaReference(post.coverImage),
         gallery: Array.isArray(post.gallery)
@@ -108,7 +116,7 @@ export async function POST(request: Request) {
     const found = await payload.find({ collection: 'posts', where: { slug: { equals: slug } }, limit: 1, depth: 0, overrideAccess: true })
     const categoryId = await getOrCreateCategoryId(payload, input.category)
     const topicId = input.topic ? await getOrCreateCategoryId(payload, input.topic, 'topic') : undefined
-    const seoMetadata = extractArticleSeoMetadata(input.html)
+    const seoMetadata = input.seo ?? extractArticleSeoMetadata(input.html)
     const articleHtml = [stripArticleSeoMetadata(input.html), buildArticleSeoMarkup(seoMetadata)].filter(Boolean).join('')
     const content = articleHtml ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: articleHtml, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
     const data = {
@@ -135,5 +143,32 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? 'Dữ liệu bài viết chưa hợp lệ.' }, { status: 400 })
     console.error('CMS article save failed', error)
     return NextResponse.json({ ok: false, message: 'Không thể lưu bài viết vào database lúc này.' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  const access = await requireCmsApiAccess('content')
+  if (!access.ok) return access.response
+
+  const slug = new URL(request.url).searchParams.get('slug')?.trim()
+  if (!slug) return NextResponse.json({ ok: false, message: 'Thiáº¿u slug bÃ i viáº¿t.' }, { status: 400 })
+
+  try {
+    const payload = await loadPayloadClient()
+    const found = await payload.find({
+      collection: 'posts',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const post = found.docs[0]
+    if (!post) return NextResponse.json({ ok: false, message: 'KhÃ´ng tÃ¬m tháº¥y bÃ i viáº¿t Ä‘á»ƒ xÃ³a.' }, { status: 404 })
+
+    await payload.delete({ collection: 'posts', id: post.id, overrideAccess: true })
+    return NextResponse.json({ ok: true, message: 'ÄÃ£ xÃ³a bÃ i viáº¿t khÃ´i database.' })
+  } catch (error) {
+    console.error('CMS article delete failed', { slug, error })
+    return NextResponse.json({ ok: false, message: 'KhÃ´ng thá»ƒ xÃ³a bÃ i viáº¿t lÃºc nÃ y.' }, { status: 500 })
   }
 }
