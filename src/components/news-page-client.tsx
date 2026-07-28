@@ -6,9 +6,17 @@ import { featuredArticles } from '@/lib/site-data'
 import { newsCategoryChips, newsSignalCards } from '@/lib/news-taxonomy'
 import { getFairRotation } from '@/lib/music-curation'
 import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
-import type { PublicNewsArticle } from '@/lib/public-articles'
 
-type NewsArticle = PublicNewsArticle
+type NewsArticle = {
+  slug: string
+  title: string
+  summary: string
+  category: string
+  topic?: string
+  placement?: string
+  date: string
+  image: string
+}
 
 const DEFAULT_NEWS_IMAGE = '/images/default-music-cover.png'
 
