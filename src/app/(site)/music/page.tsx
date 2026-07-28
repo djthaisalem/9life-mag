@@ -10,7 +10,7 @@ import type { AudioSourceType, AudioTrack } from '@/lib/audio-types'
 import { artistProfiles } from '@/lib/artist-directory-data'
 import { curateMusicCatalog, getFairRotation } from '@/lib/music-curation'
 import { fetchPublishedUserPlaylists, getUserPlaylists, type UserPlaylist } from '@/lib/user-playlists'
-import { catalogItemToAudioTrack, fetchPublicMusicCatalog, type PublicMusicCatalogItem } from '@/lib/public-music-catalog'
+import { catalogItemToAudioTrack, fetchPublicMusicCatalogData, type PublicMusicAlbumItem, type PublicMusicCatalogItem } from '@/lib/public-music-catalog'
 import { toUrlSlug } from '@/lib/url-slug'
 import {
   tidalAlbums,
@@ -114,6 +114,7 @@ export default function MusicPage() {
   const [albumOrder, setAlbumOrder] = useState<number[]>(() => tidalAlbums.map((_, index) => index))
   const [visibleAlbumIds, setVisibleAlbumIds] = useState<string[]>([])
   const [publishedCatalog, setPublishedCatalog] = useState<PublicMusicCatalogItem[]>([])
+  const [publishedAlbumCatalog, setPublishedAlbumCatalog] = useState<PublicMusicAlbumItem[]>([])
   const [publishedUserPlaylists, setPublishedUserPlaylists] = useState<UserPlaylist[]>([])
   const [expandedList, setExpandedList] = useState<ExpandedMusicList>(null)
   const openedTrackIdRef = useRef('')
@@ -140,20 +141,22 @@ export default function MusicPage() {
     return tracks.length ? tracks : tidalNonstopTracks
   }, [publishedCatalog])
   const publishedAlbums = useMemo<PublishedAlbum[]>(() => {
-    const groups = new Map<string, PublicMusicCatalogItem[]>()
-    publishedCatalog.forEach((track) => {
-      if (!track.albumLabel) return
-      groups.set(track.albumLabel, [...(groups.get(track.albumLabel) ?? []), track])
+    const trackById = new Map(publishedCatalog.map((track) => [track.id, track]))
+    return publishedAlbumCatalog.flatMap((album) => {
+      const tracks = album.trackIds
+        .map((trackId) => trackById.get(trackId))
+        .filter((track): track is PublicMusicCatalogItem => Boolean(track))
+      if (!tracks.length) return []
+      return [{
+        id: album.id,
+        title: album.title,
+        artist: album.artist,
+        cover: album.cover,
+        href: `/music/album/${album.slug || toUrlSlug(album.title)}`,
+        collection: { tracks: tracks.map(catalogItemToAudioTrack), sourceType: 'track' as const },
+      }]
     })
-    return [...groups.entries()].map(([title, tracks]) => ({
-      id: `album:${title}`,
-      title,
-      artist: tracks[0]?.artist || '9LIFE Artist',
-      cover: tracks[0]?.cover || '/images/default-music-cover.png',
-      href: `/music/album/${toUrlSlug(title)}`,
-      collection: { tracks: tracks.map(catalogItemToAudioTrack), sourceType: 'track' },
-    }))
-  }, [publishedCatalog])
+  }, [publishedAlbumCatalog, publishedCatalog])
   const sidebarLinks = [
     { label: 'Trang chủ music', href: '#music-home' },
     { label: 'Dành cho bạn', href: '#for-you' },
@@ -258,13 +261,15 @@ export default function MusicPage() {
   }[expandedList ?? 'nonstop']
 
   useEffect(() => {
-    void Promise.all([fetchPublicMusicCatalog(), fetchPublishedUserPlaylists()])
-      .then(([tracks, playlists]) => {
-        setPublishedCatalog(tracks)
+    void Promise.all([fetchPublicMusicCatalogData(), fetchPublishedUserPlaylists()])
+      .then(([catalog, playlists]) => {
+        setPublishedCatalog(catalog.tracks)
+        setPublishedAlbumCatalog(catalog.albums)
         setPublishedUserPlaylists(playlists)
       })
       .catch(() => {
         setPublishedCatalog([])
+        setPublishedAlbumCatalog([])
         setPublishedUserPlaylists([])
       })
   }, [])

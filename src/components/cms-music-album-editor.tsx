@@ -54,7 +54,7 @@ export function CmsMusicAlbumEditor({ albumId, initialAlbum, initialTrackIds, tr
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(capability ? { Authorization: `Bearer ${capability}` } : {}) },
-        body: JSON.stringify({ title, description, isPublic, displayMap: isPublic ? 'Music - Album / release' : '', coverDataUrl: coverDataUrl || undefined, trackIds: selected }),
+        body: JSON.stringify({ title, description, isPublic, coverDataUrl: coverDataUrl || undefined, trackIds: selected }),
       })
       const result = await response.json().catch(() => ({})) as { ok?: boolean; message?: string }
       setMessage(result.ok ? 'Đã lưu Album và cập nhật vị trí hiển thị.' : result.message ?? `Không thể lưu Album (HTTP ${response.status}).`)

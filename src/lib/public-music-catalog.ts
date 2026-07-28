@@ -15,14 +15,33 @@ export type PublicMusicCatalogItem = {
   isPremiumDrop?: boolean
 }
 
-export async function fetchPublicMusicCatalog() {
+export type PublicMusicAlbumItem = {
+  id: string
+  slug: string
+  title: string
+  artist: string
+  cover: string
+  trackIds: string[]
+}
+
+export async function fetchPublicMusicCatalogData() {
   const response = await fetch('/api/music/catalog', {
     credentials: 'same-origin',
     cache: 'no-store',
   })
-  if (!response.ok) return []
-  const payload = await response.json() as { ok?: boolean; tracks?: PublicMusicCatalogItem[] }
-  return payload.ok ? payload.tracks ?? [] : []
+  if (!response.ok) return { tracks: [], albums: [] }
+  const payload = await response.json() as {
+    ok?: boolean
+    tracks?: PublicMusicCatalogItem[]
+    albums?: PublicMusicAlbumItem[]
+  }
+  return payload.ok
+    ? { tracks: payload.tracks ?? [], albums: payload.albums ?? [] }
+    : { tracks: [], albums: [] }
+}
+
+export async function fetchPublicMusicCatalog() {
+  return (await fetchPublicMusicCatalogData()).tracks
 }
 
 export function catalogItemToAudioTrack(item: PublicMusicCatalogItem): AudioTrack {

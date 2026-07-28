@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     const uploadedTrackIds = new Set(input.uploadedTrackIds)
-    for (const trackId of relationTrackIds) {
+    for (const trackId of relationTrackIds.filter((id) => uploadedTrackIds.has(String(id)))) {
       await payload.update({
         collection: 'tracks',
         id: trackId,
@@ -130,6 +130,10 @@ export async function POST(request: Request) {
         data: {
           albumLabel: input.title,
           trackType: 'single',
+          displayMap: input.isPublic ? 'Music - Album / release' : '',
+          visibility: input.isPublic ? 'public' : 'draft',
+          isPublic: input.isPublic,
+          status: input.isPublic ? 'published' : 'draft',
           ...(uploadedTrackIds.has(String(trackId)) && albumCoverId ? { coverImage: albumCoverId } : {}),
         },
       })

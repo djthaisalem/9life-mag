@@ -10,7 +10,6 @@ const updateAlbumSchema = z.object({
   title: z.string().trim().min(2).max(180),
   description: z.string().trim().max(1_200).default(''),
   isPublic: z.boolean().default(false),
-  displayMap: z.string().trim().max(500).default(''),
   trackIds: z.array(z.string().trim().min(1)).min(1).max(100),
   coverDataUrl: z.string().max(4_500_000).optional(),
 })
@@ -54,14 +53,27 @@ export async function PATCH(request: Request, context: { params: Promise<{ album
       coverImage = Number(media.id)
     }
     const hasCover = Number.isSafeInteger(coverImage) && coverImage > 0
-    const previousTrackIds = Array.isArray(album.tracks) ? album.tracks.map((track) => typeof track === 'object' && track ? String(track.id) : String(track)) : []
+    const ownedTrackIds = result.docs
+      .filter((track) => track.albumLabel === album.title)
+      .map((track) => Number(track.id))
 
     await payload.update({ collection: 'albums', id: albumId, depth: 0, overrideAccess: true, data: { title: input.title, slug: `${toSlug(input.title)}-${String(album.id)}`, description: input.description || undefined, isPublic: input.isPublic, status: input.isPublic ? 'published' : 'draft', publishedAt: input.isPublic ? new Date().toISOString() : undefined, tracks: relationTrackIds, ...(hasCover ? { coverImage } : {}) } })
-    for (const trackId of relationTrackIds) {
-      await payload.update({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true, data: { albumLabel: input.title, trackType: 'single', displayMap: input.displayMap, visibility: input.isPublic ? 'public' : 'draft', isPublic: input.isPublic, status: input.isPublic ? 'published' : 'draft', ...(hasCover ? { coverImage } : {}) } })
-    }
-    for (const trackId of previousTrackIds.filter((id) => !input.trackIds.includes(id))) {
-      await payload.update({ collection: 'tracks', id: trackId, depth: 0, overrideAccess: true, data: { albumLabel: undefined } })
+    for (const trackId of ownedTrackIds) {
+      await payload.update({
+        collection: 'tracks',
+        id: trackId,
+        depth: 0,
+        overrideAccess: true,
+        data: {
+          albumLabel: input.title,
+          trackType: 'single',
+          displayMap: input.isPublic ? 'Music - Album / release' : '',
+          visibility: input.isPublic ? 'public' : 'draft',
+          isPublic: input.isPublic,
+          status: input.isPublic ? 'published' : 'draft',
+          ...(hasCover ? { coverImage } : {}),
+        },
+      })
     }
 
     return NextResponse.json({ ok: true })
