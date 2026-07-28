@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 
 import { getFairRotation } from '@/lib/music-curation'
 
+const DEFAULT_DISCOVERY_IMAGE = '/images/default-music-cover.png'
+
 export type DiscoveryItem = {
   id: string
   label: string
@@ -40,6 +42,12 @@ export function ContentDiscoveryClient({ groups }: { groups: DiscoveryGroup[] })
 
   if (!items.length) return null
 
+  const useFallbackImage = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget
+    if (image.src.endsWith(DEFAULT_DISCOVERY_IMAGE)) return
+    image.src = DEFAULT_DISCOVERY_IMAGE
+  }
+
   return (
     <section className="content-discovery" aria-label="Khám phá nội dung liên quan">
       <div className="container">
@@ -52,7 +60,11 @@ export function ContentDiscoveryClient({ groups }: { groups: DiscoveryGroup[] })
         <div className="content-discovery-grid">
           {items.map((item) => (
             <Link key={`${item.label}-${item.id}`} href={item.href} className="content-discovery-card">
-              {item.image ? <img src={item.image} alt="" /> : <span className="content-discovery-image-placeholder" aria-hidden="true" />}
+              <img
+                src={item.image || DEFAULT_DISCOVERY_IMAGE}
+                alt=""
+                onError={useFallbackImage}
+              />
               <div>
                 <span>{item.label}</span>
                 <strong>{item.title}</strong>

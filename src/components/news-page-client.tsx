@@ -10,6 +10,8 @@ import type { PublicNewsArticle } from '@/lib/public-articles'
 
 type NewsArticle = PublicNewsArticle
 
+const DEFAULT_NEWS_IMAGE = '/images/default-music-cover.png'
+
 const legacyFeedArticles: NewsArticle[] = [
   ...featuredArticles,
   {
@@ -206,6 +208,12 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
     return () => window.removeEventListener('scroll', loadWhenNearBottom)
   }, [hasMoreStories, storyFeed.length])
 
+  const useFallbackImage = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget
+    if (image.src.endsWith(DEFAULT_NEWS_IMAGE)) return
+    image.src = DEFAULT_NEWS_IMAGE
+  }
+
   return (
     <main className="news-feed-page">
       <section className="home-section">
@@ -240,7 +248,12 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
 
           <div className="news-feed-hero-grid">
             <Link href={`/tin-tuc/${heroArticle.slug}`} className="headline-slide news-feed-hero-card">
-              <img src={heroArticle.image} alt={heroArticle.title} className="headline-slide-image" />
+              <img
+                src={heroArticle.image || DEFAULT_NEWS_IMAGE}
+                alt={heroArticle.title}
+                className="headline-slide-image"
+                onError={useFallbackImage}
+              />
               <div className="headline-slide-overlay" />
               <div className="headline-slide-copy">
                 <div className="tag-row">
@@ -303,7 +316,11 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
           <div className="news-feed-top-grid">
             {displayedTopStories.map((article) => (
               <Link key={article.slug} href={`/tin-tuc/${article.slug}`} className="news-feed-top-card">
-                <img src={article.image} alt={article.title} />
+                <img
+                  src={article.image || DEFAULT_NEWS_IMAGE}
+                  alt={article.title}
+                  onError={useFallbackImage}
+                />
                 <div className="news-feed-top-copy">
                   <div className="tag-row">
                     <span className="pill">{article.category}</span>
@@ -331,7 +348,11 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
             {visibleStories.map((article, index) => (
               <Link key={article.slug} href={`/tin-tuc/${article.slug}`} className="news-feed-item">
                 <div className="news-feed-item-media">
-                  <img src={article.image} alt={article.title} />
+                  <img
+                    src={article.image || DEFAULT_NEWS_IMAGE}
+                    alt={article.title}
+                    onError={useFallbackImage}
+                  />
                 </div>
                 <div className="news-feed-item-copy">
                   <div className="news-feed-item-meta">

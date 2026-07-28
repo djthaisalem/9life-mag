@@ -46,6 +46,8 @@ type AlbumDocument = {
   status?: string
 }
 
+const DEFAULT_MUSIC_COVER = '/images/default-music-cover.png'
+
 function mediaUrl(value: MediaValue) {
   if (typeof value === 'string') return value.startsWith('/') || /^https:\/\//.test(value) ? value : undefined
   // Route every Payload media relation through the public image resolver. It
@@ -74,7 +76,7 @@ function trackItem(track: TrackDocument, label = trackLabel(track.trackType)): D
     label,
     title: track.title || '9LIFE Music',
     meta: track.submittedArtistSlug || track.author || track.genreLabel || 'Music mới phát hành',
-    image: mediaUrl(track.coverImage),
+    image: mediaUrl(track.coverImage) || DEFAULT_MUSIC_COVER,
     href: `/music/track/${track.id}`,
   }
 }
@@ -152,7 +154,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
           label: 'Playlist User nổi bật',
           title: playlist.name,
           meta: `${playlist.items.length} bản nhạc`,
-          image: playlist.cover || playlist.items[0]?.cover,
+          image: playlist.cover || playlist.items[0]?.cover || DEFAULT_MUSIC_COVER,
           href: `/music/library/${playlist.shareCode}`,
         })),
       ...albums
@@ -162,7 +164,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
           label: 'Album / Release',
           title: album.title || 'Album 9LIFE',
           meta: album.musician || album.description || 'Album mới phát hành',
-          image: mediaUrl(album.coverImage),
+          image: mediaUrl(album.coverImage) || DEFAULT_MUSIC_COVER,
           href: `/music/album/${toUrlSlug(album.slug || album.title || String(album.id))}`,
         })),
       ...communityItems,
@@ -175,7 +177,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
         label: 'Tin tức',
         title: post.title || 'Tin mới từ 9LIFE',
         meta: post.excerpt || 'Bài viết mới nhất',
-        image: mediaUrl(post.coverImage),
+        image: mediaUrl(post.coverImage) || DEFAULT_MUSIC_COVER,
         href: `/tin-tuc/${post.slug}`,
       }))
 
@@ -194,7 +196,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
       label: 'Nghệ sĩ',
       title: artist.name,
       meta: `${artist.role} · ${artist.location}`,
-      image: artist.image,
+      image: artist.image || DEFAULT_MUSIC_COVER,
       href: `/nghe-si/${artist.slug}`,
     }))
 
@@ -207,7 +209,7 @@ export async function ContentDiscovery({ current }: ContentDiscoveryProps) {
       label: 'Outlet',
       title: outlet.name,
       meta: `${outlet.type} · ${outlet.city}`,
-      image: outlet.image,
+      image: outlet.image || DEFAULT_MUSIC_COVER,
       href: `/dat-ban/${outlet.slug}`,
     }))
 
