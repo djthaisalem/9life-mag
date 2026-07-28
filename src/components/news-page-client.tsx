@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { featuredArticles } from '@/lib/site-data'
 import { newsCategoryChips, newsSignalCards } from '@/lib/news-taxonomy'
 import { getFairRotation } from '@/lib/music-curation'
@@ -20,6 +20,13 @@ type NewsArticle = {
 }
 
 const DEFAULT_NEWS_IMAGE = '/images/default-music-cover.png'
+
+function truncateSummary(value: string, limit = 100) {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  const characters = [...normalized]
+  if (characters.length <= limit) return normalized
+  return `${characters.slice(0, limit).join('').trimEnd()}...`
+}
 
 const legacyFeedArticles: NewsArticle[] = [
   ...featuredArticles,
@@ -136,18 +143,13 @@ const legacyFeedArticles: NewsArticle[] = [
 // One source for every card displayed in the feed. Detail pages use the same supplement as a fallback.
 const staticFeedArticles: NewsArticle[] = [...legacyFeedArticles, ...newsCatalogSupplement]
 
-const INITIAL_VISIBLE = 4
-const LOAD_MORE_STEP = 4
-
 export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: NewsArticle[] }) {
   const [cmsArticles, setCmsArticles] = useState<NewsArticle[]>(initialCmsArticles)
   const [activeChip, setActiveChip] = useState<(typeof newsCategoryChips)[number]>('Tất cả')
   const [activeSignal, setActiveSignal] = useState<(typeof newsSignalCards)[number]['key'] | null>(null)
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
   const [activeSlide, setActiveSlide] = useState(0)
   const [topStoryIds, setTopStoryIds] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(initialCmsArticles.length === 0)
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -196,13 +198,8 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
     .map((slug) => topStoryCandidates.find((article) => article.slug === slug))
     .filter((article): article is NewsArticle => Boolean(article))
   const displayedTopStories = topStories.length ? topStories : topStoryCandidates.slice(0, 3)
-  const featuredSlugs = new Set([
-    ...headlineArticles.map((article) => article.slug),
-    ...displayedTopStories.map((article) => article.slug),
-  ])
-  const storyFeed = displayArticles.filter((article) => !featuredSlugs.has(article.slug))
-  const visibleStories = storyFeed.slice(0, visibleCount)
-  const hasMoreStories = visibleCount < storyFeed.length
+  // Keep the chronological feed complete even when an article is featured above.
+  const storyFeed = displayArticles
 
   useEffect(() => { setActiveSlide(0) }, [activeChip, activeSignal])
   useEffect(() => {
@@ -214,24 +211,6 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
     const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % headlineArticles.length), 5200)
     return () => window.clearInterval(timer)
   }, [headlineArticles.length])
-  useEffect(() => {
-    const target = loadMoreRef.current
-    if (!target || !hasMoreStories) return
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setVisibleCount((current) => Math.min(current + LOAD_MORE_STEP, storyFeed.length)) }, { rootMargin: '280px' })
-    observer.observe(target)
-    return () => observer.disconnect()
-  }, [hasMoreStories, storyFeed.length])
-
-  useEffect(() => {
-    if (!hasMoreStories) return
-    const loadWhenNearBottom = () => {
-      const threshold = document.documentElement.scrollHeight - window.innerHeight - 320
-      if (window.scrollY >= threshold) setVisibleCount((current) => Math.min(current + LOAD_MORE_STEP, storyFeed.length))
-    }
-    window.addEventListener('scroll', loadWhenNearBottom, { passive: true })
-    return () => window.removeEventListener('scroll', loadWhenNearBottom)
-  }, [hasMoreStories, storyFeed.length])
-
   const useFallbackImage = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const image = event.currentTarget
     if (image.src.endsWith(DEFAULT_NEWS_IMAGE)) return
@@ -296,7 +275,6 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
                 className={activeChip === chip ? 'artist-filter-chip artist-filter-chip-active' : 'artist-filter-chip'}
                 onClick={() => {
                   setActiveChip(chip)
-                  setVisibleCount(INITIAL_VISIBLE)
                 }}
               >
                 {chip}
@@ -319,7 +297,7 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
                   <span className="pill">{heroArticle.date}</span>
                 </div>
                 <h3>{heroArticle.title}</h3>
-                <p>{heroArticle.summary}</p>
+                <p>{truncateSummary(heroArticle.summary)}</p>
                 <div className="news-headline-dots">
                   {headlineArticles.map((item, index) => (
                     <button key={item.slug} type="button" aria-label={`Chuyển đến bài ${index + 1}`} className={index === activeSlide ? 'news-headline-dot news-headline-dot-active' : 'news-headline-dot'} onClick={() => setActiveSlide(index)} />
@@ -339,7 +317,6 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
                     className={activeSignal === item.key ? 'news-feed-signal-card news-feed-signal-card-active' : 'news-feed-signal-card'}
                     onClick={() => {
                       setActiveSignal((current) => (current === item.key ? null : item.key))
-                      setVisibleCount(INITIAL_VISIBLE)
                     }}
                   >
                     <div className="news-feed-signal-head">
@@ -385,7 +362,7 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
                     <span className="pill">{article.date}</span>
                   </div>
                   <h3>{article.title}</h3>
-                  <p>{article.summary}</p>
+                  <p>{truncateSummary(article.summary)}</p>
                 </div>
               </Link>
             ))}
@@ -395,15 +372,18 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
 
       <section className="home-section">
         <div className="container">
-          <div className="home-section-head">
+          <div className="home-section-head news-feed-story-head">
             <div>
               <p className="section-eyebrow">Story Feed</p>
-              <h2 className="home-title">Cuộn xuống để xem thêm bài viết</h2>
+              <h2 className="home-title">Dòng tin mới nhất</h2>
+              <p className="news-feed-story-count">
+                {storyFeed.length} bài viết đã xuất bản, sắp xếp từ mới đến cũ.
+              </p>
             </div>
           </div>
 
           <div className="news-feed-list">
-            {visibleStories.map((article, index) => (
+            {storyFeed.map((article, index) => (
               <Link key={article.slug} href={`/tin-tuc/${article.slug}`} className="news-feed-item">
                 <div className="news-feed-item-media">
                   <img
@@ -421,25 +401,12 @@ export function NewsPageClient({ initialCmsArticles }: { initialCmsArticles: New
                     </div>
                   </div>
                   <h3>{article.title}</h3>
-                  <p>{article.summary}</p>
+                  <p>{truncateSummary(article.summary)}</p>
                   <span className="news-feed-read-button">Xem bài viết</span>
                 </div>
               </Link>
             ))}
           </div>
-
-          {hasMoreStories ? <div ref={loadMoreRef} className="news-feed-autoload">Đang tải thêm bài viết...</div> : null}
-          {hasMoreStories ? (
-            <div className="section-more news-feed-more">
-              <button
-                type="button"
-                className="more-link-unified news-feed-more-button"
-                onClick={() => setVisibleCount((current) => Math.min(current + LOAD_MORE_STEP, storyFeed.length))}
-              >
-                Xem thêm bài viết cũ hơn
-              </button>
-            </div>
-          ) : null}
         </div>
       </section>
     </main>

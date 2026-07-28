@@ -48,6 +48,15 @@ function getStaticArticle(slug: string): Article | undefined {
 
 const fallbackArticleImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1400&h=860&fit=crop'
 
+function truncateSummary(value: string, limit = 100) {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  const characters = [...normalized]
+
+  if (characters.length <= limit) return normalized
+
+  return `${characters.slice(0, limit).join('').trimEnd()}...`
+}
+
 function formatArticleDate(value?: string) {
   const date = value ? new Date(value) : new Date()
   if (Number.isNaN(date.getTime())) return ''
@@ -129,9 +138,79 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
   const related = articles.filter((entry) => entry.slug !== slug && entry.category === article.category).concat(articles.filter((entry) => entry.slug !== slug && entry.category !== article.category)).slice(0, 3)
   const latest = articles.filter((entry) => entry.slug !== slug).slice(0, 4)
   const articleSchema = { '@context': 'https://schema.org', '@type': 'NewsArticle', headline: seoTitle, description: seoDescription, keywords: getArticleSeoKeywords(article.seo ?? {}).join(', '), image: [article.image], datePublished: article.date, dateModified: article.date, inLanguage: 'vi-VN', mainEntityOfPage: canonicalUrl, publisher: { '@type': 'Organization', name: '9LIFE MAG' } }
-  return <><main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} /><section className="section"><div className="container article-layout"><div className="tag-row"><span className="pill">{article.category}</span><span className="pill">{article.date}</span></div><h1 className="page-title article-title">{article.title}</h1><p className="page-intro article-summary">{article.summary}</p><ArticleShareButton slug={slug} title={article.title} /><img className="article-hero-image" src={article.image} alt="" />
-    {article.html ? <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: article.html }} /> : <div className="article-body-shell">{article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}</div>}
-    <section className="article-continue-section"><div className="article-section-head"><div><p className="section-eyebrow">Continue Reading</p><h2>Đọc tiếp cùng chủ đề</h2></div><Link href="/tin-tuc" className="view-more-link">Xem tất cả tin</Link></div><div className="article-related-grid">{related.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`} className="article-related-card"><img src={entry.image} alt="" /><div><span>{entry.category} • {entry.date}</span><strong>{entry.title}</strong><p>{entry.summary}</p></div></Link>)}</div></section>
-    <section className="article-latest-section"><div><p className="section-eyebrow">Latest Feed</p><h2>Không bỏ lỡ những bài mới</h2></div><div className="article-latest-list">{latest.map((entry) => <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`}><span>{entry.category}</span><strong>{entry.title}</strong><small>{entry.date}</small></Link>)}</div></section>
-    <div className="article-actions"><Link href="/tin-tuc" className="button-secondary">Khám phá thêm tin tức</Link><Link href="/" className="button-secondary">Về trang chủ</Link></div></div></section></main><ContentDiscovery current={{ kind: 'article', id: slug }} /></>
+  return (
+    <>
+      <main className="article-detail-page">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+        <section className="section article-detail-section">
+          <article className="container article-layout">
+            <header className="article-editorial-header">
+              <div className="tag-row">
+                <span className="pill">{article.category}</span>
+                <span className="pill">{article.date}</span>
+              </div>
+              <h1 className="page-title article-title">{article.title}</h1>
+              <p className="page-intro article-summary">{article.summary}</p>
+              <div className="article-header-actions">
+                <ArticleShareButton slug={slug} title={article.title} />
+                <span>9LIFE Editorial</span>
+              </div>
+            </header>
+
+            <figure className="article-hero-frame">
+              <img className="article-hero-image" src={article.image} alt={article.title} />
+              <figcaption>{article.category} / 9LIFE MAG</figcaption>
+            </figure>
+
+            <div className="article-reading-grid">
+              <aside className="article-reading-rail">
+                <span>Đang đọc</span>
+                <strong>{article.category}</strong>
+                <small>{article.date}</small>
+              </aside>
+              {article.html ? (
+                <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: article.html }} />
+              ) : (
+                <div className="article-body-shell">
+                  {article.body.map((paragraph) => <p key={paragraph} className="article-paragraph">{paragraph}</p>)}
+                </div>
+              )}
+            </div>
+
+            <section className="article-continue-section">
+              <div className="article-section-head">
+                <div><p className="section-eyebrow">Continue Reading</p><h2>Đọc tiếp cùng chủ đề</h2></div>
+                <Link href="/tin-tuc" className="view-more-link">Xem tất cả tin</Link>
+              </div>
+              <div className="article-related-grid">
+                {related.map((entry) => (
+                  <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`} className="article-related-card">
+                    <img src={entry.image} alt={entry.title} />
+                    <div><span>{entry.category} • {entry.date}</span><strong>{entry.title}</strong><p>{truncateSummary(entry.summary)}</p></div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <section className="article-latest-section">
+              <div><p className="section-eyebrow">Latest Feed</p><h2>Không bỏ lỡ những bài mới</h2></div>
+              <div className="article-latest-list">
+                {latest.map((entry) => (
+                  <Link key={entry.slug} href={`/tin-tuc/${entry.slug}`}>
+                    <span>{entry.category}</span><strong>{entry.title}</strong><small>{entry.date}</small>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <div className="article-actions">
+              <Link href="/tin-tuc" className="button-secondary">Khám phá thêm tin tức</Link>
+              <Link href="/" className="button-secondary">Về trang chủ</Link>
+            </div>
+          </article>
+        </section>
+      </main>
+      <ContentDiscovery current={{ kind: 'article', id: slug }} />
+    </>
+  )
 }

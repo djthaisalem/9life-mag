@@ -119,6 +119,13 @@ export async function POST(request: Request) {
     const seoMetadata = input.seo ?? extractArticleSeoMetadata(input.html)
     const articleHtml = [stripArticleSeoMetadata(input.html), buildArticleSeoMarkup(seoMetadata)].filter(Boolean).join('')
     const content = articleHtml ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: articleHtml, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
+    const existingPost = found.docs[0]
+    const publishedAt =
+      input.status === 'published'
+        ? existingPost?.status === 'published' && existingPost.publishedAt
+          ? existingPost.publishedAt
+          : new Date().toISOString()
+        : undefined
     const data = {
       title: input.title,
       slug,
@@ -130,15 +137,27 @@ export async function POST(request: Request) {
       coverImage: input.coverImageId ? Number(input.coverImageId) : undefined,
       gallery: input.galleryImageIds.map(Number),
       status: input.status,
-      publishedAt: input.status === 'published' ? new Date().toISOString() : undefined,
+      publishedAt,
       seoTitle: seoMetadata.title || input.title,
       seoDescription: seoMetadata.description || input.excerpt || undefined,
     }
-    const existingPost = found.docs[0]
     const post = existingPost
       ? await payload.update({ collection: 'posts', id: existingPost.id, depth: 0, overrideAccess: true, data })
       : await payload.create({ collection: 'posts', depth: 0, overrideAccess: true, data })
-    return NextResponse.json({ ok: true, message: 'Đã lưu bài viết vào database.', post: { id: post.id, slug: post.slug } })
+    if (post.status !== input.status) throw new Error(`Article status persistence mismatch: ${String(post.status)}`)
+    return NextResponse.json({
+      ok: true,
+      message:
+        post.status === 'published'
+          ? 'Bài viết đã được xuất bản và sẵn sàng hiển thị ngoài site.'
+          : 'Đã lưu bài viết vào database.',
+      post: {
+        id: post.id,
+        slug: post.slug,
+        status: post.status,
+        publishedAt: post.publishedAt,
+      },
+    })
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? 'Dữ liệu bài viết chưa hợp lệ.' }, { status: 400 })
     console.error('CMS article save failed', error)

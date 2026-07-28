@@ -212,12 +212,25 @@ export default function CmsArticlesPage() {
         }),
       })
       const raw = await response.text()
-      let result: { ok?: boolean; message?: string } = {}
+      let result: {
+        ok?: boolean
+        message?: string
+        post?: {
+          slug?: string
+          status?: 'draft' | 'scheduled' | 'published'
+          publishedAt?: string
+        }
+      } = {}
       try { result = JSON.parse(raw) as typeof result } catch { /* Keep the server status visible to the editor. */ }
       if (!response.ok || !result.ok) throw new Error(result.message ?? `Lưu bài viết bị máy chủ từ chối (HTTP ${response.status}).`)
       setPostSlug(normalizedSlug)
-      setPostStatus(options?.status ?? postStatus)
-      setSaveMessage(options?.successMessage ?? result.message ?? 'Không thể lưu bài viết.')
+      const persistedStatus = result.post?.status ?? options?.status ?? postStatus
+      setPostStatus(persistedStatus)
+      setSaveMessage(
+        options?.successMessage ??
+          result.message ??
+          (persistedStatus === 'published' ? 'Đã xuất bản bài viết ngoài site.' : 'Đã lưu bài viết.'),
+      )
     } catch (error) {
       if (error instanceof Error) {
         setSaveMessage(error.message)
@@ -299,6 +312,16 @@ export default function CmsArticlesPage() {
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} seoMetadata={articleSeo} onSeoMetadataChange={setArticleSeo} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
+        <aside className="cms-article-seo-summary" aria-label="Metadata SEO của bài viết">
+          <div>
+            <span>SEO metadata</span>
+            <strong>{articleSeo.title || 'Chưa đặt tiêu đề SEO riêng'}</strong>
+          </div>
+          <p>{articleSeo.description || 'Chưa có meta description. Hệ thống sẽ dùng phần tóm tắt bài viết.'}</p>
+          <small>
+            {[articleSeo.primaryKeywords, articleSeo.secondaryKeywords].filter(Boolean).join(', ') || 'Chưa có từ khóa SEO'}
+          </small>
+        </aside>
         <div className="cms-article-media-fields">
           <div className="field">
             <label htmlFor="articleCoverUpload">Ảnh cover</label>
@@ -314,7 +337,7 @@ export default function CmsArticlesPage() {
           </div>
         </div>
         <div className="cms-editor-body cms-editor-body-wide"><div className="cms-article-meta-grid"><div className="field"><label htmlFor="coverImage">Ảnh cover</label><input id="coverImage" placeholder="Upload hoặc dán URL ảnh cover" /></div><div className="field"><label htmlFor="galleryImages">Gallery ảnh</label><input id="galleryImages" placeholder="Danh sách ảnh cho recap hoặc phỏng vấn" /></div><div className="field"><label htmlFor="youtubeEmbed">Embed YouTube</label><input id="youtubeEmbed" placeholder="https://youtube.com/watch?v=..." /></div><div className="field"><label htmlFor="facebookEmbed">Embed Facebook video</label><input id="facebookEmbed" placeholder="https://facebook.com/.../videos/..." /></div></div></div>
-        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving || isDeleting} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ status: 'scheduled', successMessage: 'Đã lưu bài viết và chuyển sang chờ duyệt.' })}>Gửi duyệt</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ successMessage: 'Đã lưu bản HTML vào database.' })}>Lưu bản HTML</button>{postSlug ? <button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void deleteArticle()}>{isDeleting ? 'Đang xóa...' : 'Xóa bài viết'}</button> : null}</div>
+        <div className="cms-inline-actions"><button type="button" className="button" disabled={isSaving || isDeleting} onClick={() => void saveArticle()}>{isSaving ? 'Đang lưu...' : 'Lưu bài'}</button><button type="button" className="button" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ status: 'published', successMessage: 'Đã xuất bản bài viết ngoài site.' })}>Xuất bản ngay</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ status: 'scheduled', successMessage: 'Đã lưu bài viết và chuyển sang chờ duyệt.' })}>Gửi duyệt</button><button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void saveArticle({ successMessage: 'Đã lưu bản HTML vào database.' })}>Lưu bản HTML</button>{postSlug ? <button type="button" className="button-secondary" disabled={isSaving || isDeleting} onClick={() => void deleteArticle()}>{isDeleting ? 'Đang xóa...' : 'Xóa bài viết'}</button> : null}</div>
         {saveMessage ? <p className="cms-field-hint" role="status">{saveMessage}</p> : null}
       </div>
     </article>

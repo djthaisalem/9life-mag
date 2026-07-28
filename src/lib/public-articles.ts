@@ -34,17 +34,31 @@ function formatDate(value?: string) {
 
 export async function listPublicArticles(): Promise<PublicNewsArticle[]> {
   const payload = await loadPayloadClient()
-  const result = await payload.find({
+  const firstPage = await payload.find({
     collection: 'posts',
     where: { status: { equals: 'published' } },
     sort: '-publishedAt',
     limit: 100,
+    page: 1,
     depth: 1,
-    pagination: false,
     overrideAccess: true,
   })
+  const docs = [...firstPage.docs]
 
-  return result.docs.flatMap((post) => {
+  for (let page = 2; page <= firstPage.totalPages; page += 1) {
+    const result = await payload.find({
+      collection: 'posts',
+      where: { status: { equals: 'published' } },
+      sort: '-publishedAt',
+      limit: 100,
+      page,
+      depth: 1,
+      overrideAccess: true,
+    })
+    docs.push(...result.docs)
+  }
+
+  return docs.flatMap((post) => {
     if (!post.slug) return []
     const cover = getCmsMediaReference(post.coverImage)
     const publishedAt = post.publishedAt ?? post.updatedAt ?? ''
