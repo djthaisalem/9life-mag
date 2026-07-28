@@ -38,6 +38,7 @@ type PublicArticle = {
   title: string
   summary?: string
   category?: string
+  placement?: string
   date?: string
   image?: string
 }
@@ -716,16 +717,31 @@ export default function HomePage() {
         const publishedSlugs = new Set(publishedNews.map((article) => article.slug))
 
         setHomeNewsItems([...publishedNews, ...newsItems.filter((article) => !publishedSlugs.has(article.slug))])
-        setHomeFeaturedSlides(featuredSlides.map((slide) => {
-          const article = result.articles?.find((item) => item.slug === slide.slug)
-          return article ? {
-            ...slide,
-            title: repairVietnameseText(article.title || slide.title),
-            description: truncateNewsDescription(article.summary || slide.description),
-            image: article.image || slide.image,
-            tag: repairVietnameseText(article.category || slide.tag),
-          } : slide
-        }))
+        const placedSlides = result.articles
+          .filter((article) => repairVietnameseText(article.placement || '') === 'Headline slider trang chủ')
+          .slice(0, 5)
+          .map((article): HomeFeaturedSlide => ({
+            slug: article.slug,
+            title: repairVietnameseText(article.title),
+            description: truncateNewsDescription(article.summary || ''),
+            image: article.image || '/images/default-music-cover.png',
+            tag: repairVietnameseText(article.category || 'Tin tức'),
+          }))
+        const placedSlugs = new Set(placedSlides.map((slide) => slide.slug))
+        setHomeFeaturedSlides(
+          placedSlides.length
+            ? [...placedSlides, ...featuredSlides.filter((slide) => !placedSlugs.has(slide.slug))].slice(0, 5)
+            : featuredSlides.map((slide) => {
+                const article = result.articles?.find((item) => item.slug === slide.slug)
+                return article ? {
+                  ...slide,
+                  title: repairVietnameseText(article.title || slide.title),
+                  description: truncateNewsDescription(article.summary || slide.description),
+                  image: article.image || slide.image,
+                  tag: repairVietnameseText(article.category || slide.tag),
+                } : slide
+              }),
+        )
       } catch {
         // Static cards remain available if the public feed is temporarily unavailable.
       }

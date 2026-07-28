@@ -9780,9 +9780,19 @@ html, body { background: #080a12; }
 .cms-map-option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .cms-map-option-grid label { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 9px 10px; color: #daddE7; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; background: rgba(255,255,255,0.025); cursor: pointer; }
 .cms-map-option-grid input { accent-color: #f5b301; }
+.cms-article-placement-fieldset { margin: 22px 0; }
+.cms-article-placement-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cms-article-placement-option { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 14px; border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; background: rgba(255,255,255,0.025); cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+.cms-article-placement-option:hover { border-color: rgba(255,210,83,0.42); }
+.cms-article-placement-option-active { border-color: rgba(255,210,83,0.72); background: linear-gradient(135deg, rgba(255,210,83,0.13), rgba(255,255,255,0.03)); }
+.cms-article-placement-option input { margin-top: 3px; accent-color: #f5b301; }
+.cms-article-placement-option span { display: grid; gap: 4px; }
+.cms-article-placement-option strong { color: #fff2bd; }
+.cms-article-placement-option small { color: #aeb6ca; line-height: 1.45; }
 
 @media (max-width: 560px) {
   .cms-map-option-grid { grid-template-columns: 1fr; }
+  .cms-article-placement-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {

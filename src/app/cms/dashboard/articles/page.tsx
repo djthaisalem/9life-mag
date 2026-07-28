@@ -6,7 +6,7 @@ import { CmsArticleLexicalEditor } from '@/components/cms-article-lexical-editor
 import type { ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { useCmsCapability } from '@/components/cms-capability-provider'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
-import { cmsNewsPlacementOptions, newsSignalCards } from '@/lib/news-taxonomy'
+import { cmsArticlePlacementOptions } from '@/lib/news-taxonomy'
 import { featuredArticles } from '@/lib/site-data'
 import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
@@ -47,7 +47,6 @@ export default function CmsArticlesPage() {
   const [seriesList, setSeriesList] = useState(initialSeries)
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-  const [selectedSignal, setSelectedSignal] = useState<(typeof newsSignalCards)[number]['key']>('hot-topic')
   const [postPlacement, setPostPlacement] = useState('Feed tin tức')
   const [seriesForm, setSeriesForm] = useState({ title: '', description: '', placement: '', status: 'Nháp' })
   const [postTitle, setPostTitle] = useState('')
@@ -64,7 +63,6 @@ export default function CmsArticlesPage() {
   const [coverImage, setCoverImage] = useState<ArticleImage | null>(null)
   const [galleryImages, setGalleryImages] = useState<ArticleImage[]>([])
   const htmlRef = useRef<HTMLTextAreaElement | null>(null)
-  const activeSignal = newsSignalCards.find((signal) => signal.key === selectedSignal) ?? newsSignalCards[0]
   const updateSeriesForm = (field: keyof typeof seriesForm, value: string) =>
     setSeriesForm((current) => ({ ...current, [field]: value }))
 
@@ -127,7 +125,7 @@ export default function CmsArticlesPage() {
         setPostSlug(result.post.slug)
         setPostCategory(normalizeArticleCategory(result.post.category))
         setPostTopic(result.post.topic || '')
-        setPostPlacement(result.post.placement || 'Feed tin tức')
+        setPostPlacement(repairVietnameseValue(result.post.placement || 'Feed tin tức'))
         setPostExcerpt(result.post.excerpt)
         setPostStatus(result.post.status === 'published' || result.post.status === 'scheduled' ? result.post.status : 'draft')
         setArticleHtml(result.post.html || initialArticleHtml)
@@ -155,11 +153,6 @@ export default function CmsArticlesPage() {
     void loadPersistedArticle()
     return () => { cancelled = true }
   }, [articleCatalog, capability])
-
-  const applySignal = (signal: (typeof newsSignalCards)[number]) => {
-    setSelectedSignal(signal.key)
-    setPostPlacement(signal.placement)
-  }
 
   const makeArticleImage = (file: File): ArticleImage => ({
     file,
@@ -287,15 +280,22 @@ export default function CmsArticlesPage() {
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Article Taxonomy</p><h2>Chuyên mục và chuyên đề</h2><p className="cms-muted">Tạo taxonomy thật để bài viết được map đúng nhóm trên trang tin tức.</p></div><div className="cms-inline-actions"><button type="button" className="button-secondary" onClick={() => setIsCategoryModalOpen(true)}>Tạo chuyên mục</button><button type="button" className="button" onClick={() => setIsSeriesModalOpen(true)}>Tạo chuyên đề</button></div></div>
     </article>
 
-    <article className="panel">
-      <div className="cms-panel-head-inline"><div><p className="section-eyebrow">Tín hiệu tin tức</p><h2>Điểm ưu tiên hiển thị</h2><p className="cms-muted">Chọn vị trí phù hợp để bài viết xuất hiện đúng nhóm nội dung trên trang Tin tức.</p></div></div>
-      <div className="cms-link-grid cms-news-signal-grid">{newsSignalCards.map((signal) => <article key={signal.key} className={signal.key === selectedSignal ? 'cms-link-card cms-link-card-active' : 'cms-link-card'}><div className="cms-news-signal-card-head"><strong>{signal.label}</strong><button type="button" className="button-secondary" onClick={() => applySignal(signal)}>Áp dụng</button></div><span>{signal.value}</span><Link className="cms-table-link" href={`/tin-tuc?signal=${signal.key}`}>Xem trên site</Link></article>)}</div>
-    </article>
-
     <article className="panel cms-article-editor-panel">
       <div className="cms-panel-head-inline cms-panel-head-inline-stretch"><div><p className="section-eyebrow">Editorial Desk</p><h2>Editor bài đăng</h2></div><div className="cms-inline-actions"><button type="button" className={editorMode === 'rich' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('rich')}>Soạn bài</button><button type="button" className={editorMode === 'html' ? 'button-secondary cms-mode-button-active' : 'button-secondary'} onClick={() => setEditorMode('html')}>Edit HTML</button><button type="button" className="button" onClick={() => setIsPreviewOpen(true)}>Xem preview</button></div></div>
       <div className="form-shell cms-embedded-form">
-        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries" value={postTopic} onChange={(event) => setPostTopic(event.currentTarget.value)}><option value="">Không gắn chuyên đề</option>{seriesList.map((series) => <option key={series.title} value={series.title}>{series.title}</option>)}</select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Chờ duyệt</option><option value="published">Xuất bản</option></select></div><div className="field"><label htmlFor="postPlacement">Vị trí hiển thị</label><select id="postPlacement" value={postPlacement} onChange={(event) => setPostPlacement(event.currentTarget.value)}>{cmsNewsPlacementOptions.map((placement) => <option key={placement}>{placement}</option>)}</select><span className="cms-field-hint">Đang áp dụng: {activeSignal.label}</span></div></div>
+        <div className="cms-article-meta-grid"><div className="field"><label htmlFor="postTitle">Tiêu đề bài viết</label><input id="postTitle" value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Headline nổi bật cho nightlife / entertainment" /></div><div className="field"><label htmlFor="postSlug">Slug / đường dẫn</label><input id="postSlug" value={postSlug} onChange={(event) => setPostSlug(event.target.value)} placeholder="nightlife-weekend-saigon" /></div><div className="field"><label htmlFor="postCategory">Chuyên mục</label><select id="postCategory" value={postCategory} onChange={(event) => setPostCategory(event.target.value)}>{articleCategories.map((category) => <option key={category}>{category}</option>)}</select></div><div className="field"><label htmlFor="postSeries">Chuyên đề</label><select id="postSeries" value={postTopic} onChange={(event) => setPostTopic(event.currentTarget.value)}><option value="">Không gắn chuyên đề</option>{seriesList.map((series) => <option key={series.title} value={series.title}>{series.title}</option>)}</select></div><div className="field"><label htmlFor="postStatus">Trạng thái</label><select id="postStatus" value={postStatus} onChange={(event) => setPostStatus(event.currentTarget.value as typeof postStatus)}><option value="draft">Nháp</option><option value="scheduled">Chờ duyệt</option><option value="published">Xuất bản</option></select></div></div>
+        <fieldset className="cms-map-fieldset cms-article-placement-fieldset">
+          <legend>Gắn bài viết vào</legend>
+          <p>Chọn một vị trí chính. Sau khi xuất bản, bài viết sẽ được đưa vào đúng khu vực này bằng dữ liệu thật.</p>
+          <div className="cms-article-placement-grid">
+            {cmsArticlePlacementOptions.map((option) => (
+              <label key={option.value} className={postPlacement === option.value ? 'cms-article-placement-option cms-article-placement-option-active' : 'cms-article-placement-option'}>
+                <input type="radio" name="postPlacement" value={option.value} checked={postPlacement === option.value} onChange={() => setPostPlacement(option.value)} />
+                <span><strong>{option.label}</strong><small>{option.description}</small></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="field"><label htmlFor="postExcerpt">Tóm tắt</label><textarea id="postExcerpt" value={postExcerpt} onChange={(event) => setPostExcerpt(event.target.value)} placeholder="Viết 2-3 câu ngắn cho card, SEO intro và feed tin tức..." /></div>
         <div className="field"><label htmlFor={editorMode === 'html' ? 'postHtml' : 'postBody'}>Nội dung chính {editorMode === 'html' ? '/ HTML' : ''}</label></div>
         {editorMode === 'rich' ? <CmsArticleLexicalEditor html={articleHtml} seoMetadata={articleSeo} onSeoMetadataChange={setArticleSeo} onHtmlChange={setArticleHtml} onPreview={() => setIsPreviewOpen(true)} /> : <div className="cms-editor-shell cms-editor-shell-wide"><div className="cms-editor-body cms-editor-body-wide"><textarea id="postHtml" ref={htmlRef} value={articleHtml} className="cms-article-html-input" placeholder="<article>...</article>" onChange={(event) => setArticleHtml(event.currentTarget.value)} onInput={(event) => autoGrow(event.currentTarget)} /></div></div>}
