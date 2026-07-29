@@ -9,9 +9,9 @@ import { repairVietnameseText } from '@/lib/repair-vietnamese-text'
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const displayNavItems = navItems.map((item) =>
-    item.href === '/music-store' ? { ...item, href: '/music' } : item,
-  )
+  const displayNavItems = navItems
+    .map((item) => item.href === '/music-store' ? { ...item, href: '/music' } : item)
+    .filter((item) => item.href !== '/booking')
 
   return (
     <header className="site-header">
@@ -25,7 +25,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={clsx('nav-link', item.href === '/booking' && 'nav-booking-link', pathname === item.href && 'active')}
+              className={clsx('nav-link', pathname === item.href && 'active')}
             >
               {repairVietnameseText(item.label)}
             </Link>
@@ -38,8 +38,13 @@ export function SiteHeader() {
         <Link href="/lien-he" className="button-secondary header-contact-button" aria-label="Liên hệ">
           <MessageCircle size={16} />
         </Link>
-        <Link href="/booking" className="button-secondary header-booking-button" aria-label="Booking">
-          <CalendarDays size={16} />
+        <Link
+          href="/booking"
+          className={clsx('header-booking-button', pathname === '/booking' && 'active')}
+          aria-label="Booking"
+          title="Booking"
+        >
+          <CalendarDays size={18} />
         </Link>
       </div>
     </header>

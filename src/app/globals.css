@@ -550,7 +550,7 @@ img {
 }
 
 .header-row {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   min-height: 72px;
   gap: clamp(6px, 0.8vw, 11px);
@@ -10616,7 +10616,27 @@ html, body { background: #080a12; }
 }
 
 .header-booking-button {
-  display: none;
+  position: relative;
+  z-index: 3;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 214, 102, 0.55);
+  border-radius: 12px;
+  color: #ffe8a6;
+  background: linear-gradient(145deg, rgba(53, 38, 10, 0.92), rgba(14, 15, 20, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 173, 0.06), 0 0 14px rgba(238, 176, 18, 0.14);
+}
+
+.header-booking-button:hover,
+.header-booking-button.active {
+  border-color: #fff0a5;
+  color: #fff6d3;
+  background: linear-gradient(145deg, rgba(94, 64, 8, 0.95), rgba(28, 22, 10, 0.98));
+  box-shadow: 0 0 18px rgba(255, 200, 48, 0.3);
 }
 
 .search-page {
@@ -12115,7 +12135,7 @@ html, body { background: #080a12; }
   }
 
   .header-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
     align-items: center;
     min-height: 0;
     gap: 8px;
@@ -13483,12 +13503,7 @@ body:has(.global-media-player-shell) .dashboard-support-assistant {
     grid-template-columns: minmax(0, 1fr) auto auto auto;
   }
 
-  .nav-booking-link {
-    display: none;
-  }
-
   .site-header .header-booking-button {
-    display: inline-grid;
     width: 34px;
     height: 34px;
     flex: 0 0 auto;
