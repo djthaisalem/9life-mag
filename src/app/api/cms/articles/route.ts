@@ -170,7 +170,9 @@ export async function DELETE(request: Request) {
   if (!access.ok) return access.response
 
   const slug = new URL(request.url).searchParams.get('slug')?.trim()
-  if (!slug) return NextResponse.json({ ok: false, message: 'Thiáº¿u slug bÃ i viáº¿t.' }, { status: 400 })
+  if (!slug) {
+    return NextResponse.json({ ok: false, message: 'Thiếu slug bài viết.' }, { status: 400 })
+  }
 
   try {
     const payload = await loadPayloadClient()
@@ -182,12 +184,14 @@ export async function DELETE(request: Request) {
       overrideAccess: true,
     })
     const post = found.docs[0]
-    if (!post) return NextResponse.json({ ok: false, message: 'KhÃ´ng tÃ¬m tháº¥y bÃ i viáº¿t Ä‘á»ƒ xÃ³a.' }, { status: 404 })
+    if (!post) {
+      return NextResponse.json({ ok: false, message: 'Không tìm thấy bài viết để xóa.' }, { status: 404 })
+    }
 
     await payload.delete({ collection: 'posts', id: post.id, overrideAccess: true })
-    return NextResponse.json({ ok: true, message: 'ÄÃ£ xÃ³a bÃ i viáº¿t khÃ´i database.' })
+    return NextResponse.json({ ok: true, message: 'Đã xóa bài viết khỏi database.' })
   } catch (error) {
     console.error('CMS article delete failed', { slug, error })
-    return NextResponse.json({ ok: false, message: 'KhÃ´ng thá»ƒ xÃ³a bÃ i viáº¿t lÃºc nÃ y.' }, { status: 500 })
+    return NextResponse.json({ ok: false, message: 'Không thể xóa bài viết lúc này.' }, { status: 500 })
   }
 }

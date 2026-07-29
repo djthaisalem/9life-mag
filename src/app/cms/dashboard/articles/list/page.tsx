@@ -1,10 +1,8 @@
 import Link from 'next/link'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { CMS_LIST_PAGE_SIZE, CmsListPagination } from '@/components/cms-list-pagination'
-import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
-import { featuredArticles } from '@/lib/site-data'
 import { CmsListSearchForm } from '@/components/cms-list-search-form'
 
 export default async function CmsArticleListPage({
@@ -34,12 +32,7 @@ export default async function CmsArticleListPage({
     status: article.status,
     persisted: true,
   }))
-  const staticCatalog = [...featuredArticles, ...newsCatalogSupplement].map((article) => ({
-    ...article,
-    status: 'sample',
-    persisted: false,
-  }))
-  const catalog = repairVietnameseValue([...persistedCatalog, ...staticCatalog])
+  const catalog = repairVietnameseValue(persistedCatalog)
     .filter((article, index, rows) => rows.findIndex((item) => item.slug === article.slug) === index)
     .filter((article) => status === 'all' || article.status === status)
     .filter((article) => !query || [article.title, article.summary, article.category, article.slug].some((value) => value.toLowerCase().includes(query)))
@@ -107,7 +100,7 @@ export default async function CmsArticleListPage({
                   <td>{String((page - 1) * CMS_LIST_PAGE_SIZE + index + 1).padStart(2, '0')}</td>
                   <td><strong>{article.title}</strong><span>{article.summary}</span></td>
                   <td>{article.category}</td>
-                  <td>{article.status === 'published' ? 'Đã xuất bản' : article.status === 'scheduled' ? 'Chờ duyệt' : article.status === 'draft' ? 'Nháp' : 'Dữ liệu mẫu'}</td>
+                  <td>{article.status === 'published' ? 'Đã xuất bản' : article.status === 'scheduled' ? 'Chờ duyệt' : 'Nháp'}</td>
                   <td>{article.date}</td>
                   <td>{article.slug}</td>
                   <td>

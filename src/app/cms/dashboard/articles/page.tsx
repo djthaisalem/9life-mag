@@ -1,14 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CmsArticleLexicalEditor } from '@/components/cms-article-lexical-editor'
 import type { ArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { useCmsCapability } from '@/components/cms-capability-provider'
 import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { cmsArticlePlacementOptions } from '@/lib/news-taxonomy'
-import { featuredArticles } from '@/lib/site-data'
-import { newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { toUrlSlug } from '@/lib/url-slug'
 
@@ -37,10 +35,6 @@ function normalizeArticleCategory(value: string) {
 
 export default function CmsArticlesPage() {
   const capability = useCmsCapability('content')
-  const articleCatalog = useMemo(
-    () => repairVietnameseValue([...featuredArticles, ...newsCatalogSupplement]),
-    [],
-  )
   const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich')
   const [articleHtml, setArticleHtml] = useState(initialArticleHtml)
   const [articleSeo, setArticleSeo] = useState<ArticleSeoMetadata>({})
@@ -139,20 +133,15 @@ export default function CmsArticlesPage() {
           alt: image.alt,
         })))
       } catch {
-        const editArticle = articleCatalog.find((article) => article.slug === editSlug)
-        if (!editArticle || cancelled) return
-        setPostTitle(editArticle.title)
-        setPostSlug(editArticle.slug)
-        setPostExcerpt(editArticle.summary)
-        setPostCategory(normalizeArticleCategory(editArticle.category))
-        // Editing a seeded article turns that slug into a real published CMS article.
-        setPostStatus('published')
+        if (!cancelled) {
+          setSaveMessage('Không tìm thấy bài viết thật trong database.')
+        }
       }
     }
 
     void loadPersistedArticle()
     return () => { cancelled = true }
-  }, [articleCatalog, capability])
+  }, [capability])
 
   const makeArticleImage = (file: File): ArticleImage => ({
     file,
