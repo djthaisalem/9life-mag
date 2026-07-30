@@ -969,11 +969,6 @@ img {
 }
 
 /* Branded global 404 page. */
-.error-page-shell {
-  min-height: 100vh;
-  background: #070910;
-}
-
 .error-page {
   position: relative;
   isolation: isolate;
