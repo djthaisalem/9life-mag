@@ -30,7 +30,10 @@ export function SiteFooter() {
             <p><Link href="/phap-ly/chinh-sach-noi-dung">Chính sách nội dung</Link></p>
             <p><Link href="/phap-ly/chinh-sach-quyen-rieng-tu">Chính sách quyền riêng tư</Link></p>
             <p><Link href="/phap-ly/mien-tru-trach-nhiem">Miễn trừ trách nhiệm</Link></p>
-            <p className="footer-dashboard-link"><Link href="/cms">Dashboard</Link></p>
+            <p className="footer-stealth-links">
+              <a href="https://hiitclub.org" target="_blank" rel="noopener noreferrer">hitclub</a>
+              <a href="https://vn.go88i.asia" target="_blank" rel="noopener noreferrer">Go88</a>
+            </p>
           </div>
 
           <div className="footer-column">

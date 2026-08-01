@@ -913,20 +913,26 @@ img {
   line-height: 1.7;
 }
 
-.footer-dashboard-link {
+.footer-stealth-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 14px;
-  opacity: 0.24;
+  opacity: 0.08;
   transition: opacity 160ms ease;
 }
 
-.footer-dashboard-link:hover,
-.footer-dashboard-link:focus-within {
-  opacity: 0.55;
+.footer-stealth-links:hover,
+.footer-stealth-links:focus-within {
+  opacity: 0.28;
 }
 
-.footer-dashboard-link a {
-  font-size: 0.72rem;
+.footer-stealth-links a {
+  color: var(--muted);
+  font-size: 0.62rem;
   letter-spacing: 0.04em;
+  line-height: 1;
+  text-decoration: none;
 }
 
 .premium-drop-badge {
