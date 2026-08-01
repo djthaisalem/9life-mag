@@ -35,6 +35,21 @@ export function createShareMetadata(input: { title: string; description: string;
 
 export const defaultShareMetadata = createShareMetadata({
   title: '9LIFE MAG | Nightlife, Music & Entertainment',
-  description: 'Khám phá tin tức nightlife, hồ sơ nghệ sĩ, âm nhạc, booking và cộng đồng giải trí đêm tại 9Life Mag.',
+  description: 'Khám phá tin tức nightlife, hồ sơ nghệ sĩ, outlet, âm nhạc, booking và những xu hướng giải trí nổi bật dành cho cộng đồng tại 9LIFE MAG.',
   path: '/',
 })
+
+defaultShareMetadata.keywords = [
+  '9LIFE MAG',
+  'tin tức nightlife',
+  'âm nhạc điện tử',
+  'nghệ sĩ Việt Nam',
+  'DJ Việt Nam',
+  'booking nghệ sĩ',
+  'đặt bàn nightlife',
+  'remix',
+  'nonstop',
+]
+defaultShareMetadata.authors = [{ name: '9LIFE MAG', url: siteUrl }]
+defaultShareMetadata.creator = '9LIFE MAG'
+defaultShareMetadata.publisher = '9LIFE MAG'
