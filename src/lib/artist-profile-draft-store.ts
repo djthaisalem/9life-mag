@@ -3,6 +3,7 @@ import 'server-only'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { optimizeDisplayImage } from '@/lib/display-image'
 import { env } from '@/lib/env'
 
 export type ArtistDraftTemplate = { values?: Record<string, string>; files?: Record<string, string> }
@@ -52,12 +53,17 @@ export async function storeArtistDraftImages(slug: string, draft: ArtistProfileD
       const image = parseDataImage(value)
       if (!image) continue
 
-      const key = `artist-drafts/${normalizedSlug}/${field}.jpg`
+      const optimized = await optimizeDisplayImage(
+        image.body,
+        `${field}.webp`,
+        { maxDimension: field === 'portraitUpload' ? 1800 : 2560 },
+      )
+      const key = `artist-drafts/${normalizedSlug}/${field}.webp`
       await client.send(new PutObjectCommand({
         Bucket: env.R2_BUCKET,
         Key: key,
-        Body: image.body,
-        ContentType: image.contentType,
+        Body: optimized.data,
+        ContentType: optimized.mimetype,
         CacheControl: 'private, max-age=300',
       }))
       template.files = { ...(template.files ?? {}), [field]: key }
@@ -70,10 +76,10 @@ export async function storeArtistDraftImages(slug: string, draft: ArtistProfileD
 export async function deleteArtistDraftImages(slug: string) {
   const client = getR2Client()
   const normalizedSlug = safeSlug(slug)
-  await Promise.all(['portraitUpload', 'coverUpload'].map((field) => client.send(new DeleteObjectCommand({
+  await Promise.all(['portraitUpload', 'coverUpload'].flatMap((field) => ['webp', 'jpg'].map((extension) => client.send(new DeleteObjectCommand({
     Bucket: env.R2_BUCKET,
-    Key: `artist-drafts/${normalizedSlug}/${field}.jpg`,
-  }))))
+    Key: `artist-drafts/${normalizedSlug}/${field}.${extension}`,
+  })))))
 }
 
 export async function getArtistProfileDraft(slug: string): Promise<ArtistProfileDraft> {

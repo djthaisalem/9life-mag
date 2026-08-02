@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
+import { prepareMediaUpload } from '@/lib/display-image'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -35,15 +36,16 @@ export async function POST(request: Request) {
 
     const payload = await loadPayloadClient()
     const buffer = Buffer.from(await file.arrayBuffer())
+    const uploadFile = await prepareMediaUpload({
+      data: buffer,
+      mimetype: file.type,
+      name: toFileName(file.name),
+      kind: 'image',
+    })
     const media = await payload.create({
       collection: 'media',
       data: { alt, kind: 'image' },
-      file: {
-        data: buffer,
-        mimetype: file.type,
-        name: toFileName(file.name),
-        size: buffer.length,
-      },
+      file: uploadFile,
       depth: 0,
       overrideAccess: true,
     })

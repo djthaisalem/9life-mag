@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
+import { optimizeDisplayImage } from '@/lib/display-image'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { normalizeCmsRole } from '@/lib/cms-role-policy'
 
@@ -48,8 +49,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ album
     let coverImage = typeof album.coverImage === 'object' && album.coverImage ? Number(album.coverImage.id) : Number(album.coverImage)
     const cover = parseCoverDataUrl(input.coverDataUrl)
     if (cover) {
-      const extension = cover.mimeType === 'image/png' ? 'png' : cover.mimeType === 'image/webp' ? 'webp' : 'jpg'
-      const media = await payload.create({ collection: 'media', depth: 0, overrideAccess: true, data: { alt: `${input.title} cover`, kind: 'image' }, file: { data: cover.data, mimetype: cover.mimeType, name: `${toSlug(input.title)}-cover.${extension}`, size: cover.data.length } })
+      const uploadFile = await optimizeDisplayImage(cover.data, `${toSlug(input.title)}-cover.webp`)
+      const media = await payload.create({ collection: 'media', depth: 0, overrideAccess: true, data: { alt: `${input.title} cover`, kind: 'image' }, file: uploadFile })
       coverImage = Number(media.id)
     }
     const hasCover = Number.isSafeInteger(coverImage) && coverImage > 0

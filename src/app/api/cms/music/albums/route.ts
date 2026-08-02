@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { requireCmsApiAccess } from '@/lib/cms-access'
 import { verifyCmsCapabilityToken } from '@/lib/cms-capability'
+import { optimizeDisplayImage } from '@/lib/display-image'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { normalizeCmsRole } from '@/lib/cms-role-policy'
 
@@ -100,18 +101,13 @@ export async function POST(request: Request) {
     let albumCoverId: number | null = null
 
     if (cover) {
-      const extension = cover.mimeType === 'image/png' ? 'png' : cover.mimeType === 'image/webp' ? 'webp' : 'jpg'
+      const uploadFile = await optimizeDisplayImage(cover.data, `${toSlug(input.title)}-cover.webp`)
       const media = await payload.create({
         collection: 'media',
         depth: 0,
         overrideAccess: true,
         data: { alt: `${input.title} cover`, kind: 'image' },
-        file: {
-          data: cover.data,
-          mimetype: cover.mimeType,
-          name: `${toSlug(input.title)}-cover.${extension}`,
-          size: cover.data.length,
-        },
+        file: uploadFile,
       })
       albumCoverId = Number(media.id)
       if (!Number.isSafeInteger(albumCoverId) || albumCoverId <= 0) {
