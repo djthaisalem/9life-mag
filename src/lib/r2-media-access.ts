@@ -4,7 +4,9 @@ import { GetObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { env } from '@/lib/env'
 
-export const PLAYBACK_URL_TTL_SECONDS = 5 * 60
+// A progressive MP3 request cannot swap its signed source without a brief
+// reload. Keep one lease long enough for uninterrupted nonstop sessions.
+export const PLAYBACK_URL_TTL_SECONDS = 2 * 60 * 60
 
 function getClient() {
   if (!env.R2_ENDPOINT || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY) return null
