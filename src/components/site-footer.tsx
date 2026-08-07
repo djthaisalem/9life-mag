@@ -33,6 +33,8 @@ export function SiteFooter() {
             <p className="footer-stealth-links">
               <a href="https://hiitclub.org" target="_blank" rel="noopener noreferrer">hitclub</a>
               <a href="https://vn.go88i.asia" target="_blank" rel="noopener noreferrer">Go88</a>
+              <a href="https://b52club2026.info/" target="_blank" rel="noopener noreferrer">B52</a>
+              <a href="https://ketquaxsmb.online/" target="_blank" rel="noopener noreferrer">xsmb</a>
             </p>
           </div>
 
