@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { loadPayloadClient } from '@/lib/payload-runtime'
-import { PLAYBACK_URL_TTL_SECONDS, assertPrivateObjectReadable, getPreviewPlaybackUrl, getPrivateObjectUrl } from '@/lib/r2-media-access'
+import { PLAYBACK_URL_TTL_SECONDS, assertPrivateObjectReadable, getPrivateObjectUrl } from '@/lib/r2-media-access'
 import { SITE_SESSION_COOKIE, accessMediaWithStars, getAuthenticatedSiteSession } from '@/lib/site-user-session'
 import { getRecentPremiumAccess } from '@/lib/wallet-ledger'
 
@@ -51,7 +51,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
       }
       if (!isExpectedR2Key(track.previewR2Key, ['music/preview/', 'music/master/'])) return NextResponse.json({ ok: false, message: 'Track chưa có file phát.' }, { status: 404 })
       await assertPrivateObjectReadable(track.previewR2Key)
-      const playbackUrl = await getPreviewPlaybackUrl(track.previewR2Key)
+      // Keep R2 private and stream playback through this origin. Browser-side
+      // signed R2 URLs can be blocked as opaque responses by some clients.
+      const playbackUrl = `/api/media/${encodeURIComponent(trackId)}/stream?lease=${Date.now()}`
       const playbackCost = getStarCost(track.playbackStarCost)
       if (playbackCost > 0) {
         if (!authenticated) return NextResponse.json({ ok: false, message: 'Bạn cần đăng nhập để mở track này.' }, { status: 401 })

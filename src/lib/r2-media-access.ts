@@ -44,6 +44,17 @@ export async function assertPrivateObjectReadable(key: string) {
   if (!object.ContentLength || object.ContentLength < 1) throw new Error('r2_media_object_empty')
 }
 
+export async function getPrivateObjectStream(key: string, range?: string | null) {
+  const client = getClient()
+  if (!client) throw new Error('r2_media_not_configured')
+
+  return client.send(new GetObjectCommand({
+    Bucket: env.R2_BUCKET,
+    Key: key,
+    ...(range ? { Range: range } : {}),
+  }))
+}
+
 export async function getPrivateObjectUrl(key: string, expiresIn: number, options?: { downloadFilename?: string }) {
   const client = getClient()
   if (!client) throw new Error('r2_media_not_configured')
