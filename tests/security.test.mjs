@@ -10,6 +10,21 @@ import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { sanitizeArticleHtml, serializeJsonLd } from '../src/lib/sanitize-article-html.ts'
 import { isTrustedRequestOrigin } from '../src/lib/request-origin.ts'
+import { isCredentialError, summarizeAuthError } from '../src/lib/auth-errors.ts'
+
+test('authentication distinguishes credential failures from infrastructure errors without logging secrets', () => {
+  for (const name of ['AuthenticationError', 'LockedAuth', 'UnverifiedEmail']) {
+    const error = new Error('private account details')
+    error.name = name
+    assert.equal(isCredentialError(error), true)
+  }
+  const cause = Object.assign(new Error('SQL password=do-not-print'), { code: '42703' })
+  const error = new Error('Query parameters: do-not-print', { cause })
+  assert.equal(isCredentialError(error), false)
+  assert.deepEqual(summarizeAuthError(error), [{name:'Error'}, {name:'Error', code:'42703'}])
+  assert.doesNotMatch(JSON.stringify(summarizeAuthError(error)), /do-not-print|password|Query/)
+  assert.equal(isCredentialError({name:'AuthenticationError'}), false)
+})
 
 test('article HTML removes executable markup and unsafe URLs', () => {
   const html = sanitizeArticleHtml('<script>alert(1)</script><img src="/cover.png" onerror="alert(1)"><a href="javascript:alert(1)">link</a><svg onload="alert(1)"></svg><iframe srcdoc="<script>alert(1)</script>" src="https://evil.example"></iframe>')
@@ -139,8 +154,11 @@ test('VPS auth diagnostics reveal the CMS OTP only when explicitly requested', (
   const preload = path.join(directory, 'offline-fetch.cjs')
   writeFileSync(preload, "global.fetch = async () => new Response(JSON.stringify({ok:false,message:'Invalid input'}), {status:400})")
   writeFileSync(path.join(directory, '.env.local'), 'CMS_ADMIN_OTP_CODE=001122\nSITE_SESSION_SECRET=do-not-print-session-secret\nCMS_ADMIN_PASSWORD=do-not-print-password\n')
+  const errorLog = path.join(directory, 'error.log')
+  writeFileSync(errorLog, 'SQL parameters: do-not-print-password\nerror: relation "users_sessions" does not exist\ncode: \'42P01\'\n')
   const input = JSON.stringify([{ name: '9life-mag', pm2_env: {
     pm_exec_path: path.join(directory, 'server.js'), status: 'online', exec_interpreter: 'node',
+    pm_err_log_path: errorLog,
     env: { username: 'Administrator', USERNAME: 'Administrator' },
   } }])
   try {
@@ -148,6 +166,8 @@ test('VPS auth diagnostics reveal the CMS OTP only when explicitly requested', (
     const safe = run([])
     assert.equal(safe.status, 0)
     assert.match(safe.stdout, /"cmsOtpConfigured": true/)
+    assert.match(safe.stdout, /42P01/)
+    assert.match(safe.stdout, /users_sessions/)
     assert.doesNotMatch(safe.stdout, /001122|do-not-print/)
     const requested = run(['--show-cms-otp'])
     assert.equal(requested.status, 0)

@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { summarizeAuthError } from '@/lib/auth-errors'
 import { getTrustedClientIp, guardCmsLoginAttempts } from '@/lib/request-guard'
 import { env } from '@/lib/env'
 import { validatePayloadCmsCredentials } from '@/lib/cms-session-payload'
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
       )
     }
 
-    console.error('CMS login failed unexpectedly', error)
+    console.error('CMS login failed unexpectedly', summarizeAuthError(error))
 
     return NextResponse.json(
       {

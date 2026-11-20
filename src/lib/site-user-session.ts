@@ -5,6 +5,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { env } from '@/lib/env'
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { isCredentialError } from '@/lib/auth-errors'
 import { assertProductionPersistence, canUseDevelopmentSeeds, getRuntimeSecret } from '@/lib/runtime-security'
 import { getRecentPremiumAccess, hasRecentMediaStarCharge, recordWalletLedgerEntry, type WalletEventType } from '@/lib/wallet-ledger'
 
@@ -1145,7 +1146,8 @@ export async function loginSiteAccount(input: {
           password,
         },
       })
-    } catch {
+    } catch (error) {
+      if (!isCredentialError(error)) throw error
       return {
         ok: false as const,
         reason: 'invalid_credentials' as const,

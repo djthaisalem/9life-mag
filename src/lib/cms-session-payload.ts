@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { loadPayloadClient } from '@/lib/payload-runtime'
+import { isCredentialError } from '@/lib/auth-errors'
 
 const CMS_ROLE_MAP: Record<string, string> = {
   admin: 'super_admin',
@@ -41,7 +42,8 @@ export async function validatePayloadCmsCredentials(input: {
     }
 
     return { ok: true as const, role }
-  } catch {
+  } catch (error) {
+    if (!isCredentialError(error)) throw error
     return { ok: false as const, reason: 'invalid_credentials' as const }
   }
 }

@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { summarizeAuthError } from '@/lib/auth-errors'
 import { getTrustedClientIp, guardLoginAttempts } from '@/lib/request-guard'
 import {
   getSiteSessionCookieOptions,
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
       )
     }
 
+    console.error('Site login failed unexpectedly', summarizeAuthError(error))
     return json(
       {
         ok: false,
