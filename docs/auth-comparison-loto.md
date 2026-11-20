@@ -2,6 +2,12 @@
 
 Compared local sources under `9life-mag` and `loto/lottery-crawl-master` on 20 November 2026. No loto source or production data was modified.
 
+## Payload 3.94 schema repair
+
+The VPS users-column report lacks `users.reset_password_requested_at`, while the installed Payload 3.94 generated schema includes it. Both login paths reported SQLSTATE `42703`. A PostgreSQL-compatible regression reproduced this error by selecting Payload's generated users columns against the original migration schema; adding the nullable `timestamp(3) with time zone` column resolved it.
+
+Migration `20261120_000002_auth_reset_requested_at` adds the column without changing hashes, salts, roles, lockouts or OTP configuration. The Windows deployment's schema helper applies the same idempotent change after the database backup, before building or stopping the running worker. Run `scripts/update-windows-vps.ps1 -Mode Deploy` after pulling develop. The log must include `Auth schema verified: users.reset_password_requested_at exists`. Then verify a real user and CMS login; schema checks alone do not verify credentials or OTP.
+
 | Layer | 9life | loto |
 | --- | --- | --- |
 | HTTP server | Next.js App Router behind IIS | Express behind a loopback-trusted proxy |

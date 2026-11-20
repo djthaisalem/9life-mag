@@ -2,6 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { createRequire } = require('node:module')
 const { parseEnv } = require('node:util')
+const { migrateAuthSchema } = require('./migrate-auth-schema.cjs')
 
 async function migrateStorageSchema(client) {
   await client.query('BEGIN')
@@ -37,6 +38,8 @@ async function main() {
     await client.connect()
     await migrateStorageSchema(client)
     console.log('Storage schema verified: media._objectkey exists; existing media rows and object paths are unchanged.')
+    await migrateAuthSchema(client)
+    console.log('Auth schema verified: users.reset_password_requested_at exists; account credentials are unchanged.')
   } finally { await client.end() }
 }
 

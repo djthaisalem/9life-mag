@@ -47,6 +47,7 @@ async function main() {
       report.database.permissions = permissions.rows
       report.database.missingAuthTables = requiredTables.filter((name) => !permissions.rows.some((row) => row.table_name === name))
       const userColumns = new Set(columns.rows.filter((row) => row.table_name === 'users').map((row) => row.column_name))
+      report.database.authResetRequestedAtPresent = userColumns.has('reset_password_requested_at')
       if (['role', 'is_active', 'hash', 'salt', 'login_attempts', 'lock_until'].every((column) => userColumns.has(column))) {
         const users = await client.query("SELECT role, COUNT(*)::int AS accounts, COUNT(*) FILTER (WHERE is_active = true)::int AS active, COUNT(*) FILTER (WHERE lock_until > CURRENT_TIMESTAMP)::int AS locked, COUNT(*) FILTER (WHERE hash LIKE 'pbkdf2-sha256%')::int AS modern_hash, COUNT(*) FILTER (WHERE hash IS NOT NULL AND hash NOT LIKE 'pbkdf2-sha256%')::int AS legacy_hash FROM users GROUP BY role ORDER BY role")
         report.database.accounts = users.rows
