@@ -132,3 +132,26 @@ test('release checks reject a broken database even when the homepage returns 200
     await new Promise((resolve) => server.close(resolve))
   }
 })
+
+test('VPS auth diagnostics reveal the CMS OTP only when explicitly requested', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), '9life-auth-diagnostic-'))
+  const helper = fileURLToPath(new URL('../scripts/diagnose-auth-vps.cjs', import.meta.url))
+  const preload = path.join(directory, 'offline-fetch.cjs')
+  writeFileSync(preload, "global.fetch = async () => new Response(JSON.stringify({ok:false,message:'Invalid input'}), {status:400})")
+  writeFileSync(path.join(directory, '.env.local'), 'CMS_ADMIN_OTP_CODE=001122\nSITE_SESSION_SECRET=do-not-print-session-secret\nCMS_ADMIN_PASSWORD=do-not-print-password\n')
+  const input = JSON.stringify([{ name: '9life-mag', pm2_env: {
+    pm_exec_path: path.join(directory, 'server.js'), status: 'online', exec_interpreter: 'node',
+    env: { username: 'Administrator', USERNAME: 'Administrator' },
+  } }])
+  try {
+    const run = (args) => spawnSync(process.execPath, ['--require', preload, helper, ...args], { input, encoding: 'utf8', windowsHide: true })
+    const safe = run([])
+    assert.equal(safe.status, 0)
+    assert.match(safe.stdout, /"cmsOtpConfigured": true/)
+    assert.doesNotMatch(safe.stdout, /001122|do-not-print/)
+    const requested = run(['--show-cms-otp'])
+    assert.equal(requested.status, 0)
+    assert.match(requested.stdout, /CMS OTP.*001122/)
+    assert.doesNotMatch(requested.stdout, /do-not-print/)
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
