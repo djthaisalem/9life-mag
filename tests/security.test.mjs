@@ -155,3 +155,19 @@ test('VPS auth diagnostics reveal the CMS OTP only when explicitly requested', (
     assert.doesNotMatch(requested.stdout, /do-not-print/)
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('lottery recovery rejects unexpected PM2 paths before changing tasks', () => {
+  const helper = fileURLToPath(new URL('../scripts/check-ketquaxsmb-pm2.cjs', import.meta.url))
+  const config = {
+    pm_exec_path: 'C:\\sites\\ketquaxsmb\\lottery-crawl-master\\index.mjs',
+    pm_cwd: 'C:\\sites\\ketquaxsmb\\lottery-crawl-master',
+    exec_interpreter: 'C:\\sites\\ketquaxsmb\\.runtime\\node-v24.22.3-win-x64\\node.exe',
+    env: { username: 'Administrator', USERNAME: 'Administrator', secret: 'do-not-print' },
+  }
+  const run = () => spawnSync(process.execPath, [helper], { input: JSON.stringify([{name:'ketquaxsmb',pm2_env:config}]), encoding:'utf8', windowsHide:true })
+  assert.equal(run().status, 0)
+  config.pm_exec_path = 'C:\\sites\\other-app\\index.mjs'
+  const rejected = run()
+  assert.notEqual(rejected.status, 0)
+  assert.doesNotMatch(rejected.stdout + rejected.stderr, /do-not-print/)
+})
