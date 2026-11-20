@@ -9,6 +9,7 @@ import { extractArticleSeoMetadata, getArticleSeoKeywords, stripArticleSeoMetada
 import { getSupplementArticleDetail, newsCatalogSupplement } from '@/lib/news-catalog-supplement'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { listPublicArticles } from '@/lib/public-articles'
+import { serializeJsonLd } from '@/lib/sanitize-article-html'
 
 export const revalidate = 0
 
@@ -141,7 +142,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <main className="article-detail-page">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }} />
         <section className="section article-detail-section">
           <article className="container article-layout">
             <header className="article-editorial-header">

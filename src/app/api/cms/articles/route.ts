@@ -6,6 +6,7 @@ import { getCmsArticleHtml, getCmsMediaReference } from '@/lib/cms-article-conte
 import { buildArticleSeoMarkup, extractArticleSeoMetadata, stripArticleSeoMetadata } from '@/lib/article-seo-metadata'
 import { loadPayloadClient } from '@/lib/payload-runtime'
 import { toUrlSlug } from '@/lib/url-slug'
+import { sanitizeArticleHtml } from '@/lib/sanitize-article-html'
 
 const articleSchema = z.object({
   title: z.string().trim().min(2).max(240),
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     const categoryId = await getOrCreateCategoryId(payload, input.category)
     const topicId = input.topic ? await getOrCreateCategoryId(payload, input.topic, 'topic') : undefined
     const seoMetadata = input.seo ?? extractArticleSeoMetadata(input.html)
-    const articleHtml = [stripArticleSeoMetadata(input.html), buildArticleSeoMarkup(seoMetadata)].filter(Boolean).join('')
+    const articleHtml = [stripArticleSeoMetadata(sanitizeArticleHtml(input.html)), buildArticleSeoMarkup(seoMetadata)].filter(Boolean).join('')
     const content = articleHtml ? { root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: articleHtml, detail: 0, format: 0, mode: 'normal', style: '' }], direction: null, format: '', indent: 0 }] } } : undefined
     const existingPost = found.docs[0]
     const publishedAt =

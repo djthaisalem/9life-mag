@@ -1,3 +1,5 @@
+import { sanitizeArticleHtml } from '@/lib/sanitize-article-html'
+
 export function getCmsArticleHtml(content: unknown): string {
   if (!content || typeof content !== 'object') return ''
   const root = (content as { root?: unknown }).root
@@ -13,7 +15,7 @@ export function getCmsArticleHtml(content: unknown): string {
     if (Array.isArray(value.children)) value.children.forEach(visit)
   }
   children.forEach(visit)
-  return textNodes.join('\n')
+  return sanitizeArticleHtml(textNodes.join('\n'))
 }
 
 export function getCmsMediaReference(value: unknown) {

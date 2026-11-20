@@ -41,6 +41,7 @@ import {
 } from 'lexical'
 import { getMediaEmbed } from '@/lib/media-embed'
 import type { ArticleSeoMetadata } from '@/lib/article-seo-metadata'
+import { sanitizeArticleHtml } from '@/lib/sanitize-article-html'
 
 const tools = ['Image', 'Gallery', 'Video', 'Embed', 'CTA', 'SEO', 'Preview'] as const
 
@@ -132,7 +133,7 @@ class CmsHtmlBlockNode extends DecoratorBlockNode {
 
   constructor(html: string, format: ElementFormatType = '', key?: NodeKey) {
     super(format, key)
-    this.__html = html
+    this.__html = sanitizeArticleHtml(html)
   }
 
   exportJSON(): SerializedCmsHtmlBlockNode {

@@ -9,6 +9,7 @@ import { CmsDashboardShell } from '@/components/cms-dashboard-shell'
 import { cmsArticlePlacementOptions } from '@/lib/news-taxonomy'
 import { repairVietnameseValue } from '@/lib/repair-vietnamese-text'
 import { toUrlSlug } from '@/lib/url-slug'
+import { sanitizeArticleHtml } from '@/lib/sanitize-article-html'
 
 type ArticleSeries = { title: string; description: string; placement: string; status: string }
 type ArticleImage = { id?: string; file?: File; preview: string; alt: string }
@@ -342,7 +343,7 @@ export default function CmsArticlesPage() {
           <h1 className="page-title article-title">{postTitle || 'Bài viết chưa có tiêu đề'}</h1>
           {postExcerpt ? <p className="page-intro article-summary">{postExcerpt}</p> : null}
           {coverImage ? <img className="article-hero-image" src={coverImage.preview} alt={coverImage.alt || postTitle} /> : null}
-          <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: articleHtml || '<p>Bài viết chưa có nội dung.</p>' }} />
+          <div className="article-body-shell" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(articleHtml) || '<p>Bài viết chưa có nội dung.</p>' }} />
           {galleryImages.length ? <section className="cms-article-live-gallery">
             <h2>Gallery</h2>
             <div>{galleryImages.map((image, index) => <figure key={`${image.preview}-${index}`}><img src={image.preview} alt={image.alt || `${postTitle} ${index + 1}`} /></figure>)}</div>

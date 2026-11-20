@@ -5,6 +5,9 @@ const scriptSource = process.env.NODE_ENV === 'production'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  outputFileTracingExcludes: {
+    '/*': ['./tmp/**/*', './.git/**/*', './.codegraph/**/*', './codegraph-main/**/*', './9life-mag/**/*', './mobile/**/*'],
+  },
   poweredByHeader: false,
   experimental: {
     // Multipart audio uploads need headroom beyond MUSIC_MAX_UPLOAD_MB.

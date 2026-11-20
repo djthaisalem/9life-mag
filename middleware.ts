@@ -1,25 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isTrustedRequestOrigin } from '@/lib/request-origin'
 
 function isSafeOrigin(request: NextRequest) {
-  const origin = request.headers.get('origin')
-  if (!origin) return process.env.NODE_ENV !== 'production'
-
-  const host = request.headers.get('host')?.trim()
-  if (!host) return false
-
-  const forwardedProtocol = process.env.TRUST_PROXY_HEADERS === 'true'
-    ? request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
-    : undefined
-  const protocol = forwardedProtocol || request.nextUrl.protocol.replace(':', '')
-
-  try {
-    // In standalone mode, nextUrl can retain the bind host (0.0.0.0).
-    // Compare against the request Host instead, which is the browser origin.
-    return new URL(origin).origin === `${protocol}://${host}`
-  } catch {
-    return false
-  }
+  return isTrustedRequestOrigin(request.headers, request.nextUrl.protocol.replace(':', ''))
 }
 
 export async function middleware(request: NextRequest) {
@@ -35,6 +19,7 @@ export async function middleware(request: NextRequest) {
   const isStudentApplicationsRoute = pathname === '/api/student-applications'
   const isUserPlaylistRoute = pathname.startsWith('/api/user-playlists/')
   const isMusicIssueReportRoute = pathname === '/api/music/report-issue'
+  const isContentVoteRoute = pathname === '/api/content-votes'
 
   if (pathname.startsWith('/cms/dashboard')) {
     const requestHeaders = new Headers(request.headers)
@@ -44,7 +29,7 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  if ((isCmsApi || isAuthApi || isContactRequestRoute || isBookingRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute || isUserPlaylistRoute || isMusicIssueReportRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
+  if ((isCmsApi || pathname.startsWith('/cms/api/') || isAuthApi || isContactRequestRoute || isBookingRequestRoute || isPortalApi || isReferralRoute || isMediaRoute || isStudentApplicationsRoute || isUserPlaylistRoute || isMusicIssueReportRoute || isContentVoteRoute) && request.method !== 'GET' && request.method !== 'HEAD' && !isSafeOrigin(request)) {
     return NextResponse.json(
       {
         ok: false,
@@ -68,5 +53,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/cms/dashboard/:path*', '/api/cms/session/:path*', '/api/cms/access-requests', '/api/cms/star-topups', '/api/auth/:path*', '/api/contact-requests', '/api/booking-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/music/report-issue', '/api/student-applications', '/api/user-playlists/:path*'],
+  matcher: ['/cms/dashboard/:path*', '/cms/api/:path*', '/api/cms/:path*', '/api/auth/:path*', '/api/contact-requests', '/api/booking-requests', '/api/referrals', '/api/portal/:path*', '/api/media/:path*', '/api/music/report-issue', '/api/student-applications', '/api/user-playlists/:path*', '/api/content-votes'],
 }
