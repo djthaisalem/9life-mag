@@ -59,10 +59,20 @@ function Wait-ForApp([string]$BaseUrl) {
 }
 
 $pm2 = (Get-Command pm2.cmd -ErrorAction Stop).Source
-$pm2Output = & $pm2 jlist
-if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect PM2.' }
-$processes = ($pm2Output -join "`n") | ConvertFrom-Json
-$current = @($processes | Where-Object { $_.name -eq '9life-mag' })
+$bootstrapNode = (Get-Command node.exe -ErrorAction Stop).Source
+function Read-Pm2Process {
+    $previousEncoding = [Console]::OutputEncoding
+    $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    try {
+        [Console]::OutputEncoding = $OutputEncoding
+        $pm2Output = & $pm2 jlist
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect PM2.' }
+        $safeJson = ($pm2Output -join "`n") | & $bootstrapNode "$PSScriptRoot\read-pm2-process.cjs"
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot parse PM2 process metadata.' }
+    } finally { [Console]::OutputEncoding = $previousEncoding }
+    return (($safeJson -join "`n") | ConvertFrom-Json)
+}
+$current = @(Read-Pm2Process)
 if ($current.Count -ne 1) { throw 'Expected exactly one PM2 process named 9life-mag.' }
 $oldInterpreter = $current[0].pm2_env.exec_interpreter
 $runningNode = Get-CimInstance Win32_Process -Filter "ProcessId = $($current[0].pid)"
@@ -113,8 +123,8 @@ foreach ($filename in @('.env', '.env.local', '.env.production', '.env.productio
     if (Test-Path -LiteralPath $envFile) { Copy-Item -LiteralPath $envFile -Destination $release }
 }
 # Inherit the app's configured environment without printing secrets.
-foreach ($property in $current[0].pm2_env.env.PSObject.Properties) {
-    [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process')
+foreach ($property in $current[0].environment) {
+    [Environment]::SetEnvironmentVariable($property.name, [string]$property.value, 'Process')
 }
 $env:PATH = "$(Split-Path $node);$env:PATH"
 $env:NODE_ENV = 'production'
@@ -174,7 +184,7 @@ try {
     Invoke-Checked $pm2 @('restart', '9life-mag', '--interpreter', $node, '--update-env')
     Wait-ForApp 'http://127.0.0.1:4000'
     Invoke-Checked $node @("$release\scripts\check-release.mjs", 'http://127.0.0.1:4000')
-    $updated = ((& $pm2 jlist) -join "`n") | ConvertFrom-Json | Where-Object { $_.name -eq '9life-mag' }
+    $updated = Read-Pm2Process
     if ($updated.pm2_env.exec_interpreter -ne $node) { throw 'PM2 did not adopt the patched Node interpreter.' }
     Invoke-Checked $pm2 @('save')
     Write-Host "SUCCESS: 9life-mag 0.1.1 / Node $runtimeVersion / port 4000. Backup: $backupNext" -ForegroundColor Green

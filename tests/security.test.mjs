@@ -87,3 +87,21 @@ test('deployment backup skips file storage and fails closed for unbacked Payload
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('PM2 metadata preserves case-colliding Windows environment keys as rows', () => {
+  const helper = fileURLToPath(new URL('../scripts/read-pm2-process.cjs', import.meta.url))
+  const input = JSON.stringify([
+    { name: 'other-site', pm2_env: { env: { secret: 'unrelated-secret' } } },
+    { name: '9life-mag', pid: 123, pm2_env: {
+      exec_interpreter: 'node', pm_exec_path: 'C:\\app\\server.js', status: 'online',
+      username: 'Administrator', USERNAME: 'Administrator',
+      env: { username: 'Administrator', USERNAME: 'Administrator', Path: 'a', PATH: 'b' },
+    } },
+  ])
+  const result = spawnSync(process.execPath, [helper], { input, encoding: 'utf8', windowsHide: true })
+  assert.equal(result.status, 0)
+  const [selectedProcess] = JSON.parse(result.stdout)
+  assert.equal(selectedProcess.pid, 123)
+  assert.deepEqual(selectedProcess.environment.map((entry) => entry.name), ['username', 'USERNAME', 'Path', 'PATH'])
+  assert.doesNotMatch(result.stdout, /unrelated-secret/)
+})
