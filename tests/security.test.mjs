@@ -3,7 +3,10 @@ import { test } from 'node:test'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { spawnSync } from 'node:child_process'
+import { spawnSync, execFile } from 'node:child_process'
+import { createServer } from 'node:http'
+import { once } from 'node:events'
+import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { sanitizeArticleHtml, serializeJsonLd } from '../src/lib/sanitize-article-html.ts'
 import { isTrustedRequestOrigin } from '../src/lib/request-origin.ts'
@@ -104,4 +107,28 @@ test('PM2 metadata preserves case-colliding Windows environment keys as rows', (
   assert.equal(selectedProcess.pid, 123)
   assert.deepEqual(selectedProcess.environment.map((entry) => entry.name), ['username', 'USERNAME', 'Path', 'PATH'])
   assert.doesNotMatch(result.stdout, /unrelated-secret/)
+})
+
+test('release checks reject a broken database even when the homepage returns 200', async () => {
+  let articleStatus = 500
+  const server = createServer((request, response) => {
+    if (request.method === 'POST') { response.writeHead(403); response.end('{}'); return }
+    if (request.url === '/') { response.end('<a href="https://hitclub26.net">hitclub</a>'); return }
+    response.setHeader('Content-Type', 'application/json')
+    if (request.url === '/api/health') { response.end(JSON.stringify({ status: 'ok', version: '0.1.1' })); return }
+    response.writeHead(articleStatus)
+    response.end(JSON.stringify({ ok: articleStatus === 200, articles: [] }))
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  const checker = fileURLToPath(new URL('../scripts/check-release.mjs', import.meta.url))
+  const run = () => promisify(execFile)(process.execPath, [checker, `http://127.0.0.1:${server.address().port}`], { windowsHide: true })
+  try {
+    await assert.rejects(run(), /Article database query must succeed/)
+    articleStatus = 200
+    const success = await run()
+    assert.match(success.stdout, /Release checks passed/)
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
 })

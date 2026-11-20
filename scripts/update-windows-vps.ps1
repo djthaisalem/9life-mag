@@ -144,6 +144,9 @@ try {
     Invoke-Checked $node @($npm, 'ci', '--include=dev')
     Invoke-Checked $node @($npm, 'audit', '--audit-level=moderate')
     Invoke-Checked $node @($npm, 'run', 'test:security')
+    if (Test-Path -LiteralPath "$release\database-before.dump") {
+        Invoke-Checked $node @("$release\scripts\migrate-storage-schema.cjs", $AppRoot, $release, "$release\database-before.dump")
+    }
     Invoke-Checked $node @($npm, 'run', 'build')
 } finally { Pop-Location }
 Copy-Tree "$release\public" "$release\.next\standalone\public"

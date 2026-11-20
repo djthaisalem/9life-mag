@@ -11,6 +11,7 @@ import * as migration_20260727_000003_allow_repeat_content_votes from './2026072
 import * as migration_20260727_000004_post_gallery from './20260727_000004_post_gallery';
 import * as migration_20260727_000005_fix_content_vote_lock_relation from './20260727_000005_fix_content_vote_lock_relation';
 import * as migration_20260727_000006_post_taxonomy from './20260727_000006_post_taxonomy';
+import * as migration_20261120_000001_media_object_key from './20261120_000001_media_object_key';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20260727_000006_post_taxonomy.up,
     down: migration_20260727_000006_post_taxonomy.down,
     name: '20260727_000006_post_taxonomy'
+  },
+  {
+    up: migration_20261120_000001_media_object_key.up,
+    down: migration_20261120_000001_media_object_key.down,
+    name: '20261120_000001_media_object_key'
   },
 ];

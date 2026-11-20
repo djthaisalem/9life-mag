@@ -7,11 +7,15 @@ import { loadPayloadClient } from '@/lib/payload-runtime'
 type MediaDocument = {
   filename?: string | null
   prefix?: string | null
+  _objectKey?: string | null
   url?: string | null
 }
 
 function getCandidateKeys(media: MediaDocument) {
   const keys: string[] = []
+  const prefix = media.prefix?.trim().replace(/^\/+|\/+$/g, '')
+  const objectKey = media._objectKey?.trim().replace(/^\/+|\/+$/g, '')
+  if (objectKey && media.filename) keys.push([prefix, objectKey, media.filename].filter(Boolean).join('/'))
   if (media.url) {
     try {
       const pathname = decodeURIComponent(new URL(media.url).pathname)
@@ -26,7 +30,6 @@ function getCandidateKeys(media: MediaDocument) {
     }
   }
 
-  const prefix = media.prefix?.trim().replace(/^\/+|\/+$/g, '')
   if (prefix) keys.push(`${prefix}/${media.filename}`)
   keys.push(`media/${media.filename}`, String(media.filename))
   return [...new Set(keys.filter(Boolean))]
