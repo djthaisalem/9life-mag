@@ -20,6 +20,6 @@ for (const route of ['/api/content-votes', '/api/cms/articles', '/api/cms/articl
     signal: AbortSignal.timeout(10000),
   })
   assert.equal(response.status, 403, `${route} must reject a foreign origin`)
-  await response.body?.cancel()
+  await response.text()
 }
 console.log('Release checks passed: version, homepage, footer, CMS aliases and vote origin guards.')
